@@ -42,9 +42,10 @@ def run_plan_execute(task: str, max_replan: int = 1,
     planner = Chat(SYSTEM_PLAN, meter, tools=False)
     planner.add_user(f"Task: {task}\nAvailable tools: read_file(path), "
                      f"count_pattern(path, pattern).")
-    plan = parse_plan(planner.send().text)
+    raw = planner.send().text
+    plan = parse_plan(raw)
     if plan is None:                              # a parse failure is one failure mode
-        log("[plan] not valid JSON")
+        log(f"[plan] not valid JSON: {raw.strip()[:300]!r}")
         return "plan parse failed", meter, 0
     log(f"[plan] {plan}")
 
@@ -71,9 +72,10 @@ def run_plan_execute(task: str, max_replan: int = 1,
             replans += 1                          # flexibility cap
             planner.add_user(f"Step {i + 1} ({plan[i]}) failed: {reply.text.strip()[:300]}\n"
                              f"Reply with a JSON list of the remaining steps.")
-            new_steps = parse_plan(planner.send().text)
+            raw = planner.send().text
+            new_steps = parse_plan(raw)
             if new_steps is None:
-                log("[replan] not valid JSON")
+                log(f"[replan] not valid JSON: {raw.strip()[:300]!r}")
                 break
             plan = plan[:i] + new_steps
             log(f"[replan] {plan}")

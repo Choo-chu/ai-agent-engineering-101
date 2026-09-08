@@ -57,7 +57,7 @@ python scripts/check_week02.py submissions/<student-id>/week-02
 ```bash
 export OPENAI_BASE_URL=https://openrouter.ai/api/v1
 export OPENAI_API_KEY=<your openrouter key>
-export AGENT_MODEL=<a model that supports tool calling>
+export AGENT_MODEL=nvidia/nemotron-3.5-lightning:free   # tested with the starter; any tool-calling model works
 python run_ab.py --runs 3
 ```
 
