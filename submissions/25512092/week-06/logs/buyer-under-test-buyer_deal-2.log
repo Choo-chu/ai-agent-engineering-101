@@ -1,20 +1,10 @@
-12:01:52 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:57298/
-12:01:52 task 0465a4ea-90bc-4420-a4c6-5aa13d831785
-12:01:52 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
-12:02:00 harness: '{"action": "offer", "price": 90}'
-12:02:00 -> offer 90
-12:02:00 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 110.'
-12:02:09 harness: '{"action": "accept"}'
-12:02:09 -> accept 110
-12:02:09 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 110.'
-12:02:09 DEAL lamp at 110.0 (budget 120)
-12:02:09 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:57298/
-12:02:09 task 209019f9-0646-4abd-9285-781f2dc06b45
-12:02:09 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
-12:02:17 harness: '{"action": "offer", "price": 90}'
-12:02:17 -> offer 90
-12:02:17 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 110.'
-12:02:25 harness: '{"action": "offer", "price": 100}'
-12:02:25 -> offer 100
-12:02:25 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 100.'
-12:02:25 DEAL lamp at 100.0 (budget 120)
+12:17:00 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:56902/
+12:17:00 task 04d68653-da92-4f3b-8106-ee6c532b8c3a
+12:17:00 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
+12:17:08 harness: '{"action": "offer", "price": 90}'
+12:17:08 -> offer 90
+12:17:08 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 110.'
+12:17:16 harness: '{"action": "accept"}'
+12:17:16 -> accept 110
+12:17:16 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 110.'
+12:17:16 DEAL lamp at 110.0 (budget 120)
