@@ -1,4 +1,4 @@
-"""Week 06 seller v1 — A2A v1.0 server (JSON-RPC) whose prices are decided by a harness.
+"""Week 06 seller v2 — A2A v1.0 server (JSON-RPC) whose prices are decided by a harness.
 
     python seller.py                 # shop on :9101
     python seller.py --port 9200
