@@ -215,7 +215,7 @@ def parse_turn(raw):
             d["price"] = int(round(float(d["price"])))
         except (KeyError, TypeError, ValueError):
             return None
-    d["say"] = re.sub(r"\d", "", str(d.get("say", ""))).strip()  # keep numbers out of the text
+    d["say"] = str(d.get("say", "")).strip()  # the ask is appended last, so numbers here are harmless
     return d
 
 
@@ -254,7 +254,7 @@ class CatalogSeller(AgentExecutor):
         tid = task.id[:8]
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
-        log(f"[{tid}] buyer: {text!r}")
+        log(f"[{tid}] {self.name} | buyer: {text!r}")
 
         # ---- first message: search, pick, open ----
         if deal is None:
@@ -287,9 +287,9 @@ class CatalogSeller(AgentExecutor):
             if ask < reserve:
                 log(f"[{tid}] GUARD opening ask {ask} < reserve {reserve} -> {reserve}")
                 ask = reserve
-            note = re.sub(r"\d", "", str(d.get("say", ""))).strip()
-            line = (note + " " if note else "") + f"{item['name']} ({item['id']}): asking {ask}."
-            # the id has digits but the ask comes last, so "last number = ask" still holds
+            note = str(d.get("say", "")).strip()
+            line = (note + " " if note else "") + f"{item['name']} ({item['id']}): {item['description']} Asking {ask}."
+            # the text has other numbers, but the ask comes last, so "last number = ask" still holds
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask, "turns": 0,
                                   "history": [f"buyer: {text}", f"you: {line}"]}
             log(f"[{tid}] picked {item['id']} {item['name']!r} reserve {reserve} -> INPUT_REQUIRED {line!r}")

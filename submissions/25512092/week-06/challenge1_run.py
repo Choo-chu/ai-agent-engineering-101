@@ -71,8 +71,10 @@ def main():
         offers = [int(asks[0] * f) for f in OFFER_STEPS]
         deal = None
         for offer in offers + [None]:
-            if offer is None:
-                offer = asks[-1]  # accept the current ask
+            if deal is not None:
+                break
+            if offer is None or offer >= asks[-1]:
+                offer = asks[-1]  # never offer more than the current ask; this accepts it
             task = client.send(str(offer), tid)
             text = status_text(task)
             log(f"  -> {offer}\n  <- {state(task)} | {text}")
