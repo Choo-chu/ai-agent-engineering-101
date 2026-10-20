@@ -4,7 +4,9 @@
     python seller.py --port 9200
     python seller.py --selftest      # call the harness once and print the raw answer
 
-v1: the reserve price lives ONLY in the prompt (no code guard yet).
+v2: the reserve is in the prompt AND guarded in code.
+    If the harness asks or accepts below the reserve, the code asks it once more with the reason;
+    if the second answer still breaks the reserve, the code counters at the reserve itself.
 The code speaks A2A, keeps per-task state, and turns the harness's JSON into A2A states.
 """
 import argparse
@@ -135,6 +137,9 @@ class Seller(AgentExecutor):
             ask = d["price"] if d and d["action"] == "counter" else round(reserve * 1.3)
             if d is None:
                 log(f"[{tid}] fallback opening ask {ask}")
+            if ask < reserve:
+                log(f"[{tid}] GUARD opening ask {ask} < reserve {reserve} -> {reserve}")
+                ask = reserve
             line = (d["say"] + " " if d and d["say"] else "") + f"{item}: asking {ask}."
             self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask, "turns": 0,
                                   "history": [f"buyer: {text}", f"you: {line}"]}
@@ -166,6 +171,19 @@ class Seller(AgentExecutor):
             d = {"action": "counter", "price": deal["ask"], "say": "Let me think."}
             log(f"[{tid}] fallback: hold ask {deal['ask']}")
 
+        reserve = deal["reserve"]
+        problem = self._violation(d, offer, reserve)
+        if problem:  # guard step 1: tell the harness why and ask once more
+            log(f"[{tid}] GUARD {problem} -> asking the harness again")
+            retry = prompt + f"\n\nYour previous answer was not allowed: {problem} Answer again."
+            d2 = await self._ask_harness(tid, retry)
+            if d2 and not self._violation(d2, offer, reserve):
+                d = d2
+                log(f"[{tid}] GUARD fixed by harness: {d2['action']} {d2.get('price', '')}")
+            else:  # guard step 2: the code holds the reserve
+                d = {"action": "counter", "price": reserve, "say": "This is the lowest I can go."}
+                log(f"[{tid}] GUARD clamp -> counter {reserve}")
+
         if d["action"] == "accept":
             receipt = {"seller": SHOP_NAME, "item": deal["item"], "price": offer}
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
@@ -184,6 +202,14 @@ class Seller(AgentExecutor):
             deal["history"].append(f"you: {line}")
             log(f"[{tid}] -> INPUT_REQUIRED {line!r}")
             await up.requires_input(say(line))
+
+    @staticmethod
+    def _violation(d, offer, reserve):
+        if d["action"] == "counter" and d["price"] < reserve:
+            return f"asking {d['price']} is below your reserve {reserve}."
+        if d["action"] == "accept" and offer < reserve:
+            return f"accepting {offer} is below your reserve {reserve}."
+        return None
 
     async def _ask_harness(self, tid, prompt):
         try:
@@ -234,5 +260,5 @@ if __name__ == "__main__":
         print("raw:", out)
         print("parsed:", parse_decision(out))
     else:
-        log(f"seller v1 on :{args.port}, harness: {' '.join(HARNESS_CMD)}")
+        log(f"seller v2 on :{args.port}, harness: {' '.join(HARNESS_CMD)}")
         uvicorn.run(build(args.port), host="127.0.0.1", port=args.port, log_level="warning")
