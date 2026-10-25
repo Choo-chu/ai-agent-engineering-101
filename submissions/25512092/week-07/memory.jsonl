@@ -38,3 +38,7 @@
 {"ts": "2026-10-25 14:32:25", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
 {"ts": "2026-10-25 14:32:48", "shop": "corner-store", "item": "bookshelf", "budget": 360, "agreed": 306, "receipt_price": 306.0, "deal": true, "flag": "ok", "stars": 5}
 {"ts": "2026-10-25 14:33:28", "shop": "corner-store", "item": "lamp", "budget": 110, "agreed": 103, "receipt_price": 103.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:36:03", "shop": "ggari-shop", "item": "lamp", "budget": 105, "agreed": 100, "receipt_price": 100, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:36:39", "shop": "ggari-shop", "item": "bookshelf", "budget": 295, "agreed": 260, "receipt_price": 260, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:37:06", "shop": "ggari-shop", "item": "lamp", "budget": 110, "agreed": 100, "receipt_price": 100, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:37:48", "shop": "corner-store", "item": "chair", "budget": 185, "agreed": 180, "receipt_price": 180.0, "deal": true, "flag": "ok", "stars": 5}
