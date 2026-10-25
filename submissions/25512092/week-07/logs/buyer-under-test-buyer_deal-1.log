@@ -1,10 +1,13 @@
-21:03:08 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:52316/
-21:03:08 task 8c520df0-8e24-439a-b828-40174266de02
-21:03:08 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
-21:03:14 harness: '{"action": "offer", "price": 90}'
-21:03:14 -> offer 90
-21:03:14 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 110.'
-21:03:21 harness: '{"action": "accept"}'
-21:03:21 -> accept 110
-21:03:21 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 110.'
-21:03:21 DEAL lamp at 110.0 (budget 120)
+14:04:52 [choose] http://127.0.0.1:52906: Kit Shop: highest score 3.00
+14:04:55 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:52906/
+14:04:55 task c6daad1a-6ed0-4022-801b-2cf6a225e85b
+14:04:55 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
+14:05:13 harness: '{"action": "offer", "price": 80}'
+14:05:13 -> offer 80
+14:05:13 seller [TASK_STATE_INPUT_REQUIRED]: '80 is too low. Counteroffer: 105.'
+14:05:29 harness: '{"action": "accept"}'
+14:05:29 -> accept 105
+14:05:29 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 105.'
+14:05:29 DEAL lamp: agreed 105, receipt {'task': 'c6daad1a-6ed0-4022-801b-2cf6a225e85b', 'item': 'lamp', 'sig_seller': '+aPYdkIGW5AnfNi3V7DYZ3UPnMqbZ9X1Kx3EACAFCnL3o6YuTne3/umCUw6uUoCR++ZfdoylmjfU/nUDIubsAA==', 'shop': 'Kit Shop', 'price': 105.0}
+14:05:29 stars 5 (ok): Deal at 105 after asking 130; receipt matches the agreed price.
+{"shop": "http://127.0.0.1:52906", "receipt": {"task": "c6daad1a-6ed0-4022-801b-2cf6a225e85b", "item": "lamp", "sig_seller": "+aPYdkIGW5AnfNi3V7DYZ3UPnMqbZ9X1Kx3EACAFCnL3o6YuTne3/umCUw6uUoCR++ZfdoylmjfU/nUDIubsAA==", "shop": "Kit Shop", "price": 105.0}, "stars": 5, "review": "Deal at 105 after asking 130; receipt matches the agreed price."}

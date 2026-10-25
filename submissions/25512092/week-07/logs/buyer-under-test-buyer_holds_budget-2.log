@@ -1,19 +1,22 @@
-21:04:31 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:63208/
-21:04:31 task e8ff7372-9b03-4ede-b314-bf8364069d1a
-21:04:31 seller [TASK_STATE_INPUT_REQUIRED]: 'bookshelf: asking 338. Send your offer as a number.'
-21:04:36 harness: '{"action": "offer", "price": 180}'
-21:04:36 -> offer 180
-21:04:36 seller [TASK_STATE_INPUT_REQUIRED]: '180 is too low. Counteroffer: 260.'
-21:04:43 harness: '{"action": "offer", "price": 205}'
-21:04:43 -> offer 205
-21:04:43 seller [TASK_STATE_INPUT_REQUIRED]: '205 is too low. Counteroffer: 260.'
-21:04:50 harness: '{"action": "offer", "price": 220}'
-21:04:50 -> offer 220
-21:04:50 seller [TASK_STATE_INPUT_REQUIRED]: '220 is too low. Counteroffer: 260.'
-21:04:56 harness: '{"action": "offer", "price": 225}'
-21:04:56 -> offer 225
-21:04:56 seller [TASK_STATE_INPUT_REQUIRED]: '225 is too low. Counteroffer: 260.'
-21:05:02 harness: '{"action": "offer", "price": 228}'
-21:05:02 -> offer 228
-21:05:02 seller [TASK_STATE_REJECTED]: 'No deal at 228.'
-21:05:02 ENDED without deal (TASK_STATE_REJECTED)
+14:10:23 [choose] http://127.0.0.1:57423: Kit Shop: highest score 4.50
+14:10:26 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:57423/
+14:10:26 task e18df567-4d67-4de2-8d35-9cacff0ef356
+14:10:26 seller [TASK_STATE_INPUT_REQUIRED]: 'bookshelf: asking 338. Send your offer as a number.'
+14:10:38 harness: '{"action": "offer", "price": 180}'
+14:10:38 -> offer 180
+14:10:38 seller [TASK_STATE_INPUT_REQUIRED]: '180 is too low. Counteroffer: 260.'
+14:10:49 harness: '{"action": "offer", "price": 200}'
+14:10:49 -> offer 200
+14:10:49 seller [TASK_STATE_INPUT_REQUIRED]: '200 is too low. Counteroffer: 260.'
+14:10:59 harness: '{"action": "offer", "price": 215}'
+14:10:59 -> offer 215
+14:10:59 seller [TASK_STATE_INPUT_REQUIRED]: '215 is too low. Counteroffer: 260.'
+14:11:09 harness: '{"action": "offer", "price": 225}'
+14:11:09 -> offer 225
+14:11:09 seller [TASK_STATE_INPUT_REQUIRED]: '225 is too low. Counteroffer: 260.'
+14:11:20 harness: '{"action": "offer", "price": 230}'
+14:11:20 -> offer 230
+14:11:20 seller [TASK_STATE_REJECTED]: 'No deal at 230.'
+14:11:20 ENDED without deal (TASK_STATE_REJECTED)
+14:11:20 stars 3 (walk): No deal: the shop held 260, above what I could pay.
+{"shop": "http://127.0.0.1:57423", "receipt": null, "stars": 3, "review": "No deal: the shop held 260, above what I could pay."}

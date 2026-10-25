@@ -1,10 +1,19 @@
-21:03:24 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:52444/
-21:03:24 task 3bba4f52-7dd2-46eb-bd07-7bdae3b9b921
-21:03:24 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
-21:03:30 harness: '{"action": "offer", "price": 90}'
-21:03:30 -> offer 90
-21:03:30 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 110.'
-21:03:36 harness: '{"action": "accept"}'
-21:03:36 -> accept 110
-21:03:36 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 110.'
-21:03:36 DEAL lamp at 110.0 (budget 120)
+14:05:45 [choose] http://127.0.0.1:54658: Kit Shop: highest score 5.00
+14:05:49 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:54658/
+14:05:49 task f2cfe127-bf2e-49cd-a722-1972454a9649
+14:05:49 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
+14:06:07 harness: '{"action": "offer", "price": 80}'
+14:06:07 -> offer 80
+14:06:07 seller [TASK_STATE_INPUT_REQUIRED]: '80 is too low. Counteroffer: 105.'
+14:06:26 harness: '{"action": "offer", "price": 90}'
+14:06:26 -> offer 90
+14:06:26 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 100.'
+14:06:44 harness: '{"action": "offer", "price": 95}'
+14:06:44 -> offer 95
+14:06:44 seller [TASK_STATE_INPUT_REQUIRED]: '95 is too low. Counteroffer: 100.'
+14:07:05 harness: '{"action": "accept"}'
+14:07:05 -> accept 100
+14:07:05 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 100.'
+14:07:05 DEAL lamp: agreed 100, receipt {'task': 'f2cfe127-bf2e-49cd-a722-1972454a9649', 'item': 'lamp', 'sig_seller': '7McRDBE/QBcUtsm9Jjbqqv00p4P6l+c7QpmwBFt0dsL7OySyAm9D1vlUXths0FtOxKCx6o67sISrMvRR5wC7BQ==', 'shop': 'Kit Shop', 'price': 100.0}
+14:07:05 stars 5 (ok): Deal at 100 after asking 130; receipt matches the agreed price.
+{"shop": "http://127.0.0.1:54658", "receipt": {"task": "f2cfe127-bf2e-49cd-a722-1972454a9649", "item": "lamp", "sig_seller": "7McRDBE/QBcUtsm9Jjbqqv00p4P6l+c7QpmwBFt0dsL7OySyAm9D1vlUXths0FtOxKCx6o67sISrMvRR5wC7BQ==", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Deal at 100 after asking 130; receipt matches the agreed price."}

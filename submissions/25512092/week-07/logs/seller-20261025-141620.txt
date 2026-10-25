@@ -1,0 +1,1 @@
+14:16:20 seller v2 on :58796, harness: C:\Users\LG\.local\bin\claude.EXE -p --model haiku --tools  --setting-sources  --no-session-persistence
