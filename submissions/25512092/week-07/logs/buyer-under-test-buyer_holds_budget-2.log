@@ -1,0 +1,19 @@
+21:04:31 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:63208/
+21:04:31 task e8ff7372-9b03-4ede-b314-bf8364069d1a
+21:04:31 seller [TASK_STATE_INPUT_REQUIRED]: 'bookshelf: asking 338. Send your offer as a number.'
+21:04:36 harness: '{"action": "offer", "price": 180}'
+21:04:36 -> offer 180
+21:04:36 seller [TASK_STATE_INPUT_REQUIRED]: '180 is too low. Counteroffer: 260.'
+21:04:43 harness: '{"action": "offer", "price": 205}'
+21:04:43 -> offer 205
+21:04:43 seller [TASK_STATE_INPUT_REQUIRED]: '205 is too low. Counteroffer: 260.'
+21:04:50 harness: '{"action": "offer", "price": 220}'
+21:04:50 -> offer 220
+21:04:50 seller [TASK_STATE_INPUT_REQUIRED]: '220 is too low. Counteroffer: 260.'
+21:04:56 harness: '{"action": "offer", "price": 225}'
+21:04:56 -> offer 225
+21:04:56 seller [TASK_STATE_INPUT_REQUIRED]: '225 is too low. Counteroffer: 260.'
+21:05:02 harness: '{"action": "offer", "price": 228}'
+21:05:02 -> offer 228
+21:05:02 seller [TASK_STATE_REJECTED]: 'No deal at 228.'
+21:05:02 ENDED without deal (TASK_STATE_REJECTED)
