@@ -11,6 +11,11 @@ The code speaks A2A, keeps per-task state, and turns the harness's JSON into A2A
 
 Week 07 LAB 2: receipts are {shop, item, price, task} and carry sig_seller,
     an Ed25519 signature (by shop_key.pem) over the canonical JSON of those four fields.
+Week 07 HW (shop: change the price): every negotiation's outcome goes to pricing.jsonl;
+    the opening ask per item is set by code from the recent deal rate of that item
+    (few deals -> open lower, many deals -> open higher). The reserve guard is unchanged.
+
+    python seller.py --pricing-report   # deal rate and average price per item and markup
 """
 import argparse
 import asyncio
@@ -38,6 +43,44 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 SHOP_NAME = "Choo Furniture"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}
 MAX_TURNS = 8  # safety stop so a task always ends (not a price rule)
+
+# ---------- pricing from my own trade record (week 07 HW) ----------
+PRICING_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pricing.jsonl")
+WINDOW = 8          # look at the last 8 negotiations of the item
+MIN_RECORDS = 3     # fewer records than this: use the default markup
+DEFAULT_MARKUP = 1.4
+# (deal rate at least, markup): high deal rate -> open higher, low deal rate -> open lower
+MARKUP_STEPS = [(0.6, 1.5), (0.3, 1.3), (0.0, 1.15)]
+
+
+def load_pricing():
+    rows = []
+    if os.path.exists(PRICING_PATH):
+        with open(PRICING_PATH, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    return rows
+
+
+def record_outcome(item, open_ask, outcome, price=None, turns=0):
+    row = {"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "item": item, "open_ask": open_ask,
+           "outcome": outcome, "price": price, "turns": turns}
+    with open(PRICING_PATH, "a", encoding="utf-8") as f:
+        f.write(json.dumps(row) + "\n")
+
+
+def opening_markup(item):
+    """Returns (markup, reason) from the last WINDOW outcomes of this item."""
+    recent = [r for r in load_pricing() if r.get("item") == item][-WINDOW:]
+    if len(recent) < MIN_RECORDS:
+        return DEFAULT_MARKUP, f"{len(recent)} records, default"
+    deals = sum(1 for r in recent if r.get("outcome") == "deal")
+    rate = deals / len(recent)
+    markup = next(m for floor, m in MARKUP_STEPS if rate >= floor)
+    return markup, f"last {len(recent)}: {deals} deals ({rate:.0%})"
 
 # ---------- receipt signing (week 07 LAB 2) ----------
 KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "shop_key.pem")
@@ -159,14 +202,15 @@ class Seller(AgentExecutor):
                 return
             reserve = RESERVE[item]
             d = await self._ask_harness(tid, OPEN_PROMPT.format(item=item, reserve=reserve))
-            ask = d["price"] if d and d["action"] == "counter" else round(reserve * 1.3)
-            if d is None:
-                log(f"[{tid}] fallback opening ask {ask}")
+            markup, why = opening_markup(item)
+            ask = round(reserve * markup)  # the code sets the opening ask; the harness only writes the sentence
+            log(f"[{tid}] [pricing] {item}: {why} -> open at {markup}x reserve = {ask}"
+                + (f" (harness wanted {d['price']})" if d and d["action"] == "counter" else ""))
             if ask < reserve:
                 log(f"[{tid}] GUARD opening ask {ask} < reserve {reserve} -> {reserve}")
                 ask = reserve
             line = (d["say"] + " " if d and d["say"] else "") + f"{item}: asking {ask}."
-            self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask, "turns": 0,
+            self.open[task.id] = {"item": item, "reserve": reserve, "ask": ask, "open_ask": ask, "turns": 0,
                                   "history": [f"buyer: {text}", f"you: {line}"]}
             log(f"[{tid}] -> INPUT_REQUIRED {line!r}")
             await up.requires_input(say(line))
@@ -185,6 +229,7 @@ class Seller(AgentExecutor):
         if deal["turns"] > MAX_TURNS:
             line = f"No deal at {offer}."
             log(f"[{tid}] -> REJECTED (turn limit) {line!r}")
+            record_outcome(deal["item"], deal["open_ask"], "no_deal", turns=deal["turns"])
             await up.reject(say(line))
             del self.open[task.id]
             return
@@ -216,11 +261,13 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             line = f"Deal: {deal['item']} at {offer}."
             log(f"[{tid}] -> COMPLETED {line!r} receipt={receipt}")
+            record_outcome(deal["item"], deal["open_ask"], "deal", price=int(offer), turns=deal["turns"])
             await up.complete(say(line))
             del self.open[task.id]
         elif d["action"] == "reject":
             line = (d["say"] + " " if d["say"] else "") + f"No deal at {offer}."
             log(f"[{tid}] -> REJECTED {line!r}")
+            record_outcome(deal["item"], deal["open_ask"], "no_deal", turns=deal["turns"])
             await up.reject(say(line))
             del self.open[task.id]
         else:
@@ -249,7 +296,9 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context: RequestContext, event_queue: EventQueue) -> None:
         task = context.current_task
-        self.open.pop(task.id, None)
+        deal = self.open.pop(task.id, None)
+        if deal:  # the buyer walked away
+            record_outcome(deal["item"], deal["open_ask"], "walk", turns=deal["turns"])
         log(f"[{task.id[:8]}] -> CANCELED")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
@@ -281,8 +330,18 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=9101)
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--pricing-report", action="store_true")
     args = ap.parse_args()
-    if args.selftest:
+    if args.pricing_report:
+        rows = load_pricing()
+        for item in RESERVE:
+            rs = [r for r in rows if r.get("item") == item]
+            deals = [r for r in rs if r.get("outcome") == "deal"]
+            avg = sum(r["price"] for r in deals) / len(deals) if deals else None
+            m, why = opening_markup(item)
+            print(f"{item:9s} negotiations {len(rs):3d}  deals {len(deals):3d}  "
+                  f"avg price {avg if avg is None else round(avg, 1)}  next open {m}x ({why})")
+    elif args.selftest:
         out = call_harness(OPEN_PROMPT.format(item="lamp", reserve=100))
         print("raw:", out)
         print("parsed:", parse_decision(out))

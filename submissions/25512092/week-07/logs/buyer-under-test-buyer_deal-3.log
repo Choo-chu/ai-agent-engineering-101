@@ -1,16 +1,13 @@
-14:07:23 [choose] http://127.0.0.1:59306: Kit Shop: highest score 5.00
-14:07:27 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:59306/
-14:07:27 task b6c63893-c85a-4625-b645-c1b20e7fef4f
-14:07:27 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
-14:07:46 harness: '{"action": "offer", "price": 80}'
-14:07:46 -> offer 80
-14:07:46 seller [TASK_STATE_INPUT_REQUIRED]: '80 is too low. Counteroffer: 105.'
-14:08:03 harness: '{"action": "offer", "price": 90}'
-14:08:03 -> offer 90
-14:08:03 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 100.'
-14:08:19 harness: '{"action": "accept"}'
-14:08:19 -> accept 100
-14:08:19 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 100.'
-14:08:19 DEAL lamp: agreed 100, receipt {'task': 'b6c63893-c85a-4625-b645-c1b20e7fef4f', 'item': 'lamp', 'sig_seller': '6Qp+FfUSbI5D7nQ0PGm3mxrOBp0cWWs5BhZAw5Aw+rHcIdS9XBBfF3FcGI3s/m7cR0hgJQr3haeIwcdEIsc2Aw==', 'shop': 'Kit Shop', 'price': 100.0}
-14:08:19 stars 5 (ok): Deal at 100 after asking 130; receipt matches the agreed price.
-{"shop": "http://127.0.0.1:59306", "receipt": {"task": "b6c63893-c85a-4625-b645-c1b20e7fef4f", "item": "lamp", "sig_seller": "6Qp+FfUSbI5D7nQ0PGm3mxrOBp0cWWs5BhZAw5Aw+rHcIdS9XBBfF3FcGI3s/m7cR0hgJQr3haeIwcdEIsc2Aw==", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Deal at 100 after asking 130; receipt matches the agreed price."}
+14:28:12 [choose] http://127.0.0.1:63927: Kit Shop: highest score 4.25
+14:28:14 card: Kit Shop skills=['Negotiate a purchase'] jsonrpc=http://127.0.0.1:63927/
+14:28:14 task 29a3e802-a5d2-44b0-9785-9d4f3af0e1eb
+14:28:14 seller [TASK_STATE_INPUT_REQUIRED]: 'lamp: asking 130. Send your offer as a number.'
+14:28:23 harness: '{"action": "offer", "price": 90}'
+14:28:23 -> offer 90
+14:28:23 seller [TASK_STATE_INPUT_REQUIRED]: '90 is too low. Counteroffer: 110.'
+14:28:31 harness: '{"action": "offer", "price": 100}'
+14:28:31 -> offer 100
+14:28:31 seller [TASK_STATE_COMPLETED]: 'Deal: lamp at 100.'
+14:28:31 DEAL lamp: agreed 100, receipt {'task': '29a3e802-a5d2-44b0-9785-9d4f3af0e1eb', 'item': 'lamp', 'sig_seller': 'o+viQvmsPSVBGLmAz35ZwhaKfycUCDGnd+TVoyWOYfe1OtPSOz3Odh4sxa0Ymsbrqad4uJ1RyTw3uN4+HulFAA==', 'shop': 'Kit Shop', 'price': 100.0}
+14:28:31 stars 5 (ok): Deal at 100 after asking 130; receipt matches the agreed price.
+{"shop": "http://127.0.0.1:63927", "receipt": {"task": "29a3e802-a5d2-44b0-9785-9d4f3af0e1eb", "item": "lamp", "sig_seller": "o+viQvmsPSVBGLmAz35ZwhaKfycUCDGnd+TVoyWOYfe1OtPSOz3Odh4sxa0Ymsbrqad4uJ1RyTw3uN4+HulFAA==", "shop": "Kit Shop", "price": 100.0}, "stars": 5, "review": "Deal at 100 after asking 130; receipt matches the agreed price."}

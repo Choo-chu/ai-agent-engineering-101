@@ -7,3 +7,34 @@
 {"ts": "2026-10-25 14:12:27", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 105, "receipt_price": 105.0, "deal": true, "flag": "ok", "stars": 5}
 {"ts": "2026-10-25 14:12:43", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
 {"ts": "2026-10-25 14:13:11", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:18:24", "shop": "elm-street", "item": "lamp", "budget": 90, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:18:55", "shop": "25620027", "item": "bookshelf", "budget": 295, "agreed": 265, "receipt_price": 265.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-10-25 14:19:48", "shop": "grand-furniture", "item": "chair", "budget": 225, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:20:32", "shop": "psyoung82", "item": "bookshelf", "budget": 230, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:20:58", "shop": "elm-street", "item": "lamp", "budget": 125, "agreed": 118, "receipt_price": 118.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:21:31", "shop": "elm-street", "item": "lamp", "budget": 110, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:22:20", "shop": "elm-street", "item": "bookshelf", "budget": 270, "agreed": 260, "receipt_price": 295.0, "deal": true, "flag": "receipt_mismatch", "stars": 1}
+{"ts": "2026-10-25 14:22:58", "shop": "25620027", "item": "lamp", "budget": 110, "agreed": 102, "receipt_price": 102.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-10-25 14:23:15", "shop": "psyoung82", "item": "bookshelf", "budget": 295, "agreed": 270, "receipt_price": 270.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-10-25 14:24:33", "shop": "grand-furniture", "item": "bookshelf", "budget": 295, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:24:53", "shop": "psyoung82", "item": "bookshelf", "budget": 295, "agreed": 270, "receipt_price": 270.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-10-25 14:26:43", "shop": "25620027", "item": "lamp", "budget": 90, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:27:12", "shop": "cheapest-in-town", "item": "chair", "budget": 225, "agreed": 180, "receipt_price": 180, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-10-25 14:27:28", "shop": "Kit Shop", "item": "lamp", "budget": 120, "agreed": 105, "receipt_price": 105.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:27:58", "shop": "myeonggi", "item": "lamp", "budget": 125, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-10-25 14:28:08", "shop": "Kit Shop", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:28:30", "shop": "corner-store", "item": "bookshelf", "budget": 360, "agreed": 306, "receipt_price": 306.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:28:31", "shop": "Kit Shop", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:29:17", "shop": "corner-store", "item": "bookshelf", "budget": 295, "agreed": 275, "receipt_price": 275.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:29:22", "shop": "Kit Shop", "item": "bookshelf", "budget": 230, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:29:58", "shop": "corner-store", "item": "bookshelf", "budget": 295, "agreed": 275, "receipt_price": 275.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:30:13", "shop": "Kit Shop", "item": "bookshelf", "budget": 230, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:30:51", "shop": "corner-store", "item": "bookshelf", "budget": 270, "agreed": 260, "receipt_price": 260.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:31:02", "shop": "Kit Shop", "item": "bookshelf", "budget": 230, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 3}
+{"ts": "2026-10-25 14:31:27", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:31:34", "shop": "corner-store", "item": "lamp", "budget": 105, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:31:51", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 105, "receipt_price": 105.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:32:15", "shop": "corner-store", "item": "lamp", "budget": 110, "agreed": 106, "receipt_price": 106.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:32:25", "shop": "Kit Shop South", "item": "lamp", "budget": 120, "agreed": 100, "receipt_price": 100.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:32:48", "shop": "corner-store", "item": "bookshelf", "budget": 360, "agreed": 306, "receipt_price": 306.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-10-25 14:33:28", "shop": "corner-store", "item": "lamp", "budget": 110, "agreed": 103, "receipt_price": 103.0, "deal": true, "flag": "ok", "stars": 5}
