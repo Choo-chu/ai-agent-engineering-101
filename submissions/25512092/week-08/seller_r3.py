@@ -27,7 +27,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, ask_json
 from forum_post import promo
 import strategy
-from market_db import load_stats, price_of
+from market_db import connect, load_stats, price_of
 from pricing import floor
 
 NAME = "Choo Shop"
@@ -80,6 +80,39 @@ def find_unit(text, taken=()):
     return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
+def first_ask(u, avg, reserve, rule, deal):
+    """normal: market average x the variant (1.00 / 1.05 / 1.10), at most the list price;
+    any markdown: the market average (the seller never asks more during a markdown); never below the floor."""
+    base = avg if avg is not None else u["list_price"] * 0.9
+    if rule == "normal" and deal["key"] == "shop_normal_ask":
+        ask = min(u["list_price"], base * float(deal["variant"]))
+    else:
+        ask = min(u["list_price"], base)
+    return max(reserve, int(ask))
+
+
+def record(task, deal, u, reserve, ask):
+    try:
+        db = connect()
+        db.execute("INSERT OR REPLACE INTO shop_deals VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                   (task, __import__("time").time(), deal["case"], deal["key"], deal["variant"], u["sku"], u["unit"],
+                    u["cost"], ask, reserve, "open", None, deal["warranty"]))
+        db.commit()
+        db.close()
+    except Exception as e:
+        print(f"[record] {e}", flush=True)
+
+
+def finish(task, outcome, price=None):
+    try:
+        db = connect()
+        db.execute("UPDATE shop_deals SET outcome=?, price=? WHERE task=?", (outcome, price, task))
+        db.commit()
+        db.close()
+    except Exception as e:
+        print(f"[record] {e}", flush=True)
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
@@ -101,7 +134,13 @@ class Seller(AgentExecutor):
                 return
             case = strategy.current()[0]                # decided every 5 min by restock.py (strategy.tick)
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
-                                         "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats())}
+                                         "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats()),
+                                         "key": None, "variant": None, "mult": 1.0}
+            if case in ("normal", "overstock"):         # stage 2: one variant per negotiation, by weight
+                key = "shop_normal_ask" if case == "normal" else "shop_overstock_floor"
+                v, w = strategy.pick(key)
+                deal.update(key=key, variant=v, mult=float(v) if case == "overstock" else 1.0)
+                print(f"[variant] {key} -> {v} (weights {w})", flush=True)
         else:
             deal["lines"].append(f"buyer: {text}")
             m = re.search(r"\d+", text)
@@ -109,14 +148,19 @@ class Seller(AgentExecutor):
 
         u = deal["unit"]
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
-        reserve, rule = floor(u, avg, deal["case"])     # the rules of the shop case, see pricing.py
+        reserve, rule = floor(u, avg, deal["case"], overstock_mult=deal["mult"])   # pricing.py, the case's rules
         if len(deal["lines"]) == 1:
+            ask = first_ask(u, avg, reserve, rule, deal)    # stage 2: the code names the first ask, not the harness
             print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), case {deal['case']}, rule {rule} "
-                  f"-> floor {reserve}" + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""), flush=True)
-        move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
-                                           market=int(avg) if avg is not None else "an unknown price",
-                                           transcript="\n".join(deal["lines"])))
-        print(f"[harness] {raw}", flush=True)
+                  f"-> floor {reserve}, first ask {ask}" + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""),
+                  flush=True)
+            record(task.id, deal, u, reserve, ask)
+            move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
+        else:
+            move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
+                                               market=int(avg) if avg is not None else "an unknown price",
+                                               transcript="\n".join(deal["lines"])))
+            print(f"[harness] {raw}", flush=True)
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
             print(f"[guard] accept of {deal['offer']} below floor {reserve} -> counter", flush=True)
@@ -131,10 +175,12 @@ class Seller(AgentExecutor):
             receipt = sign(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
+            finish(task.id, "receipt", price)
             del self.open[task.id]
             return
         if action == "reject":
             await up.reject(say("No deal."))
+            finish(task.id, "rejected")
             del self.open[task.id]
             return
         price = (move or {}).get("price")
@@ -154,7 +200,8 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context, event_queue):
         task = context.current_task
-        self.open.pop(task.id, None)
+        if self.open.pop(task.id, None) is not None:
+            finish(task.id, "cancelled")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 

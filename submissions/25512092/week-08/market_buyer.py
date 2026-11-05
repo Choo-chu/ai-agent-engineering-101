@@ -169,7 +169,8 @@ def get_receipt(task):
     return None
 
 
-def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER):
+def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
+              force_first=False):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": ""}
@@ -221,6 +222,10 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                                    first_pct=round(100 * first_offer))
         d = ask_harness(prompt)
         res["guard_last"] = False
+        if force_first and n_offers == 0 and ask is not None:
+            # stage 2: the opening offer is the variant's share of the ask, made by the code
+            d = {"action": "offer", "price": max(1, min(int(ask * first_offer), budget, ask - 1))}
+            log(f"[variant] first offer {first_offer:.0%} of {ask} -> {d['price']}")
         if n_offers < min_offers and ask is not None and (d is None or d["action"] != "offer"):
             # haggle guard: no accept / walk before min_offers counteroffers; the code names the counter
             step = int(ask * first_offer) if last is None else last + max(1, (ask - last) // 3)
@@ -362,6 +367,11 @@ def main():
 
     chosen, res, sku, lp = ordered[0], None, None, None
     variant_key, variant, first_offer = None, None, FIRST_OFFER
+    if case == "normal":                          # stage 2: the opening offer variant, by weight
+        variant_key = "buyer_normal_first"
+        variant, w = strategy.pick(variant_key)
+        first_offer = float(variant)
+        log(f"[variant] {variant_key} -> {variant} (weights {w})")
     tries = ordered[:2]  # if the picked shop does not answer, try the next candidate once
     for i, c in enumerate(tries):
         chosen = c
@@ -383,7 +393,8 @@ def main():
                       + "Pay less than the market average.")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
         try:
-            res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer)
+            res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer,
+                            force_first=variant_key is not None)
             break
         except Exception as e:
             log(f"shop {c['name']} failed: {e}")

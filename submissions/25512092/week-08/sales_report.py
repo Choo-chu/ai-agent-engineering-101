@@ -14,7 +14,7 @@ import os
 import time
 from datetime import datetime, timedelta
 
-from market_db import ME, connect, meta
+from market_db import ME, connect, load_stats, meta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORTS = os.path.join(HERE, "reports")
@@ -67,6 +67,44 @@ def pct(x):
     return "-" if x is None else f"{100 * x:.0f}%"
 
 
+def extras(db, t0, t1, catalog):
+    """Stage 1/2 numbers for a report period."""
+    out = {}
+    rows = db.execute("SELECT ts, shop_case FROM cases WHERE ts < ? ORDER BY ts", (t1,)).fetchall()
+    dur = {}
+    for (ts, c), nxt in zip(rows, rows[1:] + [(t1, None)]):
+        a, b = max(ts, t0), min(nxt[0], t1)
+        if b > a:
+            dur[c] = dur.get(c, 0) + round((b - a) / 60)
+    out["case_minutes"] = dur
+    import strategy
+    out["variants"] = {}
+    for key in strategy.VARIANTS:
+        w = strategy.weights(db, key)
+        perf = strategy.performance(db, key)
+        out["variants"][key] = {v: {"weight": w[v], "n": perf[v][0], "metric": perf[v][1]} for v in w}
+    surplus = 0
+    for sku, amount in db.execute("SELECT sku, amount FROM settles WHERE buyer=? AND ts>=? AND ts<?", (ME, t0, t1)):
+        lp = (catalog.get(sku) or {}).get("list_price")
+        surplus += (lp - amount) if lp else 0
+    refund = db.execute("SELECT COALESCE(SUM(paid), 0) FROM my_broken WHERE refunded=1 AND broke_at>=? AND broke_at<?",
+                        (t0, t1)).fetchone()[0]
+    out["buyer_surplus"] = surplus + refund
+    out["buyer_refunds"] = refund
+    wr = db.execute("""SELECT COUNT(*), COALESCE(SUM((SELECT s.amount FROM settles s WHERE s.shop=? AND s.sku=b.sku
+                       AND s.buyer=b.buyer AND s.ts<=b.ts ORDER BY s.ts DESC LIMIT 1)), 0)
+                       FROM broken b WHERE b.shop=? AND b.refunded=1 AND b.ts>=? AND b.ts<?""", (ME, ME, t0, t1)).fetchone()
+    out["warranty_refunds"] = {"n": wr[0], "amount": wr[1]}
+    out["warranty_sales"] = db.execute("SELECT COUNT(*) FROM settles WHERE shop=? AND warranty_hours>0 AND ts>=? AND ts<?",
+                                       (ME, t0, t1)).fetchone()[0]
+    out["want_sales"] = db.execute("""SELECT COUNT(DISTINCT s.seq) FROM settles s JOIN want_replies w ON w.sku=s.sku
+                                      WHERE s.shop=? AND s.ts>=w.ts AND s.ts<=w.ts+7200 AND s.ts>=? AND s.ts<?""",
+                                   (ME, t0, t1)).fetchone()[0]
+    scores = load_stats().get("shop_score", {})
+    out["top_shops"] = [(k, v["score"]) for k, v in sorted(scores.items(), key=lambda kv: -kv[1]["score"])[:3]]
+    return out
+
+
 def hourly(db, inv, catalog, log):
     now = time.time()
     hour = now // 3600 * 3600 - 3600                  # the last full hour (epoch hours line up with KST hours)
@@ -76,15 +114,40 @@ def hourly(db, inv, catalog, log):
     s = summarize(my_sales(db, hour, hour + 3600), catalog)
     stock = sum(u.get("cost", 0) for u in inv.get("units", []) if u.get("grade") != "expired")
     cash = int(inv.get("balance", 0))
-    db.execute("INSERT OR REPLACE INTO hourly VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+    x = extras(db, hour, hour + 3600, catalog)
+    db.execute("INSERT OR REPLACE INTO hourly VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                (hour, s["sales"], s["revenue"], s["profit"], s["low_cost"], s["low_profit"], s["high_cost"],
-                s["high_profit"], json.dumps(s["cats"], ensure_ascii=False), stock, cash))
+                s["high_profit"], json.dumps(s["cats"], ensure_ascii=False), stock, cash,
+                json.dumps(x, ensure_ascii=False)))
     db.execute("INSERT OR REPLACE INTO meta VALUES ('hourly_done', ?)", (str(hour + 3600),))
     db.commit()
     cats = ", ".join(f"{k} {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])[:4]) or "-"
     log(f"[report] {datetime.fromtimestamp(hour):%m-%d %H}:00 sold {s['sales']}, revenue {s['revenue']:,}, "
         f"profit {s['profit']:,} (low {pct(rate(s['low_profit'], s['low_cost']))}, "
         f"high {pct(rate(s['high_profit'], s['high_cost']))}), by category: {cats}; stock {stock:,}, cash {cash:,}")
+    log(f"[report] {datetime.fromtimestamp(hour):%H}:00 cases {x['case_minutes']} min, buyer surplus "
+        f"{x['buyer_surplus']:,} (refunds {x['buyer_refunds']:,}), warranty sales {x['warranty_sales']}, "
+        f"warranty refunds {x['warranty_refunds']['n']} ({x['warranty_refunds']['amount']:,}), wanted-reply sales "
+        f"{x['want_sales']}, top shops {x['top_shops']}")
+
+
+def extras_md(db, t0, t1, catalog):
+    x = extras(db, t0, t1, catalog)
+    lines = ["## Cases and variants", "",
+             "- time per shop case (min): " + (", ".join(f"{k} {v}" for k, v in x["case_minutes"].items()) or "-")]
+    for key, vs in x["variants"].items():
+        lines.append(f"- {key}: " + ", ".join(f"{v} weight {d['weight']:.2f} (n {d['n']}, per negotiation {d['metric']})"
+                                               for v, d in vs.items()))
+    changes = db.execute("SELECT datetime(ts,'unixepoch','localtime'), key, reason FROM variant_weights "
+                         "WHERE ts>=? AND ts<? AND reason!='start' GROUP BY ts, key", (t0, t1)).fetchall()
+    lines += [f"- weight change {ts} {key}: {reason}" for ts, key, reason in changes] or ["- no weight change"]
+    lines += ["", "## Buyer, warranty, forum", "",
+              f"- buyer surplus (list - paid + refunds) {x['buyer_surplus']:,}, refunds {x['buyer_refunds']:,}",
+              f"- my warranty sales {x['warranty_sales']}, warranty refunds {x['warranty_refunds']['n']} "
+              f"({x['warranty_refunds']['amount']:,})",
+              f"- sales within 2 h of a '구합니다' reply: {x['want_sales']}",
+              "- top shop scores: " + ", ".join(f"{k} {v:.2f}" for k, v in x["top_shops"]), ""]
+    return lines
 
 
 def daily(db, inv, catalog, log):
@@ -151,7 +214,7 @@ def daily(db, inv, catalog, log):
             ["", "## Broken / refunds", ""] + \
             ([f"- ledger #{b[0]} {b[1]}: broke {b[2]:.1f} h after sale, refunded {bool(b[3])}" for b in broken] or ["- none"]) + \
             ["", "## Buying split", "", f"- high-price share {pol['high_share']:.0%} -> {share:.0%}, "
-             f"high-price units held at most {pol['high_max']} -> {cap} ({reason})", ""]
+             f"high-price units held at most {pol['high_max']} -> {cap} ({reason})", ""] + extras_md(db, t0, t1, catalog)
     os.makedirs(REPORTS, exist_ok=True)
     path = os.path.join(REPORTS, f"daily_{day:%Y%m%d}.md")
     with open(path, "w", encoding="utf-8") as f:

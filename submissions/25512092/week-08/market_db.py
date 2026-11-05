@@ -82,6 +82,8 @@ def connect():
         db.execute("ALTER TABLE settles ADD COLUMN unit TEXT")       # links my sales to my_stock (cost)
     if "warranty_hours" not in cols:
         db.execute("ALTER TABLE settles ADD COLUMN warranty_hours REAL")
+    if "extra" not in [r[1] for r in db.execute("PRAGMA table_info(hourly)")]:
+        db.execute("ALTER TABLE hourly ADD COLUMN extra TEXT")
     return db
 
 
