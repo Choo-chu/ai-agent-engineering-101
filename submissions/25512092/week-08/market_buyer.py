@@ -71,6 +71,14 @@ def clean(text, n=100):
     return re.sub(r"\s+", " ", text).strip()[:n]
 
 
+def harmless_mismatch(m):
+    """Before 11/06 00:20 a receipt BELOW the agreed price was also flagged; that is no cheating."""
+    try:
+        return m.get("flag") == "receipt_mismatch" and float(m["receipt_price"]) <= float(m["agreed"])
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 def summarize(shop, memory):
     revs = shop.get("reviews") or []
     stars = [r["stars"] for r in revs if isinstance(r.get("stars"), (int, float))]
@@ -79,8 +87,8 @@ def summarize(shop, memory):
     mine = [m for m in memory if m.get("shop") == shop["name"]]
     my_stars = [m["stars"] for m in mine if isinstance(m.get("stars"), (int, float))]
     my_avg = sum(my_stars) / len(my_stars) if my_stars else None
-    cheated = any(m.get("flag") in ("receipt_mismatch", "over_budget", "item_mismatch",
-                                    "no_receipt", "injection") for m in mine)
+    cheated = any(m.get("flag") in ("receipt_mismatch", "over_budget", "item_mismatch", "no_receipt", "injection")
+                  and not harmless_mismatch(m) for m in mine)
 
     weighted = []
     if avg is not None:
