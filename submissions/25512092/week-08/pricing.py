@@ -1,9 +1,9 @@
 """The shop's selling floor: one rule set per shop case (strategy.py decides the case).
 
-  normal      max(cost, market average)                       sell at or above the market average
+  normal      max(cost, market average), or the aging markdown when lower
   cash_low    cost
   overstock   cost (x the overstock floor variant), or the aging markdown when lower
-  endgame     the endgame markdown, or the aging markdown when lower
+  endgame     the endgame floor (cost); no aging, since ALL ranks by book and an unsold unit keeps its cost
   always      food clearance when lower                       (an expired unit is worth nothing)
 
   aging       non-food on the shelf over AGING_AFTER_H: the average minus AGING_CUT of it every AGING_STEP_H,
@@ -100,7 +100,7 @@ def floor(u, avg, case, now=None, overstock_mult=1.0):
         cands = [(int(u["cost"] * overstock_mult), "overstock")]
     else:
         cands = [(max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")]
-    if case in ("endgame", "overstock"):
+    if case in ("normal", "overstock"):              # endgame: no aging below cost (ALL uses book)
         a, step = aging(u, avg, now)
         if a is not None:
             cands.append((a, f"aging step {step}"))

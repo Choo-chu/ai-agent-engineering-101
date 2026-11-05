@@ -6,8 +6,8 @@ The market accepts one post per 5 minutes per role, so each role has its own slo
               1  food clearance    a food SKU near expiry whose markdown stepped down (pricing.clearance)
               2  wanted answer     a buyer's '구합니다' post (market_db.demand_posts, last 2 h) for a category or
                                    SKU I hold: a reply in that post's thread, once per post
-              3  aging markdown    a non-food SKU whose 6-hourly markdown stepped down (overstock/endgame
-                                   cases only: the normal case has no aging floor)
+              3  aging markdown    a non-food SKU whose 6-hourly markdown stepped down (normal/overstock
+                                   cases only: the endgame floor is the cost)
               -  comparison ad     when the queue is empty: my floor vs the 2-hour market average, my prices only
   buyer slot  rotates purchase record -> market report -> ledger record; a turn with nothing to post is skipped
               purchase record   my newest settled purchase not reported yet, with its ledger ref
@@ -127,7 +127,7 @@ def collect(st, inv, db, log):
             _enqueue(st, "shop", 1, f"clear:{u['sku']}:{int(NEAR_EXPIRY_H - left)}", "clearance", log, id=u["sku"])
             continue
         a, step = aging(u, avg, now)
-        if a is not None and case in ("overstock", "endgame"):
+        if a is not None and case in ("normal", "overstock"):
             _enqueue(st, "shop", 3, f"aging:{u['sku']}:{step}", "aging", log, id=u["sku"])
 
     step = endgame_step(now)
