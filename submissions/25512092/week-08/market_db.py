@@ -14,9 +14,17 @@ Tables
              before this deal, so my own rows show what the market price was when I bought or sold)
   snapshots  every refresh: per SKU the average price and how many sold in the last 5 and 30 minutes
   my_stock   every unit my shop bought from supply: unit, sku, cost, grade, supplied_at, market_avg_at
+  broken     every goods unit that broke after a sale: shop, sku, hours after sale, warranty, refund
+
+Signals in market_stats.json (code-made; forum text never goes to a harness)
+  shop_flags  per shop (name and URL): deals, dishonest grade claims, broken units — from the ledger, plus
+              forum posts whose ledger refs show a dishonest claim
+  sku_break   per SKU: share of sold units that broke
+  wanted      SKUs that buyers asked for on the forum ("구합니다", "looking for" ...)
 """
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -45,6 +53,8 @@ def connect():
         sold_30m INTEGER, PRIMARY KEY (ts, sku));
     CREATE TABLE IF NOT EXISTS my_stock (unit TEXT PRIMARY KEY, sku TEXT, name TEXT, cost INTEGER, grade TEXT,
         supplied_at REAL, market_avg_at REAL);
+    CREATE TABLE IF NOT EXISTS broken (seq INTEGER PRIMARY KEY, ts REAL, buyer TEXT, shop_url TEXT, shop TEXT,
+        sku TEXT, hours_after_sale REAL, warranty_hours REAL, refunded INTEGER);
     CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
     """)
     return db
@@ -92,6 +102,13 @@ def refresh(force=False, log=print):
             names = {}
     added = 0
     for e in entries:
+        if e.get("kind") == "broken":
+            d = e["data"]
+            url = (d.get("shop") or "").rstrip("/")
+            db.execute("INSERT OR IGNORE INTO broken VALUES (?,?,?,?,?,?,?,?,?)",
+                       (e["seq"], e["ts"], d.get("buyer"), url, names.get(url), d.get("item"),
+                        d.get("hours_after_sale"), d.get("warranty_hours"), d.get("refunded")))
+            continue
         if e.get("kind") != "settle":
             continue
         d = e["data"]
@@ -124,6 +141,7 @@ def refresh(force=False, log=print):
     for sku, paid, k in db.execute("SELECT sku, AVG(amount), COUNT(*) FROM settles WHERE buyer=? GROUP BY sku", (ME,)):
         stats["my_buys"][sku] = {"avg_paid": round(paid), "n": k}
 
+    stats.update(signals(db, names))
     db.execute("INSERT OR REPLACE INTO meta VALUES ('refreshed', ?)", (str(now),))
     db.commit()
     db.close()
@@ -131,9 +149,77 @@ def refresh(force=False, log=print):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(stats, f, ensure_ascii=False)
     os.replace(tmp, STATS_PATH)                       # readers never see a half-written file
+    bad = [k for k, v in stats["shop_flags"].items() if v["bad"] and not k.startswith("http")]
+    log(f"[market_db] forum wanted {len(stats['wanted'])} SKUs, categories {stats['wanted_cats'][:5]}; shops to avoid: {', '.join(bad) or 'none'}")
     log(f"[market_db] +{added} settles, {len(stats['skus'])} SKUs priced, hot: "
         + ", ".join(f"{stats['skus'][k]['name'] or k}({stats['skus'][k]['sold_30m']})" for k in stats["hot"][:3]))
     return True
+
+
+WANT = re.compile(r"구합니다|구해요|찾습니다|찾아요|삽니다|wanted|looking for|want to buy|need", re.I)
+SKU_RE = re.compile(r"G[0-9a-f]{8}")
+FORUM_PATH = os.path.join(HERE, ".market", "forum.json")
+BAD_DISHONEST = 2          # a shop with this many dishonest grade claims is avoided
+BAD_BROKEN_SHARE = 0.10    # ... or with this share of its sold units broken (at least 3)
+
+
+def signals(db, names):
+    """Shop flags, SKU break rates and forum demand. Everything is checked against the ledger."""
+    flags = {}
+
+    def flag(key, field, k=1):
+        if key:
+            f = flags.setdefault(key, {"deals": 0, "dishonest": 0, "broken": 0, "forum_dishonest": 0})
+            f[field] += k
+
+    for url, shop, n, bad in db.execute("SELECT shop_url, MAX(shop), COUNT(*), SUM(claim_honest=0) FROM settles "
+                                        "GROUP BY shop_url"):
+        for key in (url, shop):
+            flag(key, "deals", n)
+            flag(key, "dishonest", bad or 0)
+    for url, shop, n in db.execute("SELECT shop_url, MAX(shop), COUNT(*) FROM broken GROUP BY shop_url"):
+        for key in (url, shop):
+            flag(key, "broken", n)
+
+    sku_break = {}
+    for sku, sold, broke in db.execute("SELECT s.sku, COUNT(*), (SELECT COUNT(*) FROM broken b WHERE b.sku=s.sku) "
+                                       "FROM settles s GROUP BY s.sku HAVING COUNT(*) >= 5"):
+        if broke:
+            sku_break[sku] = round(broke / sold, 3)
+
+    try:
+        with open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8") as f:
+            leaves = {(c.get("category") or "").split(">")[-1] for c in json.load(f).values()} - {""}
+    except (OSError, ValueError):
+        leaves = set()
+    wanted, wanted_cats = {}, {}
+    try:
+        with open(FORUM_PATH, encoding="utf-8") as f:
+            posts = json.load(f)
+    except (OSError, ValueError):
+        posts = []
+    for p in posts:
+        text = str(p.get("text", ""))
+        if p.get("role") == "buyer" and WANT.search(text):
+            for sku in SKU_RE.findall(text):
+                wanted[sku] = wanted.get(sku, 0) + 1
+            for leaf in leaves:
+                if any(part and part in text for part in leaf.split("/")):
+                    wanted_cats[leaf] = wanted_cats.get(leaf, 0) + 1
+        for r in p.get("refs") or []:            # a ref the market resolved: trust its data, not the post text
+            if not (isinstance(r, dict) and r.get("found")):
+                continue
+            d = r.get("data") or {}
+            if r.get("kind") == "settle" and d.get("claim_honest") is False:
+                url = (d.get("shop") or "").rstrip("/")
+                flag(url, "forum_dishonest")
+                flag(names.get(url), "forum_dishonest")
+    for f in flags.values():
+        f["bad"] = (f["dishonest"] + f["forum_dishonest"] >= BAD_DISHONEST
+                    or (f["broken"] >= 3 and f["broken"] / max(f["deals"], 1) >= BAD_BROKEN_SHARE))
+    return {"shop_flags": flags, "sku_break": sku_break,
+            "wanted": sorted(wanted, key=wanted.get, reverse=True)[:20],
+            "wanted_cats": sorted(wanted_cats, key=wanted_cats.get, reverse=True)[:10]}
 
 
 def record_stock(units, log=print):

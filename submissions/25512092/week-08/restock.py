@@ -16,6 +16,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import forum_post  # noqa: E402
 from market_db import load_stats, price_of, record_stock, refresh  # noqa: E402
 
 COST_SHARE = {"goods": 0.60, "food": 0.50}   # expected cost / list price, averaged over the grade draw
@@ -26,6 +27,8 @@ MAX_QTY = 20
 SPEND_SHARE = 0.4      # at most this share of the spendable balance per run
 CUSHION = 1_000_000    # never spend below this balance
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
+MAX_BREAK = 0.15       # skip goods that break this often after a sale
+WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
 
 
 def log(msg):
@@ -55,6 +58,11 @@ def main():
     except Exception as e:
         log(f"record_stock failed: {e}")
 
+    try:
+        forum_post.run(state, inv, catalog, log=log)
+    except Exception as e:
+        log(f"forum post failed: {e}")
+
     r = inv.get("restock") or {}
     now = time.time()
     if not r.get("open") and (r.get("opens_at") or now) - now > 60:
@@ -69,12 +77,20 @@ def main():
     stats = load_stats()
     spend_left = max(0, (inv.get("balance", 0) - CUSHION)) * SPEND_SHARE
 
+    wanted_cats = set(stats.get("wanted_cats", []))
+    wanted = set(stats.get("wanted", [])) | {k for k in stats["skus"]
+                                            if (catalog.get(k) or {}).get("category", "").split(">")[-1] in wanted_cats}
     plan = []
-    for sku in stats.get("hot", []):
-        s = stats["skus"][sku]
+    for sku in list(stats.get("hot", [])) + sorted(wanted - set(stats.get("hot", []))):
+        s = stats["skus"].get(sku)
+        if not s:
+            continue
+        forum = sku in wanted
         c = catalog.get(sku) or {}
         avg, n = price_of(sku, stats)
-        if avg is None or s["sold_30m"] < MIN_SOLD_30M or not c.get("list_price"):
+        if avg is None or (s["sold_30m"] < MIN_SOLD_30M and not forum) or not c.get("list_price"):
+            continue
+        if stats.get("sku_break", {}).get(sku, 0) > MAX_BREAK:
             continue
         kind = c.get("kind", "goods")
         if kind == "food" and (c.get("shelf_hours") or 0) < FOOD_MIN_SHELF_H:
@@ -82,7 +98,7 @@ def main():
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
         if avg < cost * (1 + MIN_MARGIN):
             continue
-        target = math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE)
+        target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
         qty = min(MAX_QTY, target - held.get(sku, 0))
         if qty <= 0:
             continue
@@ -92,7 +108,7 @@ def main():
         spend_left -= qty * cost
         plan.append({"sku": sku, "qty": qty})
         log(f"{s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
-            f"held {held.get(sku, 0)} -> buy {qty}")
+            f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''} -> buy {qty}")
         if len(plan) == 10:
             break
     print(json.dumps({"buy": plan}))

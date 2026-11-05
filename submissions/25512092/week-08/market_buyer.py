@@ -26,6 +26,7 @@ from market_db import load_stats, price_of  # noqa: E402
 
 MEMORY_PATH = os.path.join(HERE, "memory.jsonl")
 NEW_SHOP_SCORE = 3.0   # score for a shop nobody has reviewed yet
+SHOP_FLAGS = {}        # market_db shop_flags: dishonest grade claims and broken units, checked on the ledger
 TOP_K = 3              # candidates shown to the harness
 SCORE_MARGIN = 1.0     # how far below the best score a candidate may be
 MIN_OFFERS = 3         # counteroffers the buyer makes before it may accept or walk
@@ -84,9 +85,13 @@ def summarize(shop, memory):
     score = (sum(a * w for a, w in weighted) / sum(w for _, w in weighted)) if weighted else NEW_SHOP_SCORE
     score -= 0.5 * warns
 
+    mf = SHOP_FLAGS.get(shop["name"]) or SHOP_FLAGS.get(shop["url"].rstrip("/")) or {}
     blocked = None
     if cheated:
         blocked = "cheated me before"
+    elif mf.get("bad"):
+        blocked = (f"ledger: {mf['dishonest'] + mf['forum_dishonest']} dishonest claims, "
+                   f"{mf['broken']} broken of {mf['deals']} sold")
     elif avg is not None and len(stars) >= 2 and avg < 2.5:
         blocked = f"low stars {avg:.1f}"
     elif warns >= 2:
@@ -328,7 +333,8 @@ def pick_sku(offers, stats, catalog, budget):
         avg, n = price_of(o["sku"], stats)
         lp = (catalog.get(o["sku"]) or {}).get("list_price") or 0
         expect = avg if avg is not None else lp * 0.9
-        scored.append((expect <= budget, lp - expect, o, avg, n))
+        value = lp * (1 - stats.get("sku_break", {}).get(o["sku"], 0))   # broken goods are worth 0
+        scored.append((expect <= budget, value - expect, o, avg, n))
     scored.sort(key=lambda t: (t[0], t[1]), reverse=True)
     _, _, o, avg, n = scored[0]
     return o, avg, n
@@ -359,6 +365,7 @@ def main():
         shops = stocked
     memory = load_memory()
     stats, catalog = load_stats(), load_catalog()
+    SHOP_FLAGS.update(stats.get("shop_flags", {}))
     ordered, why = choose(shops, memory, args.item)
     if not ordered:
         log("no shop to trade with")

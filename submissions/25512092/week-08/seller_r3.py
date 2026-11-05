@@ -25,6 +25,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
+from forum_post import promo
 from market_db import price_of
 
 NAME = "Choo Shop"
@@ -135,7 +136,7 @@ class Seller(AgentExecutor):
             print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
             price = reserve
         deal["ask"] = int(price)
-        reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
+        reply = (f"{u['name']}: {promo()} Asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                  else f"Counteroffer: {deal['ask']}.")
         deal["lines"].append(f"you: {reply}")
         await up.requires_input(say(reply))

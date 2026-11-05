@@ -5772,3 +5772,6 @@
 {"ts": "2026-11-05 16:01:56", "shop": "jiseokkk", "item": "곡물", "sku": null, "budget": 34560, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
 {"ts": "2026-11-05 16:02:15", "shop": "oak-and-pine", "item": "곡물", "sku": null, "budget": 80740, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
 {"ts": "2026-11-05 16:03:34", "shop": "myeonggi", "item": "과자", "sku": "G1831f2c0", "budget": 13540, "agreed": 9350, "receipt_price": 9350.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-11-05 16:07:59", "shop": "yeonsong2", "item": "가공/조리 육류", "sku": "G2560a8c9", "budget": 18280, "agreed": 9500, "receipt_price": 9500.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-11-05 16:11:01", "shop": "outseop-26510122", "item": "곡물", "sku": "G80435d53", "budget": 22370, "agreed": 12499, "receipt_price": 12499.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-11-05 16:20:13", "shop": "ggari-shop", "item": "과자", "sku": null, "budget": 13860, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
