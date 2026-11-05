@@ -11,7 +11,7 @@
   clearance   food with under NEAR_EXPIRY_H of shelf life: the average minus CUT_PER_H of it every hour,
               down to (1 - MAX_CUT) of it; may go below cost
   endgame     from ENDGAME_H before the round ends (11/17 23:59): cost, minus ENDGAME_CUT of cost every
-              ENDGAME_STEP_H, down to ENDGAME_MIN of cost
+              ENDGAME_STEP_H, down to ENDGAME_MIN of cost (1.00: the endgame floor is the cost itself)
 """
 import json
 import os
@@ -29,7 +29,8 @@ ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()      # local time (KST)
 ENDGAME_H = 48
 ENDGAME_STEP_H = 6
 ENDGAME_CUT = 0.10
-ENDGAME_MIN = 0.30
+ENDGAME_MIN = 1.00     # 11/06: was 0.30; ALL ranks shops by book = cash + unsold units at cost (agent.md),
+                       # so a sale below cost lowers book while an unsold goods unit keeps its cost in book
 RESTOCK_STOP_H = 36       # restock.py buys nothing in the last 36 h
 
 

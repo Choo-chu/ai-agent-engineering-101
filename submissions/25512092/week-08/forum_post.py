@@ -208,7 +208,7 @@ def render_endgame(inv):
     top = sorted(by_sku.values(), key=len, reverse=True)[:3]
     items = "; ".join(f"{_short(us[0]['name'], 20)} ({us[0]['sku']}) {floor(us[0], _price(us[0]['sku']), case, now)[0]:,}원부터"
                       for us in top)
-    return {"post": f"[Choo Shop 폐점 정리] 라운드 종료 전 전 품목 정리 중, 6시간마다 더 내려갑니다. {items}. "
+    return {"post": f"[Choo Shop 폐점 정리] 라운드 종료 전 전 품목 원가 정리 중. {items}. "
                     f"{promo()} 주문에 SKU를 넣어 불러 주세요.", "refs": [], "as": "shop"}
 
 
