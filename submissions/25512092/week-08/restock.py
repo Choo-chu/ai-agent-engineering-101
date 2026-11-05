@@ -34,7 +34,7 @@ CUSHION = strategy.CASH_RESERVE    # 1.5M: restock spends only (cash - CUSHION);
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
 MAX_BREAK = 0.15       # skip goods that break this often after a sale
 WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
-MAX_STOCK_COST = strategy.STOCK_CAP   # 2.5M: at or over it the case is overstock (11/05: the shop was offline
+MAX_STOCK_COST = strategy.STOCK_CAP   # 4.0M: at or over it the case is overstock (11/05: the shop was offline
                                       # 7 h while restock kept buying, and 4.1M of the 5M start sat on the shelf)
 # unit cost <= HIGH_MIN is low price; HIGH_MIN..HIGH_MAX is high price, bought only in busy categories, with
 # its share of the budget and its unit cap from sales_report.policy() (30% and 2 at the start, adjusted daily)

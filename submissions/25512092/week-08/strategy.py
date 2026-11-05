@@ -5,8 +5,8 @@ minute; the case is decided at most every CASE_EVERY_S and stored in market.db (
     endgame    from 48 h before the round ends    floor: endgame markdown (pricing.endgame), restock from
                                                    normal rules until 36 h before the end, then none
     cash_low   cash < CASH_RESERVE (1.5M)          floor: cost; no restock (warning in the log under 1M)
-    overstock  stock at cost >= STOCK_CAP (2.5M)   floor: cost, or the aging markdown when lower; no restock
-               (hysteresis: it ends only when stock falls under STOCK_EXIT, 2.2M)
+    overstock  stock at cost >= STOCK_CAP (4.0M)   floor: cost, or the aging markdown when lower; no restock
+               (hysteresis: it ends only when stock falls under STOCK_EXIT, 3.52M)
     normal     otherwise                           floor: max(cost, market average); restock with the
                                                    low/high split; selective 48 h warranty
     always on: food clearance (the lower floor wins) and answers to '구합니다' posts (forum_post.py)
@@ -26,8 +26,8 @@ from market_db import ME as ME_NAME, connect, meta
 
 CASH_RESERVE = 1_500_000
 CASH_WARN = 1_000_000
-STOCK_CAP = 2_500_000
-STOCK_EXIT = 2_200_000      # overstock ends only under this
+STOCK_CAP = 4_000_000          # 11/06: was 2.5M
+STOCK_EXIT = 3_520_000         # overstock ends only under this (was 2.2M)
 MIN_HOLD_S = 30 * 60
 IMMEDIATE = ("endgame", "cash_low")
 CASE_EVERY_S = 300
