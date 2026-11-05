@@ -67,8 +67,8 @@ shop_score, wanted)이 실행 단계의 입력이다. 기록이 다음 결정에
 - restock.py: 키트의 restock hook으로 60초마다 실행되며, 루프 전체를 구동한다. 순서는 ledger 갱신(market_db.refresh)
   → 내 재고와 현금 기록 → case 판정(strategy.tick) → 리포트(sales_report.tick) → 포럼 큐(forum_post.run) → 매입
   계획(`{"buy": [...]}`)이다. 매입은 정상 case에서만 하고, (현금 − 150만) × 0.4 안에서 저가와 고가 비중대로 나눈다.
-- strategy.py: case 판정의 유일한 장소다(decide). 재고 과다는 250만에 들어가 220만 미만에서 나오는
-  히스테리시스를 두고, 모든 case는 30분을 유지한다. 단 막바지와 현금 부족은 즉시 들어간다(1e4699f). 변형 선택(pick)과
+- strategy.py: case 판정의 유일한 장소다(decide). 재고 과다는 400만에 들어가 352만 미만에서 나오는
+  히스테리시스를 두고(처음 250만과 220만이었으나 3.1절의 판단으로 01c87c1에서 올렸다), 모든 case는 30분을 유지한다. 단 막바지와 현금 부족은 즉시 들어간다(1e4699f). 변형 선택(pick)과
   3시간마다의 비중 조정(adjust)도 여기에 있다.
 - pricing.py: case가 켜는 하한 규칙들(정상, 현금 부족, 재고 과다, 막바지, 장기 재고 정리, 식품 마감 할인) 가운데
   가장 낮은 것을 고른다. 가게의 협상과 포럼 광고가 같은 함수를 쓰므로, 글에 적힌 가격과 실제 하한이 어긋나지 않는다.
@@ -83,6 +83,26 @@ shop_score, wanted)이 실행 단계의 입력이다. 기록이 다음 결정에
   것이었다. buyer는 순차 처리 용량의 80%를 쓰고 있었으나, 흥정에 성공한 거래의 55%만 결제되었다.
 
 ## 3. 구조와 키트 기본형과의 차이
+
+### 3.1 목표 함수: book
+
+설계의 기준이 되는 값은 시장의 순위 규칙이다. 시장의 /agent.md는 다음과 같이 적는다.
+
+> Cash (`profit` on the board) = balance minus the starting capital minus what bankruptcy gave, so stock counts as
+> spent. Book = cash + what the unsold units cost, and ALL uses book. Goods in stock still pay storage, and food past
+> its date leaves the book at its cost.
+
+> Rankings: shops by book, revenue and stars (ALL weighs them 0.5, 0.3, 0.2)
+
+board의 profit 열은 재고를 산 만큼 음수가 되지만, 가게 ALL은 그 값이 아니라 book을 쓴다. 팔리지 않은 비식품
+유닛은 원가 그대로 book에 남으므로, 원가 아래의 판매만 book을 줄인다. 반면 식품은 날짜가 지나면 원가째 book에서
+빠진다. 이 판단에 따라 두 결정을 바꾸었다. 첫째, 막바지 정리의 하한을 원가의 30%까지 내려가던 계단에서 원가로
+고정했다(61e1ff6). 막바지에는 장기 재고 정리도 원가 아래로 내려가지 않게 했고(8f8b25b), 식품 마감 할인만 원가
+아래를 허용한다. 둘째, 재고를 쌓는 것 자체는 book을 줄이지 않으므로, 재고 과다의 기준을 250만에서 400만으로
+올렸다(01c87c1). 현금 예비금 150만과 종료 36시간 전 매입 중단은 그대로 두었다. 보관비(하루 원가의 1%)와 매출
+비중(ALL의 30%) 때문에 재고를 무한정 늘리지는 않는다.
+
+### 3.2 키트 기본형과의 차이
 
 키트의 Round 3 기본 가게(scripts/starter_round3/seller.py)에서는 하네스가 모든 수를 정한다. 유통기한이 가장 먼저
 끝나는 유닛을 팔고, 보증은 없으며, 하한은 원가다. 기본 buyer(7주차 market_buyer)는 리뷰 점수로 가게를 고르고
@@ -182,9 +202,18 @@ memory.jsonl에 남은 잘못된 표시는 기록을 고치지 않고, 읽는 �
 ```
 
 대응은 세 단계였다. 97afcbb에서 재고 원가 상한(당시 150만)과 개당 원가 상한을 넣었고, f3e87ae에서 키트 밖 감시자
-keepalive.py를 두었다. 이후 단계 1에서 상한을 재고 과다 case(250만 진입, 220만 해제)로 일반화했다. 재고 과다
+keepalive.py를 두었다. 이후 단계 1에서 상한을 재고 과다 case(250만 진입, 220만 해제)로 일반화했고, 순위가 book
+기준임을 확인한 뒤 400만 진입, 352만 해제로 올렸다(3.1절). 재고 과다
 동안에는 하한을 원가로 내려 재고를 줄였고, 그 결과 11/05 23시 한 시간 동안 24건, 이익 444,675원이 났다.
 
 ```
 00:01:18 [buyer] [restock] [report] 11-05 23:00 sold 24, revenue 1,463,047, profit 444,675 (low 43%, high 44%), by category: 주스/코코아/생수 5, 김치 3, 침구 3, 과자 3; stock 3,064,574, cash 2,522,809
 ```
+
+### 5.4 이미 팔린 유닛에 낸 영수증
+
+가게의 협상 결렬을 분해한 결과(reports/throughput_20261106.md, tools/shop_failures.py), 영수증을 냈으나 결제되지
+않은 건 가운데 두 건에서 상대 buyer가 1점과 함께 재고가 없었다는 리뷰를 남겼다. 키트가 쓰는 inventory.json은 최대
+10초 늦게 갱신된다. 그런데 seller는 진행 중인 협상의 유닛만 후보에서 빼고, 방금 영수증을 낸 유닛은 빼지 않았다.
+그래서 같은 유닛이 다른 buyer에게 다시 제시되었고, 결제 시점에 키트가 `unit ... is not in stock for this order`로
+거절했다. 089d0fe에서 영수증을 낸 유닛을 15분 동안 후보에서 제외하게 했다.
