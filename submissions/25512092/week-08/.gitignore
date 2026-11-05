@@ -1,2 +1,5 @@
 *.pem
 .market/
+market.db
+market_stats.json
+market_stats.json.tmp

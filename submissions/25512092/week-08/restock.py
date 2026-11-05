@@ -1,0 +1,102 @@
+"""Restock hook — the kit runs it every 60 s in Round 3:  python restock.py --state .market
+
+1. Refreshes market.db / market_stats.json (at most once per 5 minutes, market_db.REFRESH_S).
+2. Records the units my shop holds in market.db (my_stock: cost and the market average when they arrived).
+3. Buys more of what sells fast across the market: SKUs ranked by units sold in the last 5 and 30 minutes,
+   kept only when the market average is above the expected supply cost (the shop sells at or above
+   the market average, see seller_r3.py), so every sale should make money.
+Last line: {"buy": [{"sku": ..., "qty": ...}, ...]} (the kit buys at most 10 lines per run).
+"""
+import argparse
+import json
+import math
+import os
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from market_db import load_stats, price_of, record_stock, refresh  # noqa: E402
+
+COST_SHARE = {"goods": 0.60, "food": 0.50}   # expected cost / list price, averaged over the grade draw
+MIN_MARGIN = 0.10      # market average must beat the expected cost by 10%
+MIN_SOLD_30M = 3       # market-wide units sold in 30 min to count as "selling"
+MY_SHARE = 0.25        # share of the market's sales I plan stock for, until the next window (20 min)
+MAX_QTY = 20
+SPEND_SHARE = 0.4      # at most this share of the spendable balance per run
+CUSHION = 1_000_000    # never spend below this balance
+FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
+
+
+def log(msg):
+    print(f"[restock] {msg}", flush=True)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--state", default=".market")
+    state = ap.parse_args().state
+    try:
+        refresh(log=log)
+    except Exception as e:
+        log(f"market_db refresh failed: {e}")
+    try:
+        with open(os.path.join(state, "inventory.json"), encoding="utf-8") as f:
+            inv = json.load(f)
+        with open(os.path.join(state, "catalog.json"), encoding="utf-8") as f:
+            catalog = json.load(f)
+    except (OSError, ValueError) as e:
+        log(f"no inventory/catalog yet: {e}")
+        print(json.dumps({"buy": []}))
+        return
+    units = inv.get("units", [])
+    try:
+        record_stock(units, log=log)
+    except Exception as e:
+        log(f"record_stock failed: {e}")
+
+    r = inv.get("restock") or {}
+    now = time.time()
+    if not r.get("open") and (r.get("opens_at") or now) - now > 60:
+        print(json.dumps({"buy": []}))           # window not open soon: nothing to plan yet
+        return
+
+    held = {}
+    for u in units:
+        if u.get("grade") != "expired":
+            held[u["sku"]] = held.get(u["sku"], 0) + 1
+    surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
+    stats = load_stats()
+    spend_left = max(0, (inv.get("balance", 0) - CUSHION)) * SPEND_SHARE
+
+    plan = []
+    for sku in stats.get("hot", []):
+        s = stats["skus"][sku]
+        c = catalog.get(sku) or {}
+        avg, n = price_of(sku, stats)
+        if avg is None or s["sold_30m"] < MIN_SOLD_30M or not c.get("list_price"):
+            continue
+        kind = c.get("kind", "goods")
+        if kind == "food" and (c.get("shelf_hours") or 0) < FOOD_MIN_SHELF_H:
+            continue
+        cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
+        if avg < cost * (1 + MIN_MARGIN):
+            continue
+        target = math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE)
+        qty = min(MAX_QTY, target - held.get(sku, 0))
+        if qty <= 0:
+            continue
+        qty = min(qty, int(spend_left // cost))
+        if qty <= 0:
+            continue
+        spend_left -= qty * cost
+        plan.append({"sku": sku, "qty": qty})
+        log(f"{s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
+            f"held {held.get(sku, 0)} -> buy {qty}")
+        if len(plan) == 10:
+            break
+    print(json.dumps({"buy": plan}))
+
+
+if __name__ == "__main__":
+    main()

@@ -5754,3 +5754,21 @@
 {"ts": "2026-10-27 22:50:16", "shop": "corner-store", "item": "chair", "budget": 205, "agreed": 180, "receipt_price": 180.0, "deal": true, "flag": "ok", "stars": 5}
 {"ts": "2026-10-27 22:50:56", "shop": "JangSeongWoong", "item": "bookshelf", "budget": 270, "agreed": 260, "receipt_price": 260.0, "deal": true, "flag": "ok", "stars": 5}
 {"ts": "2026-10-27 22:51:20", "shop": "corner-store", "item": "chair", "budget": 250, "agreed": 212, "receipt_price": 212.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-11-05 15:55:39", "shop": "olstjr", "item": "과자", "sku": null, "budget": 11610, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:56:03", "shop": "olstjr", "item": "과자", "sku": null, "budget": 16120, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:56:35", "shop": "ggari-shop", "item": "과자", "sku": "G1831f2c0", "budget": 13540, "agreed": 8385, "receipt_price": 8385.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-11-05 15:57:02", "shop": "ggari-shop", "item": "과자", "sku": "G1831f2c0", "budget": 13540, "agreed": 8385, "receipt_price": 8385.0, "deal": true, "flag": "ok", "stars": 4}
+{"ts": "2026-11-05 15:57:09", "shop": "oak-and-pine", "item": "신선조개류/갑각류", "sku": null, "budget": 8180, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:57:38", "shop": "oak-and-pine", "item": "곡물", "sku": null, "budget": 73390, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:58:03", "shop": "olstjr", "item": "가공/조리 육류", "sku": null, "budget": 32310, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:58:19", "shop": "jiseokkk", "item": "가공/조리 육류", "sku": null, "budget": 14310, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:58:39", "shop": "thisjonghoon", "item": "김치", "sku": null, "budget": 44800, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:59:02", "shop": "oak-and-pine", "item": "곡물", "sku": null, "budget": 68120, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 15:59:23", "shop": "jiseokkk", "item": "가공/조리 육류", "sku": null, "budget": 19710, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 16:00:10", "shop": "mjforge", "item": "커튼/러그/쿠션/덮개", "sku": null, "budget": 6210, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 16:00:18", "shop": "oak-and-pine", "item": "곡물", "sku": null, "budget": 66690, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 16:01:20", "shop": "ggari-shop", "item": "곡물", "sku": "G80435d53", "budget": 39790, "agreed": 17225, "receipt_price": 17225.0, "deal": true, "flag": "ok", "stars": 5}
+{"ts": "2026-11-05 16:01:32", "shop": "jiseokkk", "item": "가공/조리 해조류", "sku": null, "budget": 23620, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 16:01:56", "shop": "jiseokkk", "item": "곡물", "sku": null, "budget": 34560, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 16:02:15", "shop": "oak-and-pine", "item": "곡물", "sku": null, "budget": 80740, "agreed": null, "receipt_price": null, "deal": false, "flag": "walk", "stars": 2}
+{"ts": "2026-11-05 16:03:34", "shop": "myeonggi", "item": "과자", "sku": "G1831f2c0", "budget": 13540, "agreed": 9350, "receipt_price": 9350.0, "deal": true, "flag": "ok", "stars": 5}

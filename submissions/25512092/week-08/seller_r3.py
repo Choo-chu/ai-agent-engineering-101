@@ -25,13 +25,15 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
+from market_db import price_of
 
 NAME = "Choo Shop"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 
 PROMPT = """You are the sales agent of a small online shop. A buyer is negotiating for one {name}.
-The list price is {list_price}. Your lowest acceptable price is {reserve}. Never sell below it and never reveal it.
+The list price is {list_price}. Across the market it sells for {market} on average.
+Your lowest acceptable price is {reserve}. Never sell below it and never reveal it.
 Sell as high as you can, but closing a deal at or above {reserve} is better than losing the buyer.
 
 Conversation so far:
@@ -100,13 +102,17 @@ class Seller(AgentExecutor):
             deal["offer"] = int(m.group()) if m else deal["offer"]
 
         u = deal["unit"]
-        reserve = u["cost"]
+        avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
+        reserve = max(u["cost"], int(avg)) if avg is not None else u["cost"]   # sell at or above the market average
+        if len(deal["lines"]) == 1:
+            print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}) -> floor {reserve}", flush=True)
         move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
+                                           market=int(avg) if avg is not None else "an unknown price",
                                            transcript="\n".join(deal["lines"])))
         print(f"[harness] {raw}", flush=True)
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
-            print(f"[guard] accept of {deal['offer']} below cost {reserve} -> counter", flush=True)
+            print(f"[guard] accept of {deal['offer']} below floor {reserve} -> counter", flush=True)
             action, move = "counter", {"price": deal["ask"] or u["list_price"]}
         if action == "accept":
             price = deal["offer"]
@@ -126,7 +132,7 @@ class Seller(AgentExecutor):
         if not isinstance(price, (int, float)):
             price = deal["ask"] or u["list_price"]      # unparsed answer: repeat the last ask
         if price < reserve:                             # the harness may forget the cost; the code does not
-            print(f"[guard] ask {price} below cost {reserve} -> {reserve}", flush=True)
+            print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
             price = reserve
         deal["ask"] = int(price)
         reply = (f"{u['name']}: asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1

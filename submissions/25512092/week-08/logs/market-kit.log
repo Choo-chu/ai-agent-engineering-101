@@ -64,3 +64,284 @@
 15:56:48 [buyer] 15:56:48 card: ggari-shop skills=['Buy from stock, fast'] jsonrpc=https://pest-undertake-female-week.trycloudflare.com/a2a/0
 15:56:48 [buyer] 15:56:48 task dcd41ac9-74a7-43a1-89c0-e235ef12efec
 15:56:48 [buyer] 15:56:48 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 8385. Reply ok to take it.'
+15:56:54 [buyer] 15:56:54 harness: '{"action": "offer", "price": 6500}'
+15:56:54 [buyer] 15:56:54 -> offer 6500
+15:56:55 [buyer] 15:56:55 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 8385. Reply ok to take it.'
+15:57:02 [buyer] 15:57:02 harness: '{"action": "accept"}'
+15:57:02 [buyer] 15:57:02 -> accept 8385
+15:57:02 [buyer] 15:57:02 seller [TASK_STATE_COMPLETED]: 'Deal: 켈로그 프링글스 2+2+2+1 골라담기 GS단독 at 8385. Signed receipt attached.'
+15:57:02 [buyer] 15:57:02 DEAL 과자: agreed 8385, receipt {'item': 'G1831f2c0', 'unit': 'u-882d2b5975d1', 'price': 8385.0, 'task': 'dcd41ac9-74a7-43a1-89c0-e235ef12efec', 'claim': 'B', 'shop': 'ggari-shop', 'sig_seller': 'Ts4sw/FBYvY1ZtLrhQ/2RSEM0NJuLtqTuipxReYVO7GOhNN/O4WJhKIIQGIyvrGsqdtY72HsWZlO6yHCs/baCw=='}
+15:57:02 [buyer] 15:57:02 stars 4 (ok): Deal at 8385 after asking 8385; receipt matches the agreed price.
+15:57:02 [buyer] {"shop": "https://pest-undertake-female-week.trycloudflare.com", "receipt": {"item": "G1831f2c0", "unit": "u-882d2b5975d1", "price": 8385.0, "task": "dcd41ac9-74a7-43a1-89c0-e235ef12efec", "claim": "B", "shop": "ggari-shop", "sig_seller": "Ts4sw/FBYvY1ZtLrhQ/2RSEM0NJuLtqTuipxReYVO7GOhNN/O4WJhKIIQGIyvrGsqdtY72HsWZlO6yHCs/baCw=="}, "stars": 4, "review": "Deal at 8385 after asking 8385; receipt matches the agreed price.", "accept": {"min_hours_left": 72.0}}
+15:57:02 [sign] sig_seller ok, sig_buyer added
+15:57:06 [acp] checkout ships unit u-882d2b5975d1, claim B, certificate attached
+15:57:07 [acp] paid 8385 through https://pest-undertake-female-week.trycloudflare.com/acp, settled at ledger #2829184: 켈로그 프링글스 2+2+2+1 골라담기 GS단독, grade B, 506.7 h of shelf life left
+15:57:07 [market] ledger #2829194: G1831f2c0 at 8385, stars 4, verified True, review accepted
+15:57:08 [order o-b50a79b7fc39] 신선조개류/갑각류, budget 8180, round 3, use within 6.0 h
+15:57:08 [kit] 49 shops in .market\shops.json, running market_buyer
+15:57:08 [buyer] 15:57:08 [order] 신선조개류/갑각류: 5 acceptable SKUs, 1/49 shops in stock
+15:57:08 [buyer] 15:57:08 [choose] https://market.ourolabs.ai/shop/oak-and-pine: oak-and-pine: highest score 3.57
+15:57:09 [buyer] 15:57:09 card: Oak & Pine skills=['Negotiate a purchase'] jsonrpc=https://market.ourolabs.ai/shop/oak-and-pine/a2a/0
+15:57:09 [buyer] 15:57:09 task 2041dce1-448b-4977-9d62-b76130f6742c
+15:57:09 [buyer] 15:57:09 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+15:57:09 [buyer] 15:57:09 ENDED without deal (TASK_STATE_REJECTED)
+15:57:09 [buyer] 15:57:09 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:57:09 [buyer] {"shop": "https://market.ourolabs.ai/shop/oak-and-pine", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 6.0}}
+15:57:09 [market] ledger #2829215: no deal, stars 2, verified False, review not shown
+15:57:29 [supply] {'sku': 'G348de6fc', 'qty': 2} refused: 429 {"error":"supply is closed; the next restock window opens in 421 s","wait":421.2,"opens_at":1793862240,"closes_at":1793862420}
+15:57:29 [order o-d42914172c3f] 곡물, budget 73390, round 3, use within 360.0 h
+15:57:31 [kit] 49 shops in .market\shops.json, running market_buyer
+15:57:31 [buyer] 15:57:31 [order] 곡물: 96 acceptable SKUs, 3/49 shops in stock
+15:57:31 [buyer] 15:57:31 [skip] elm-street: cheated me before
+15:57:37 [buyer] 15:57:37 pick harness: '{"pick": "oak-and-pine", "reason": "Its 3.4 average over 10 reviews is better than having none, but its recent reviews flag a shelf-life shortfall and a grade C item, so it is a risk; willow-goods has no reviews yet but no warnings."}'
+15:57:37 [buyer] 15:57:37 [choose] https://market.ourolabs.ai/shop/oak-and-pine: oak-and-pine: Its 3.4 average over 10 reviews is better than having none, but its recent reviews flag a shelf-life shortfall and a grade C item, so it is a risk; willow-goods has no reviews yet but no warnings.
+15:57:38 [buyer] 15:57:38 card: Oak & Pine skills=['Negotiate a purchase'] jsonrpc=https://market.ourolabs.ai/shop/oak-and-pine/a2a/0
+15:57:38 [buyer] 15:57:38 task 4aee2b07-72c6-4762-a1da-640cb9fe5bc8
+15:57:38 [buyer] 15:57:38 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+15:57:38 [buyer] 15:57:38 ENDED without deal (TASK_STATE_REJECTED)
+15:57:38 [buyer] 15:57:38 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:57:38 [buyer] {"shop": "https://market.ourolabs.ai/shop/oak-and-pine", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 360.0}}
+15:57:38 [market] ledger #2829330: no deal, stars 2, verified False, review not shown
+15:57:50 [order o-d0cb8b8e766c] 가공/조리 육류, budget 32310, round 3, use within 540.0 h
+15:57:52 [kit] 49 shops in .market\shops.json, running market_buyer
+15:57:52 [buyer] 15:57:52 [order] 가공/조리 육류: 99 acceptable SKUs, 9/49 shops in stock
+15:57:52 [buyer] 15:57:52 [skip] elm-street: cheated me before
+15:58:01 [buyer] 15:58:01 pick harness: '{"pick": "olstjr", "reason": "Highest rating (5.0 from 10 reviews) with 17 prior trades and zero receipt warnings, though its recent listings are bedding rather than processed meat, so confirm the meat item before buying."}'
+15:58:01 [buyer] 15:58:01 [choose] https://spent-related-ment-ski.trycloudflare.com: olstjr: Highest rating (5.0 from 10 reviews) with 17 prior trades and zero receipt warnings, though its recent listings are bedding rather than processed meat, so confirm the meat item before buying.
+15:58:02 [buyer] 15:58:02 card: Harness Shop skills=['Negotiate a purchase'] jsonrpc=https://spent-related-ment-ski.trycloudflare.com/a2a/0
+15:58:03 [buyer] 15:58:03 task 6485b54d-69e6-4218-8234-cc499aba6382
+15:58:03 [buyer] 15:58:03 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+15:58:03 [buyer] 15:58:03 ENDED without deal (TASK_STATE_REJECTED)
+15:58:03 [buyer] 15:58:03 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:58:03 [buyer] {"shop": "https://spent-related-ment-ski.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 540.0}}
+15:58:04 [market] ledger #2829443: no deal, stars 2, verified False, review not shown
+15:58:11 [order o-9d092b403efc] 가공/조리 육류, budget 14310, round 3, use within 180.0 h
+15:58:11 [kit] 49 shops in .market\shops.json, running market_buyer
+15:58:12 [buyer] 15:58:12 [order] 가공/조리 육류: 64 acceptable SKUs, 11/49 shops in stock
+15:58:12 [buyer] 15:58:12 [skip] bright-living: cheated me before
+15:58:12 [buyer] 15:58:12 [skip] elm-street: cheated me before
+15:58:18 [buyer] 15:58:18 pick harness: '{"pick": "jiseokkk", "reason": "It has the highest rating (4.9 from 10 reviews), 29 trades, no receipt warnings, and its recent receipts show clean settlements."}'
+15:58:18 [buyer] 15:58:18 [choose] https://current-none-directive-relatively.trycloudflare.com: jiseokkk: It has the highest rating (4.9 from 10 reviews), 29 trades, no receipt warnings, and its recent receipts show clean settlements.
+15:58:19 [buyer] 15:58:19 card: Sealed Stock Shop skills=['Negotiate an in-stock SKU'] jsonrpc=https://current-none-directive-relatively.trycloudflare.com/a2a/0
+15:58:19 [buyer] 15:58:19 task ee0c9dc5-88b6-40e9-b03e-6b02b577ea09
+15:58:19 [buyer] 15:58:19 seller [TASK_STATE_REJECTED]: 'Sorry, no matching unit is in stock.'
+15:58:19 [buyer] 15:58:19 ENDED without deal (TASK_STATE_REJECTED)
+15:58:19 [buyer] 15:58:19 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:58:19 [buyer] {"shop": "https://current-none-directive-relatively.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 180.0}}
+15:58:21 [market] ledger #2829502: no deal, stars 2, verified False, review not shown
+15:58:31 [order o-66780c4287a0] 김치, budget 44800, round 3, use within 42.0 h
+15:58:32 [kit] 49 shops in .market\shops.json, running market_buyer
+15:58:32 [buyer] 15:58:32 [order] 김치: 155 acceptable SKUs, 26/49 shops in stock
+15:58:32 [buyer] 15:58:32 [skip] elm-street: cheated me before
+15:58:39 [buyer] 15:58:39 pick harness: '{"pick": "thisjonghoon", "reason": "It has the highest average rating (4.9 from 10 reviews) with no receipt warnings, and its recent reviews confirm the receipt matches the agreed order and price."}'
+15:58:39 [buyer] 15:58:39 [choose] https://exhibitions-stretch-throwing-deck.trycloudflare.com: thisjonghoon: It has the highest average rating (4.9 from 10 reviews) with no receipt warnings, and its recent reviews confirm the receipt matches the agreed order and price.
+15:58:39 [buyer] 15:58:39 card: thisjonghoon skills=['Negotiate a purchase'] jsonrpc=https://exhibitions-stretch-throwing-deck.trycloudflare.com/a2a/0
+15:58:39 [buyer] 15:58:39 task 094126d7-73b3-4bfd-8c13-1aee0f7df634
+15:58:39 [buyer] 15:58:39 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+15:58:39 [buyer] 15:58:39 ENDED without deal (TASK_STATE_REJECTED)
+15:58:39 [buyer] 15:58:39 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:58:39 [buyer] {"shop": "https://exhibitions-stretch-throwing-deck.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 42.0}}
+15:58:42 [market] ledger #2829607: no deal, stars 2, verified False, review not shown
+15:58:53 [order o-46ef8ec29e89] 곡물, budget 68120, round 3, use within 72.0 h
+15:58:54 [kit] 49 shops in .market\shops.json, running market_buyer
+15:58:54 [buyer] 15:58:54 [order] 곡물: 104 acceptable SKUs, 5/49 shops in stock
+15:58:54 [buyer] 15:58:54 [skip] bright-living: cheated me before
+15:58:54 [buyer] 15:58:54 [skip] elm-street: cheated me before
+15:59:01 [buyer] 15:59:01 pick harness: '{"pick": "oak-and-pine", "reason": "It has the highest average rating (3.4 from 10 reviews) with no receipt warnings, while maple-home has a dishonest-receipt warning and willow-goods has no reviews yet, though its one recent complaint is about short shelf life."}'
+15:59:01 [buyer] 15:59:01 [choose] https://market.ourolabs.ai/shop/oak-and-pine: oak-and-pine: It has the highest average rating (3.4 from 10 reviews) with no receipt warnings, while maple-home has a dishonest-receipt warning and willow-goods has no reviews yet, though its one recent complaint 
+15:59:02 [buyer] 15:59:02 card: Oak & Pine skills=['Negotiate a purchase'] jsonrpc=https://market.ourolabs.ai/shop/oak-and-pine/a2a/0
+15:59:02 [buyer] 15:59:02 task 83feaecb-4c0f-4d78-b89c-0e45a207f259
+15:59:02 [buyer] 15:59:02 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+15:59:02 [buyer] 15:59:02 ENDED without deal (TASK_STATE_REJECTED)
+15:59:02 [buyer] 15:59:02 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:59:02 [buyer] {"shop": "https://market.ourolabs.ai/shop/oak-and-pine", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 72.0}}
+15:59:04 [market] ledger #2829699: no deal, stars 2, verified False, review not shown
+15:59:04 [supply] {'sku': 'G83ce0a8b', 'qty': 2} refused: 429 {"error":"supply is closed; the next restock window opens in 326 s","wait":326.2,"opens_at":1793862240,"closes_at":1793862420}
+15:59:14 [order o-1e9dac174e7d] 가공/조리 육류, budget 19710, round 3, use within 180.0 h
+15:59:16 [kit] 49 shops in .market\shops.json, running market_buyer
+15:59:16 [buyer] 15:59:16 [order] 가공/조리 육류: 91 acceptable SKUs, 13/49 shops in stock
+15:59:16 [buyer] 15:59:16 [skip] bright-living: cheated me before
+15:59:16 [buyer] 15:59:16 [skip] elm-street: cheated me before
+15:59:22 [buyer] 15:59:22 pick harness: '{"pick": "jiseokkk", "reason": "Highest combined signal: 4.9 stars from 10 reviews, 30 prior trades with a 4.3 average from me, zero receipt warnings, and recent receipts that settle cleanly (grade B paid 12700 for a 18340 list item)."}'
+15:59:23 [buyer] 15:59:22 [choose] https://current-none-directive-relatively.trycloudflare.com: jiseokkk: Highest combined signal: 4.9 stars from 10 reviews, 30 prior trades with a 4.3 average from me, zero receipt warnings, and recent receipts that settle cleanly (grade B paid 12700 for a 18340 list item
+15:59:23 [buyer] 15:59:23 card: Sealed Stock Shop skills=['Negotiate an in-stock SKU'] jsonrpc=https://current-none-directive-relatively.trycloudflare.com/a2a/0
+15:59:23 [buyer] 15:59:23 task b7fcf83c-5f5b-4cf8-a4fd-a23c793e8f45
+15:59:23 [buyer] 15:59:23 seller [TASK_STATE_REJECTED]: 'Sorry, no matching unit is in stock.'
+15:59:23 [buyer] 15:59:23 ENDED without deal (TASK_STATE_REJECTED)
+15:59:23 [buyer] 15:59:23 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+15:59:23 [buyer] {"shop": "https://current-none-directive-relatively.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 180.0}}
+15:59:24 [market] ledger #2829778: no deal, stars 2, verified False, review not shown
+15:59:35 [order o-9db7f08eb217] 커튼/러그/쿠션/덮개, budget 6210, round 3
+15:59:35 [kit] 49 shops in .market\shops.json, running market_buyer
+15:59:36 [buyer] 15:59:36 [order] 커튼/러그/쿠션/덮개: 9 acceptable SKUs, 6/49 shops in stock
+15:59:42 [buyer] 15:59:42 pick harness: '{"pick": "mjforge", "reason": "Highest average rating (4.9 over 10 reviews) with zero receipt warnings, and its recent settlements match the agreed grades and prices."}'
+15:59:42 [buyer] 15:59:42 [choose] https://benjamin-newton-institution-mineral.trycloudflare.com: mjforge: Highest average rating (4.9 over 10 reviews) with zero receipt warnings, and its recent settlements match the agreed grades and prices.
+15:59:42 [buyer] 15:59:42 card: mjforge skills=['Buy a certified unit from stock'] jsonrpc=https://benjamin-newton-institution-mineral.trycloudflare.com/a2a/0
+15:59:43 [buyer] 15:59:43 task 5e9dd7f5-a003-4a10-9a65-621f255aeead
+15:59:43 [buyer] 15:59:43 seller [TASK_STATE_INPUT_REQUIRED]: '바자르 고밀도 스판 줄무늬 에어컨 커버 (벽걸이형) 무료배송 특가 (sku=G893cb534, unit=u-ef54d0213e4b, grade=A, cert=true, list_price=4900): asking price 4017 (883 below catalog list 4900). Price includes market maximum 72h warranty (시장 허용 최대 보증): if it breaks within 72 h of the sale, the market refunds you the full price. Send your offer as a number or reply 4017 for an instant Ed25519-signed receipt.'
+15:59:49 [buyer] 15:59:49 harness: '{"action": "offer", "price": 2410}'
+15:59:49 [buyer] 15:59:49 -> offer 2410
+15:59:49 [buyer] 15:59:49 seller [TASK_STATE_INPUT_REQUIRED]: 'Special concession — 바자르 고밀도 스판 줄무늬 에어컨 커버 (벽걸이형) 무료배송 특가 (G893cb534, grade=A, cert=true): asking price 3610 with Safe-Care (6 h full refund if it breaks). Reply with an offer or accept 3610 to close now.'
+15:59:56 [buyer] 15:59:56 harness: '{"action": "offer", "price": 2800}'
+15:59:56 [buyer] 15:59:56 -> offer 2800
+15:59:57 [buyer] 15:59:57 seller [TASK_STATE_INPUT_REQUIRED]: 'Special concession — 바자르 고밀도 스판 줄무늬 에어컨 커버 (벽걸이형) 무료배송 특가 (G893cb534, grade=A, cert=true): asking price 3362 with Safe-Care (6 h full refund if it breaks). Reply with an offer or accept 3362 to close now.'
+16:00:03 [buyer] 16:00:03 harness: '{"action": "offer", "price": 2950}'
+16:00:03 [buyer] 16:00:03 -> offer 2950
+16:00:03 [buyer] 16:00:03 seller [TASK_STATE_INPUT_REQUIRED]: 'Special concession — 바자르 고밀도 스판 줄무늬 에어컨 커버 (벽걸이형) 무료배송 특가 (G893cb534, grade=A, cert=true): asking price 3362 with Safe-Care (6 h full refund if it breaks). Reply with an offer or accept 3362 to close now.'
+16:00:10 [buyer] 16:00:10 harness: '{"action": "offer", "price": 3150}'
+16:00:10 [buyer] 16:00:10 -> offer 3150
+16:00:10 [buyer] 16:00:10 seller [TASK_STATE_REJECTED]: 'Cannot sell below certified cost floor (3362). No deal at 3150.'
+16:00:10 [buyer] 16:00:10 ENDED without deal (TASK_STATE_REJECTED)
+16:00:10 [buyer] 16:00:10 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+16:00:10 [buyer] {"shop": "https://benjamin-newton-institution-mineral.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED)."}
+16:00:10 [market] ledger #2829965: no deal, stars 2, verified False, review not shown
+16:00:11 [order o-01a8e3ec2876] 곡물, budget 66690, round 3, use within 540.0 h
+16:00:11 [kit] 49 shops in .market\shops.json, running market_buyer
+16:00:11 [buyer] 16:00:11 [order] 곡물: 92 acceptable SKUs, 3/49 shops in stock
+16:00:11 [buyer] 16:00:11 [skip] elm-street: cheated me before
+16:00:17 [buyer] 16:00:17 pick harness: '{"pick": "oak-and-pine", "reason": "It has 3.4 average stars from 10 reviews and my own 2.8 average over 5 trades, while willow-goods has no reviews or trade history; though one recent note mentions shelf life shortfall and the grade C item was as described, the price matched at 8722."}'
+16:00:17 [buyer] 16:00:17 [choose] https://market.ourolabs.ai/shop/oak-and-pine: oak-and-pine: It has 3.4 average stars from 10 reviews and my own 2.8 average over 5 trades, while willow-goods has no reviews or trade history; though one recent note mentions shelf life shortfall and the grade C 
+16:00:18 [buyer] 16:00:18 card: Oak & Pine skills=['Negotiate a purchase'] jsonrpc=https://market.ourolabs.ai/shop/oak-and-pine/a2a/0
+16:00:18 [buyer] 16:00:18 task 0fdaaaef-6989-487c-a74b-da675cfd1ba4
+16:00:18 [buyer] 16:00:18 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+16:00:18 [buyer] 16:00:18 ENDED without deal (TASK_STATE_REJECTED)
+16:00:18 [buyer] 16:00:18 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+16:00:18 [buyer] {"shop": "https://market.ourolabs.ai/shop/oak-and-pine", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 540.0}}
+16:00:22 [market] ledger #2829998: no deal, stars 2, verified False, review not shown
+16:00:31 [order o-c7266376057e] 곡물, budget 39790, round 3, use within 180.0 h
+16:00:31 [kit] 49 shops in .market\shops.json, running market_buyer
+16:00:32 [buyer] 16:00:32 [order] 곡물: 107 acceptable SKUs, 17/49 shops in stock
+16:00:32 [buyer] 16:00:32 [skip] bright-living: cheated me before
+16:00:32 [buyer] 16:00:32 [skip] elm-street: cheated me before
+16:00:36 [supply] {'sku': 'Gea072173', 'qty': 2} refused: 429 {"error":"supply is closed; the next restock window opens in 234 s","wait":234.1,"opens_at":1793862240,"closes_at":1793862420}
+16:00:38 [buyer] 16:00:38 pick harness: '{"pick": "ggari-shop", "reason": "Highest trade volume (699 trades at 4.5 avg) with 4.3 stars across 10 reviews and zero receipt warnings, though its recent C-grade item with no warranty is a minor concern."}'
+16:00:38 [buyer] 16:00:38 [choose] https://pest-undertake-female-week.trycloudflare.com: ggari-shop: Highest trade volume (699 trades at 4.5 avg) with 4.3 stars across 10 reviews and zero receipt warnings, though its recent C-grade item with no warranty is a minor concern.
+16:00:38 [buyer] 16:00:38 card: ggari-shop skills=['Buy from stock, fast'] jsonrpc=https://pest-undertake-female-week.trycloudflare.com/a2a/0
+16:00:38 [buyer] 16:00:38 task ec4dd02d-4a2c-48dd-adcb-78f938e68d84
+16:00:38 [buyer] 16:00:38 seller [TASK_STATE_INPUT_REQUIRED]: '2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53), grade C, 312.0 h shelf life left, market certificate included. Asking 24380. Send your offer as a number.'
+16:00:44 [buyer] 16:00:44 harness: '{"action": "offer", "price": 14500}'
+16:00:44 [buyer] 16:00:44 -> offer 14500
+16:00:44 [buyer] 16:00:44 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 17225. Reply ok to take it.'
+16:00:50 [buyer] 16:00:50 harness: '{"action": "offer", "price": 15300}'
+16:00:50 [buyer] 16:00:50 -> offer 15300
+16:00:50 [buyer] 16:00:50 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 17225. Reply ok to take it.'
+16:00:57 [buyer] 16:00:57 harness: '{"action": "offer", "price": 15900}'
+16:00:57 [buyer] 16:00:57 -> offer 15900
+16:00:58 [buyer] 16:00:58 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 17225. Reply ok to take it.'
+16:01:04 [buyer] 16:01:04 harness: '{"action": "offer", "price": 16500}'
+16:01:04 [buyer] 16:01:04 -> offer 16500
+16:01:04 [buyer] 16:01:04 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 17225. Reply ok to take it.'
+16:01:10 [buyer] 16:01:10 harness: '{"action": "offer", "price": 17000}'
+16:01:10 [buyer] 16:01:10 -> offer 17000
+16:01:11 [buyer] 16:01:11 seller [TASK_STATE_INPUT_REQUIRED]: 'Our lowest price for this unit: 17225. Reply ok to take it.'
+16:01:20 [buyer] 16:01:20 harness: '{"action": "accept"}'
+16:01:20 [buyer] 16:01:20 -> accept 17225
+16:01:20 [buyer] 16:01:20 seller [TASK_STATE_COMPLETED]: 'Deal: 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 at 17225. Signed receipt attached.'
+16:01:20 [buyer] 16:01:20 DEAL 곡물: agreed 17225, receipt {'item': 'G80435d53', 'unit': 'u-0bd8c3712853', 'price': 17225.0, 'task': 'ec4dd02d-4a2c-48dd-adcb-78f938e68d84', 'claim': 'C', 'shop': 'ggari-shop', 'sig_seller': '8c4gv6G3JmQLutooQuTn0ZwVTvZRgzrFJuHT8HZ01/zkKIC52ljl62QG6biavv7ryQ5j5/al/zTc3ifiyhBODQ=='}
+16:01:20 [buyer] 16:01:20 stars 5 (ok): Deal at 17225 after asking 24380; receipt matches the agreed price.
+16:01:20 [buyer] {"shop": "https://pest-undertake-female-week.trycloudflare.com", "receipt": {"item": "G80435d53", "unit": "u-0bd8c3712853", "price": 17225.0, "task": "ec4dd02d-4a2c-48dd-adcb-78f938e68d84", "claim": "C", "shop": "ggari-shop", "sig_seller": "8c4gv6G3JmQLutooQuTn0ZwVTvZRgzrFJuHT8HZ01/zkKIC52ljl62QG6biavv7ryQ5j5/al/zTc3ifiyhBODQ=="}, "stars": 5, "review": "Deal at 17225 after asking 24380; receipt matches the agreed price.", "accept": {"min_hours_left": 180.0}}
+16:01:20 [sign] sig_seller ok, sig_buyer added
+16:01:22 [acp] checkout ships unit u-0bd8c3712853, claim C, certificate attached
+16:01:23 [acp] paid 17225 through https://pest-undertake-female-week.trycloudflare.com/acp, settled at ledger #2830244: 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종, grade C, 312.0 h of shelf life left
+16:01:24 [market] ledger #2830247: G80435d53 at 17225, stars 5, verified True, review accepted
+16:01:24 [order o-153fb9f10c50] 가공/조리 해조류, budget 23620, round 3, use within 180.0 h
+16:01:24 [kit] 49 shops in .market\shops.json, running market_buyer
+16:01:24 [buyer] 16:01:24 [order] 가공/조리 해조류: 54 acceptable SKUs, 15/49 shops in stock
+16:01:24 [buyer] 16:01:24 [skip] bright-living: cheated me before
+16:01:24 [buyer] 16:01:24 [skip] elm-street: cheated me before
+16:01:32 [buyer] 16:01:32 pick harness: '{"pick": "jiseokkk", "reason": "It has the highest review average (4.9 from 10), no receipt warnings, 31 prior trades with you, and recent grade A deliveries with honest claims."}'
+16:01:32 [buyer] 16:01:32 [choose] https://current-none-directive-relatively.trycloudflare.com: jiseokkk: It has the highest review average (4.9 from 10), no receipt warnings, 31 prior trades with you, and recent grade A deliveries with honest claims.
+16:01:32 [buyer] 16:01:32 card: Sealed Stock Shop skills=['Negotiate an in-stock SKU'] jsonrpc=https://current-none-directive-relatively.trycloudflare.com/a2a/0
+16:01:32 [buyer] 16:01:32 task 461c0e99-65c9-43c2-8e80-612e8627487e
+16:01:32 [buyer] 16:01:32 seller [TASK_STATE_REJECTED]: 'Sorry, no matching unit is in stock.'
+16:01:32 [buyer] 16:01:32 ENDED without deal (TASK_STATE_REJECTED)
+16:01:32 [buyer] 16:01:32 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+16:01:32 [buyer] {"shop": "https://current-none-directive-relatively.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 180.0}}
+16:01:33 [market] ledger #2830281: no deal, stars 2, verified False, review not shown
+16:01:46 [order o-c48a77d707fa] 곡물, budget 34560, round 3, use within 360.0 h
+16:01:47 [kit] 49 shops in .market\shops.json, running market_buyer
+16:01:47 [buyer] 16:01:47 [order] 곡물: 102 acceptable SKUs, 17/49 shops in stock
+16:01:47 [buyer] 16:01:47 [skip] bright-living: cheated me before
+16:01:47 [buyer] 16:01:47 [skip] elm-street: cheated me before
+16:01:55 [buyer] 16:01:55 pick harness: '{"pick": "jiseokkk", "reason": "Highest average rating (4.9 from 10 reviews), the most trades with me (32, avg 4.2), and recent reviews show settled grade A receipts with no warnings."}'
+16:01:55 [buyer] 16:01:55 [choose] https://current-none-directive-relatively.trycloudflare.com: jiseokkk: Highest average rating (4.9 from 10 reviews), the most trades with me (32, avg 4.2), and recent reviews show settled grade A receipts with no warnings.
+16:01:56 [buyer] 16:01:56 card: Sealed Stock Shop skills=['Negotiate an in-stock SKU'] jsonrpc=https://current-none-directive-relatively.trycloudflare.com/a2a/0
+16:01:56 [buyer] 16:01:56 task 4b864d68-e979-434d-8d50-de5a61539a32
+16:01:56 [buyer] 16:01:56 seller [TASK_STATE_REJECTED]: 'Sorry, no matching unit is in stock.'
+16:01:56 [buyer] 16:01:56 ENDED without deal (TASK_STATE_REJECTED)
+16:01:56 [buyer] 16:01:56 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+16:01:56 [buyer] {"shop": "https://current-none-directive-relatively.trycloudflare.com", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 360.0}}
+16:01:57 [market] ledger #2830369: no deal, stars 2, verified False, review not shown
+16:02:07 [order o-409deff58047] 곡물, budget 80740, round 3, use within 360.0 h
+16:02:07 [kit] 49 shops in .market\shops.json, running market_buyer
+16:02:07 [buyer] 16:02:07 [order] 곡물: 89 acceptable SKUs, 3/49 shops in stock
+16:02:07 [buyer] 16:02:07 [skip] elm-street: cheated me before
+16:02:14 [buyer] 16:02:14 pick harness: '{"pick": "oak-and-pine", "reason": "willow-goods has no reviews or trade history, while oak-and-pine has a 3.4 average and 0 receipt warnings, though its recent reviews flag a shelf-life shortfall and a grade C item, so it\'s a judgment call."}'
+16:02:14 [buyer] 16:02:14 [choose] https://market.ourolabs.ai/shop/oak-and-pine: oak-and-pine: willow-goods has no reviews or trade history, while oak-and-pine has a 3.4 average and 0 receipt warnings, though its recent reviews flag a shelf-life shortfall and a grade C item, so it's a judgment 
+16:02:14 [buyer] 16:02:14 card: Oak & Pine skills=['Negotiate a purchase'] jsonrpc=https://market.ourolabs.ai/shop/oak-and-pine/a2a/0
+16:02:15 [buyer] 16:02:15 task beaa773b-27a2-4524-b733-0fd8bce9b702
+16:02:15 [buyer] 16:02:15 seller [TASK_STATE_REJECTED]: 'Sorry, we have none of that in stock.'
+16:02:15 [buyer] 16:02:15 ENDED without deal (TASK_STATE_REJECTED)
+16:02:15 [buyer] 16:02:15 stars 2 (walk): No deal (TASK_STATE_REJECTED).
+16:02:15 [buyer] {"shop": "https://market.ourolabs.ai/shop/oak-and-pine", "receipt": null, "stars": 2, "review": "No deal (TASK_STATE_REJECTED).", "accept": {"min_hours_left": 360.0}}
+16:02:17 [supply] {'sku': 'G6a95e5b9', 'qty': 2} refused: 429 {"error":"supply is closed; the next restock window opens in 133 s","wait":133.3,"opens_at":1793862240,"closes_at":1793862420}
+16:02:19 [market] ledger #2830438: no deal, stars 2, verified False, review not shown
+16:02:30 [order o-a3c6c7e1b60f] 과자, budget 13540, round 3, use within 180.0 h
+16:02:31 [kit] 50 shops in .market\shops.json, running market_buyer
+16:02:31 [buyer] 16:02:31 [order] 과자: 101 acceptable SKUs, 20/50 shops in stock
+16:02:39 [buyer] 16:02:39 pick harness: '{"pick": "myeonggi", "reason": "Two recent settled trades with matching claims, 4.9 average from 10 reviews, zero receipt warnings, and a 4.0 average from my four prior trades; buzllightyear is similar but has no trade history with me."}'
+16:02:39 [buyer] 16:02:39 [choose] https://lucas-stadium-gage-birds.trycloudflare.com: myeonggi: Two recent settled trades with matching claims, 4.9 average from 10 reviews, zero receipt warnings, and a 4.0 average from my four prior trades; buzllightyear is similar but has no trade history with 
+16:02:39 [buyer] 16:02:39 card: Ssadassa Shop skills=['Negotiate a purchase'] jsonrpc=https://lucas-stadium-gage-birds.trycloudflare.com/a2a/0
+16:02:39 [buyer] 16:02:39 task 3715dc4c-f945-46e9-86e9-b2cfe6e37f13
+16:02:39 [buyer] 16:02:39 seller [TASK_STATE_INPUT_REQUIRED]: "켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0), grade B with the market's certificate, 353 h of shelf life left. Asking 9965. Send your offer as a number."
+16:02:46 [buyer] 16:02:46 harness: '{"action": "offer", "price": 5979}'
+16:02:46 [buyer] 16:02:46 -> offer 5979
+16:02:46 [buyer] 16:02:46 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9846.'
+16:02:53 [buyer] 16:02:53 harness: '{"action": "offer", "price": 7200}'
+16:02:53 [buyer] 16:02:53 -> offer 7200
+16:02:53 [buyer] 16:02:53 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9704.'
+16:03:00 [buyer] 16:03:00 harness: '{"action": "offer", "price": 7800}'
+16:03:00 [buyer] 16:03:00 -> offer 7800
+16:03:00 [buyer] 16:03:00 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9618.'
+16:03:07 [buyer] 16:03:07 harness: '{"action": "offer", "price": 8300}'
+16:03:07 [buyer] 16:03:07 -> offer 8300
+16:03:07 [buyer] 16:03:07 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9567.'
+16:03:13 [buyer] 16:03:13 harness: '{"action": "offer", "price": 8700}'
+16:03:13 [buyer] 16:03:13 -> offer 8700
+16:03:14 [buyer] 16:03:14 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9536.'
+16:03:20 [buyer] 16:03:20 harness: '{"action": "offer", "price": 9000}'
+16:03:20 [buyer] 16:03:20 -> offer 9000
+16:03:20 [buyer] 16:03:20 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9518.'
+16:03:26 [buyer] 16:03:26 harness: '{"action": "offer", "price": 9200}'
+16:03:26 [buyer] 16:03:26 -> offer 9200
+16:03:26 [buyer] 16:03:26 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 9507.'
+16:03:33 [buyer] 16:03:33 harness: '{"action": "offer", "price": 9350}'
+16:03:33 [buyer] 16:03:33 -> offer 9350
+16:03:34 [buyer] 16:03:34 seller [TASK_STATE_COMPLETED]: 'Deal: 켈로그 프링글스 2+2+2+1 골라담기 GS단독 at 9350.'
+16:03:34 [buyer] 16:03:34 DEAL 과자: agreed 9350, receipt {'task': '3715dc4c-f945-46e9-86e9-b2cfe6e37f13', 'unit': 'u-d991e15ca722', 'item': 'G1831f2c0', 'price': 9350.0, 'claim': 'B', 'sig_seller': 'FtMpyZ4oCS5YiVRFF5WVypcavR7qCPy8hH3/lL5ZzcAAry7zWG/qmH1X3S6RPIjALvg2UujWbkH/IJkaFJ5KAw==', 'shop': 'Ssadassa Shop'}
+16:03:34 [buyer] 16:03:34 stars 5 (ok): Deal at 9350 after asking 9965; receipt matches the agreed price.
+16:03:34 [buyer] {"shop": "https://lucas-stadium-gage-birds.trycloudflare.com", "receipt": {"task": "3715dc4c-f945-46e9-86e9-b2cfe6e37f13", "unit": "u-d991e15ca722", "item": "G1831f2c0", "price": 9350.0, "claim": "B", "sig_seller": "FtMpyZ4oCS5YiVRFF5WVypcavR7qCPy8hH3/lL5ZzcAAry7zWG/qmH1X3S6RPIjALvg2UujWbkH/IJkaFJ5KAw==", "shop": "Ssadassa Shop"}, "stars": 5, "review": "Deal at 9350 after asking 9965; receipt matches the agreed price.", "accept": {"min_hours_left": 180.0}}
+16:03:34 [sign] sig_seller ok, sig_buyer added
+16:03:35 [acp] checkout ships unit u-d991e15ca722, claim B, certificate attached
+16:03:36 [acp] paid 9350 through https://lucas-stadium-gage-birds.trycloudflare.com/acp, settled at ledger #2830739: 켈로그 프링글스 2+2+2+1 골라담기 GS단독, grade B, 352.5 h of shelf life left
+16:03:36 [market] ledger #2830741: G1831f2c0 at 9350, stars 5, verified True, review accepted
+16:03:36 [order o-bf85e9c0757b] 가공/조리 육류, budget 18280, round 3, use within 540.0 h
+16:03:37 [kit] 51 shops in .market\shops.json, running market_buyer
+16:03:37 [buyer] 16:03:37 [order] 가공/조리 육류: 64 acceptable SKUs, 11/51 shops in stock
+16:03:37 [buyer] 16:03:37 [skip] bright-living: cheated me before
+16:03:37 [buyer] 16:03:37 [skip] elm-street: cheated me before
+16:03:45 [buyer] 16:03:45 pick harness: '{"pick": "outseop-26510122", "reason": "Highest average stars (4.6 from 10 reviews, 0 receipt warnings), and its recent review confirms the signed receipt matched the agreed price."}'
+16:03:45 [buyer] 16:03:45 [choose] https://gfsun-182-222-217-13.free.pinggy.net: outseop-26510122: Highest average stars (4.6 from 10 reviews, 0 receipt warnings), and its recent review confirms the signed receipt matched the agreed price.
+16:03:45 [buyer] 16:03:45 [price] G2560a8c9 list 17900, market avg 12007 (n=51), budget 18280 -> cap 12007
+16:03:47 [buyer] 16:03:47 card: outseop-26510122 skills=['Negotiate a stocked purchase'] jsonrpc=https://gfsun-182-222-217-13.free.pinggy.net/a2a/0
+16:03:56 [supply] {'sku': 'Gcd29cdd2', 'qty': 2} refused: 429 {"error":"supply is closed; the next restock window opens in 33 s","wait":33.7,"opens_at":1793862240,"closes_at":1793862420}
+16:04:05 [supply] 2 x [너트리] 건포도 1kg 칠레산 for 11367, balance 4988633
+16:04:14 [buyer] 16:04:14 task bd7a3b60-0a04-4399-8100-88edde1baf11
+16:04:14 [buyer] 16:04:14 seller [TASK_STATE_INPUT_REQUIRED]: '사세 직화K버팔로윙 1kg: asking 12502. SKU G2560a8c9; grade B at quote; shelf life left 499.64h; certificate included. Opening quote discount included: 12888 -> 12502; saving 386. Negotiable; no extra automatic discount. Short replies save tokens; send a number.'
+16:04:14 [supply] 2 x [양면착용] 방수 앞치마 카페 미용실 바리스타 주방 조끼형 미술 공방 고급 앞치마 for 15751, balance 4972882
+16:04:20 [buyer] 16:04:20 harness: '{"action": "offer", "price": 7200}'
+16:04:20 [buyer] 16:04:20 -> offer 7200
+16:04:29 [supply] 2 x 하루애 식이섬유 스틱젤리 2박스(총 28포) for 17981, balance 4954901
+16:04:38 [buyer] 16:04:38 seller [TASK_STATE_INPUT_REQUIRED]: 'Counteroffer: 11100.'
+16:04:45 [buyer] 16:04:45 harness: '{"action": "offer", "price": 8300}'
+16:04:45 [buyer] 16:04:45 -> offer 8300
