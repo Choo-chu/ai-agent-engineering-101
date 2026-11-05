@@ -84,6 +84,8 @@ def connect():
         db.execute("ALTER TABLE settles ADD COLUMN warranty_hours REAL")
     if "extra" not in [r[1] for r in db.execute("PRAGMA table_info(hourly)")]:
         db.execute("ALTER TABLE hourly ADD COLUMN extra TEXT")
+    if "mo_variant" not in [r[1] for r in db.execute("PRAGMA table_info(buyer_deals)")]:
+        db.execute("ALTER TABLE buyer_deals ADD COLUMN mo_variant TEXT")    # the min-offers variant
     if "reason" not in [r[1] for r in db.execute("PRAGMA table_info(cases)")]:
         db.execute("ALTER TABLE cases ADD COLUMN reason TEXT")
     return db

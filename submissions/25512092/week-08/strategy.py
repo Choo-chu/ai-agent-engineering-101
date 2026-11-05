@@ -152,7 +152,9 @@ VARIANTS = {
     "shop_normal_ask": ["1.00", "1.05", "1.10"],      # first ask = market average x variant (normal case)
     "shop_overstock_floor": ["1.00", "0.95"],         # floor = cost x variant (overstock case)
     "buyer_normal_first": ["0.50", "0.60", "0.70"],   # first offer = ask x variant (buyer normal case)
+    "buyer_min_offers": ["1", "3"],                   # counteroffers before the buyer may accept or walk
 }
+BUYER_COLUMN = {"buyer_normal_first": "variant", "buyer_min_offers": "mo_variant"}
 ADJUST_EVERY_S = 3 * 3600
 MIN_SAMPLES = 10        # every variant of a key needs this many negotiations before its weights move
 WEIGHT_STEP = 0.10
@@ -199,10 +201,11 @@ def performance(db, key, now=None):
                 out[v][0] += 1
                 out[v][1] += (amount - cost) if amount is not None else 0
     else:
+        col = BUYER_COLUMN[key]
         rows = db.execute(
-            "SELECT d.variant, d.list_price, (SELECT s.amount FROM settles s WHERE s.buyer=? AND s.sku=d.sku "
-            "AND s.ts BETWEEN d.ts - 60 AND d.ts + 900 ORDER BY s.ts LIMIT 1) FROM buyer_deals d "
-            "WHERE d.variant_key=? AND d.outcome != 'skip'", (ME_NAME, key)).fetchall()
+            f"SELECT d.{col}, d.list_price, (SELECT s.amount FROM settles s WHERE s.buyer=? AND s.sku=d.sku "
+            f"AND s.ts BETWEEN d.ts - 60 AND d.ts + 900 ORDER BY s.ts LIMIT 1) FROM buyer_deals d "
+            f"WHERE d.{col} IS NOT NULL AND d.buyer_case='normal' AND d.outcome != 'skip'", (ME_NAME,)).fetchall()
         for v, lp, amount in rows:
             if v in out:
                 out[v][0] += 1

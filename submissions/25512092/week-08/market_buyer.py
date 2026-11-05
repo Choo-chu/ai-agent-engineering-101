@@ -442,11 +442,17 @@ def main():
         variant, w = strategy.pick(variant_key)
         first_offer = float(variant)
         log(f"[variant] {variant_key} -> {variant} (weights {w})")
+        mo_variant, w2 = strategy.pick("buyer_min_offers")
+        log(f"[variant] buyer_min_offers -> {mo_variant} (weights {w2})")
+    else:
+        mo_variant = None
     tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
     for i, c in enumerate(tries):
         chosen = c
         first, cap, market = None, args.budget, ""
-        min_offers = min_offers_for(c["shop_score"], c["name"])
+        min_offers = min_offers_for(c["shop_score"], c["name"])      # 1 at shops where the rule keeps failing
+        if mo_variant is not None and min_offers > 1:
+            min_offers = int(mo_variant)
         offers = next((s.get("offers") for s in shops if s["name"] == c["name"]), None)
         if offers:  # Round 3: pick the SKU, then cap the price at the market average (never above it)
             o, avg, n = pick_sku(offers, stats, catalog, args.budget)
@@ -499,11 +505,11 @@ def main():
         log(f"[accept] goods with a {wh} h warranty: any grade")
     if accept:
         out["accept"] = accept
-    record_deal(chosen, sku, lp, case, variant_key, variant, min_offers, res, flag, wh)
+    record_deal(chosen, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant)
     print(json.dumps(out, ensure_ascii=False), flush=True)  # last line: the kit reads this
 
 
-def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, wh):
+def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant=None):
     """[15] / stage 2: one row per negotiation in market.db (buyer_deals)."""
     if res["deal"]:
         outcome, reason = "deal", flag
@@ -518,9 +524,11 @@ def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, w
     price = (res["receipt"] or {}).get("price") if res["deal"] else None
     try:
         db = connect()
-        db.execute("INSERT INTO buyer_deals VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        db.execute("INSERT INTO buyer_deals (ts, shop, shop_url, sku, list_price, buyer_case, variant_key, variant, "
+                   "min_offers, offers, outcome, reason, price, warranty_hours, mo_variant) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                    (time.time(), c["name"], c["url"], sku, lp, case, variant_key, variant, min_offers,
-                    res.get("offers", 0), outcome, reason, price, wh))
+                    res.get("offers", 0), outcome, reason, price, wh, mo_variant))
         db.commit()
         db.close()
     except Exception as e:
