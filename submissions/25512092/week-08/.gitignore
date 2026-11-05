@@ -3,3 +3,6 @@
 market.db
 market_stats.json
 market_stats.json.tmp
+market.db-*
+*.key
+.env*
