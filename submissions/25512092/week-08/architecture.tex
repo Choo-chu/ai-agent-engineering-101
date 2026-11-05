@@ -50,12 +50,12 @@
   {every 5 min (restock hook, 60 s)\\ case holds $\geq$ 30 min\\ overstock: in 2.5M, out 2.2M};
 
 % ---- where the harness (Claude haiku) acts: only inside Execute
-\node[harn] (hs) at ($(act)+(-5.6,-2.6)$) {\textbf{harness: haiku}\\ {\scriptsize seller counteroffers}\\ {\scriptsize after the code's first ask}\\ {\file seller\_r3.py}};
-\node[harn] (hb) at ($(act)+(5.6,-2.6)$)  {\textbf{harness: haiku}\\ {\scriptsize buyer offers after the}\\ {\scriptsize code's first offer}\\ {\file market\_buyer.py}};
+\node[harn] (hs) at ($(act)+(-6.6,-2.4)$) {\textbf{harness: haiku}\\ {\scriptsize seller counteroffers}\\ {\scriptsize after the code's first ask}\\ {\file seller\_r3.py}};
+\node[harn] (hb) at ($(act)+(6.6,-2.4)$)  {\textbf{harness: haiku}\\ {\scriptsize buyer offers after the}\\ {\scriptsize code's first offer}\\ {\file market\_buyer.py}};
 \draw[hio] (act) -- (hs);
 \draw[hio] (act) -- (hb);
-\node[font=\scriptsize, text=harness, align=center, below=2pt of act, yshift=-1.55cm]
-  {code guards every harness move: floor, budget/cap, $\geq$3 offers, accept policy};
+\node[font=\scriptsize, text=harness, align=center, text width=6.2cm] at ($(act)+(0,-2.6)$)
+  {code guards every harness move: floor, budget cap,\ minimum offers (1 or 3), accept policy, precheck};
 
 % ---- outside: the market
 \node[box, anchor=north east] (mkt) at (-8.6,5.4) {\textbf{Market} {\scriptsize market.ourolabs.ai}\\[2pt]
@@ -67,17 +67,17 @@
   A2A proxy + quick tunnel\\ ACP checkout (shop side)\\ AP2 mandates, accept policy\\
   hooks: seller, market\_buyer, restock\\ outbox $\rightarrow$ forum};
 \node[box, below=0.35cm of kit] (keep) {{\file keepalive.py}\\ restarts the kit when the\\ public card stops answering};
-\node[box, anchor=north east] (tools) at (-8.6,-3.2) {{\file tools/daily\_check.py}\\ {\file tools/competitor.py}\\ {\scriptsize read-only views of market.db}};
+\node[box, anchor=north east] (tools) at (-8.6,-3.2) {{\file tools/daily\_check.py}\\ {\file tools/competitor.py}\\ {\file tools/throughput.py}\\ {\scriptsize read-only views of market.db}};
 
 \draw[io] (mkt.east) to[out=0,in=150] node[above, font=\scriptsize, sloped]{every 5 min} (obs.west);
 \draw[io] (kit.west) to[out=180,in=30] node[above, font=\scriptsize, sloped]{inventory, orders} (obs.east);
 \draw[io] (act.east) to[out=0,in=-110] node[below right, font=\scriptsize, align=left]{A2A, receipts,\\ \{"buy": [...]\}, outbox} (kit.south west);
-\draw[io] (kit.north) to[out=110,in=70] node[above, font=\scriptsize]{ACP + AP2 mandates $\rightarrow$ /api/settle, supply, posts} (mkt.north);
+\draw[io] (kit.north) -- ++(0,0.7) -| node[pos=0.25, above, font=\scriptsize]{ACP + AP2 mandates $\rightarrow$ /api/settle, supply, posts} (mkt.north);
 \draw[io] (keep.north) -- (kit.south);
 \draw[io, dashed] (rec.west) to[out=180,in=0] (tools.east);
 
 % legend
-\node[font=\scriptsize, align=left, anchor=north west] at (-12.3,-6.6)
+\node[font=\scriptsize, align=center, anchor=north] at (0,-8.0)
   {\tikz{\draw[flow] (0,0)--(0.6,0);} the loop (code)\quad
    \tikz{\draw[hio] (0,0)--(0.6,0);} harness (Claude haiku) call\quad
    \tikz{\draw[io] (0,0)--(0.6,0);} data / HTTP};
