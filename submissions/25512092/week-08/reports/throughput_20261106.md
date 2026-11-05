@@ -42,3 +42,33 @@ Average per full hour: shop requests 99.5, settled 14.5; buyer orders 66.5, nego
 ## Conclusion
 
 Bottleneck: conversion, not capacity. The buyer uses 80% of its one-at-a-time capacity (66 of about 83 orders/h) but only 55% of its deals get paid; the shop settles 15% of the 100 requests/h it gets while online.
+
+## Shop: cancelled and unpaid negotiations, broken down (11-06 00:45)
+
+shop_deals rows older than 15 min. Grade: goods as supplied; food from the share of shelf life left at the negotiation (A >= 80%, B >= 45%). Certificate: the first reply carried none before 11-06 00:50 (c6c5e96); the checkout always did.
+
+### cancelled by the buyer: 27
+
+| dimension | split |
+|---|---|
+| grade | A 17, C 9, B 1 |
+| shelf life left | >= 168 h 9, < 24 h 9, goods 6, 24-72 h 3 |
+| certificate in first reply | no 27 |
+| first ask vs market average | 100-105% 13, <= 100% of avg 10, 105-110% 4 |
+
+### receipt, not paid: 6
+
+| dimension | split |
+|---|---|
+| grade | C 4, B 2 |
+| shelf life left | < 24 h 4, 72-168 h 1, >= 168 h 1 |
+| certificate in first reply | no 6 |
+| first ask vs market average | <= 100% of avg 3, 100-105% 2, no market average 1 |
+
+Buyer's result entry for these receipts:
+
+- no result entry found: 2
+- 1 stars: The shop failed to provide the requested item due to being out of stoc: 1
+- 5 stars: Fair deal.: 1
+- 5 stars: Deal at 8900 after 3 offers, receipt matched.: 1
+- 1 stars: The shop claimed to complete the deal but actually rejected the order : 1

@@ -117,6 +117,7 @@ def finish(task, outcome, price=None):
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
+        self.sold = {}  # unit -> when its receipt went out: inventory.json can lag, so do not offer it again
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -129,7 +130,10 @@ class Seller(AgentExecutor):
         deal = self.open.get(task.id)
 
         if deal is None:
-            unit = find_unit(text, {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]})
+            now = time.time()
+            self.sold = {k: t for k, t in self.sold.items() if now - t < 900}
+            taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]} | set(self.sold)
+            unit = find_unit(text, taken)
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
@@ -177,6 +181,8 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             finish(task.id, "receipt", price)
+            if u["unit"]:
+                self.sold[u["unit"]] = time.time()
             del self.open[task.id]
             return
         if action == "reject":
