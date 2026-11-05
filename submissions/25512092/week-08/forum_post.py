@@ -4,10 +4,14 @@ The market accepts one post per 5 minutes per role, so each role has its own slo
 
   shop slot   0  food clearance    a food SKU near expiry whose markdown stepped down (pricing.clearance)
               1  aging markdown    a non-food SKU whose 6-hourly markdown stepped down (pricing.aging)
+              1  endgame markdown  the last 48 h of the round: every 6-hourly step of the store-wide floor
               -  comparison ad     when the queue is empty: my floor vs the 2-hour market average, my prices only
-  buyer slot  0  ledger record     a shop with >= 2 new settles whose grade claim the market marked dishonest
-                                   (claim_honest = false); ledger numbers only, at most once per shop per 6 h
-              -  market report     when the queue is empty: the 3 busiest categories of the last 2 hours
+  buyer slot  rotates purchase record -> market report -> ledger record; a turn with nothing to post is skipped
+              purchase record   my newest settled purchase not reported yet, with its ledger ref
+              market report     the 3 busiest categories of the last 2 hours (not the same 3 as last time)
+              ledger record     a shop with >= 2 new settles whose grade claim the market marked dishonest
+                                (claim_honest = false); ledger numbers only, once per shop per 6 h, and at
+                                least 30 min after the previous one
 
 Queued items keep only the event; the text is written when the item leaves, from the prices of that moment, and
 an item whose stock is gone is dropped. The promo lines are sales talk for the game (also in seller_r3.py's first
@@ -20,7 +24,7 @@ import random
 import sqlite3
 import time
 
-from pricing import NEAR_EXPIRY_H, aging, clearance, floor, held_cost
+from pricing import NEAR_EXPIRY_H, aging, clearance, endgame_step, floor, held_cost
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "market.db")
@@ -31,6 +35,8 @@ MIN_N = 3                        # an average needs this many deals in the windo
 CALLOUT_MIN_NEW = 2
 CALLOUT_EVERY_S = 6 * 3600
 AD_REPEAT_S = 3600               # the same SKU is advertised at most once an hour
+CALLOUT_GAP_S = 1800             # at least 30 min between two ledger records
+BUYER_TURNS = ["purchase", "report", "callout"]
 
 PROMO = [
     "요즘 SNS 인플루언서들 사이에서 입소문 난 바로 그 제품!",
@@ -52,7 +58,8 @@ def _state(state_dir):
     except (OSError, ValueError):
         st = {}
     for k, v in {"buyer_ts": 0, "shop_ts": 0, "queue": {"shop": [], "buyer": []}, "seen": [],
-                 "callout": {}, "ads": {}, "report_cats": []}.items():
+                 "callout": {}, "ads": {}, "report_cats": [], "posted": [], "buyer_turn": 0,
+                 "callout_ts": 0}.items():
         st.setdefault(k, v)
     return path, st
 
@@ -112,6 +119,10 @@ def collect(st, inv, db, log):
         if a is not None:
             _enqueue(st, "shop", 1, f"aging:{u['sku']}:{step}", "aging", log, id=u["sku"])
 
+    step = endgame_step(now)
+    if step is not None and _live(inv):
+        _enqueue(st, "shop", 1, f"endgame:{step}", "endgame", log, id="all")
+
     rows = db.execute("SELECT seq, COALESCE(shop, shop_url) FROM settles WHERE claim_honest=0 AND "
                       "COALESCE(shop, shop_url) IS NOT NULL AND COALESCE(shop, '') != ? ORDER BY seq", (ME,)).fetchall()
     by_shop = {}
@@ -149,6 +160,49 @@ def render_markdown(it, inv, kind):
         tail = "6시간마다 10%씩 더 내려갑니다"
     return {"post": head + f"(시장 평균 {int(base):,}원 대비 {off}% 할인, {tail}) {promo()} "
                            f"주문에 '{u['sku']}'를 넣어 불러 주세요.", "refs": [], "as": "shop"}
+
+
+def render_endgame(inv):
+    now, stock = time.time(), held_cost(inv)
+    by_sku = {}
+    for u in _live(inv):
+        by_sku.setdefault(u["sku"], []).append(u)
+    if not by_sku:
+        return None
+    top = sorted(by_sku.values(), key=len, reverse=True)[:3]
+    items = "; ".join(f"{_short(us[0]['name'], 20)} ({us[0]['sku']}) {floor(us[0], _price(us[0]['sku']), stock, now)[0]:,}원부터"
+                      for us in top)
+    return {"post": f"[Choo Shop 폐점 정리] 라운드 종료 전 전 품목 정리 중, 6시간마다 더 내려갑니다. {items}. "
+                    f"{promo()} 주문에 SKU를 넣어 불러 주세요.", "refs": [], "as": "shop"}
+
+
+def purchase_record(db, catalog, st):
+    """My newest settled purchase that I have not reported yet."""
+    done = set(st["posted"])
+    row = next((r for r in db.execute("SELECT seq, sku, name, grade, amount, market_avg_at, shop FROM settles "
+                                      "WHERE buyer=? ORDER BY seq DESC LIMIT 50", (ME,)) if r[0] not in done), None)
+    if not row:
+        return None
+    seq, sku, name, grade, amount, avg, shop = row
+    lp = (catalog.get(sku) or {}).get("list_price")
+    off = f", 정가 {lp:,}원 대비 {round(100 * (1 - amount / lp))}% 할인" if lp else ""
+    mk = f" | 거래 당시 시장 평균 {round(avg):,}원" if avg else ""
+    st["posted"] = (st["posted"] + [seq])[-300:]
+    return {"post": f"[구매 기록] {name} ({sku}) | {amount:,}원{off} | 등급 {grade}{mk} | 판매: {shop or '?'} | ledger #{seq}",
+            "refs": [seq], "as": "buyer"}
+
+
+def buyer_turn(kind, db, catalog, st):
+    if kind == "purchase":
+        return purchase_record(db, catalog, st), None
+    if kind == "report":
+        return market_report(db, catalog, st), None
+    if time.time() - st["callout_ts"] < CALLOUT_GAP_S:
+        return None, None
+    p, it = _pop(st, "buyer", lambda it: render_callout(it, db, st))
+    if p:
+        st["callout_ts"] = time.time()
+    return p, it
 
 
 def render_callout(it, db, st):
@@ -240,19 +294,23 @@ def run(state_dir, inv, catalog, log=print):
     try:
         collect(st, inv, db, log)
         if now - st["shop_ts"] >= POST_EVERY_S:
-            p, it = _pop(st, "shop", lambda it: render_markdown(it, inv, it["kind"]))
+            p, it = _pop(st, "shop", lambda it: render_endgame(inv) if it["kind"] == "endgame"
+                         else render_markdown(it, inv, it["kind"]))
             p = p or comparison_ad(inv, db, st)
             if p:
                 _send(state_dir, p)
                 st["shop_ts"] = now
                 log(f"[forum] shop {it['kind'] if it else 'comparison ad'}: {p['post'][:110]}")
         if now - st["buyer_ts"] >= POST_EVERY_S:
-            p, it = _pop(st, "buyer", lambda it: render_callout(it, db, st))
-            p = p or market_report(db, catalog, st)
-            if p:
-                _send(state_dir, p)
-                st["buyer_ts"] = now
-                log(f"[forum] buyer {it['kind'] if it else 'market report'}: {p['post'][:110]}")
+            for i in range(len(BUYER_TURNS)):          # this turn first; skip turns with nothing to post
+                k = (st["buyer_turn"] + i) % len(BUYER_TURNS)
+                p, _ = buyer_turn(BUYER_TURNS[k], db, catalog, st)
+                if p:
+                    st["buyer_turn"] = k + 1
+                    _send(state_dir, p)
+                    st["buyer_ts"] = now
+                    log(f"[forum] buyer {BUYER_TURNS[k]}: {p['post'][:110]}")
+                    break
     finally:
         db.close()
         with open(path, "w", encoding="utf-8") as f:

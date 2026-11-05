@@ -56,9 +56,15 @@ def connect():
     CREATE TABLE IF NOT EXISTS broken (seq INTEGER PRIMARY KEY, ts REAL, buyer TEXT, shop_url TEXT, shop TEXT,
         sku TEXT, hours_after_sale REAL, warranty_hours REAL, refunded INTEGER);
     CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+    CREATE TABLE IF NOT EXISTS hourly (hour REAL PRIMARY KEY, sales INTEGER, revenue INTEGER, profit INTEGER,
+        low_cost INTEGER, low_profit INTEGER, high_cost INTEGER, high_profit INTEGER, cats TEXT,
+        stock_cost INTEGER, cash INTEGER);
+    CREATE TABLE IF NOT EXISTS policy (ts REAL PRIMARY KEY, high_share REAL, high_max INTEGER, reason TEXT);
     CREATE TABLE IF NOT EXISTS cash (ts REAL PRIMARY KEY, balance INTEGER, stock_cost INTEGER, units INTEGER,
         storage_per_day INTEGER);
     """)
+    if "unit" not in [r[1] for r in db.execute("PRAGMA table_info(settles)")]:
+        db.execute("ALTER TABLE settles ADD COLUMN unit TEXT")       # links my sales to my_stock (cost)
     return db
 
 
@@ -89,6 +95,23 @@ def fetch_ledger(c, after):
         after = page[-1]["seq"]
 
 
+def backfill_units(db):
+    """Settles of my shop stored before the unit column existed: read their ledger entry again."""
+    rows = db.execute("SELECT seq FROM settles WHERE unit IS NULL AND (shop=? OR shop_url IN "
+                      "(SELECT shop_url FROM settles WHERE shop=?)) LIMIT 50", (ME, ME)).fetchall()
+    if not rows:
+        return
+    with httpx.Client(timeout=30) as c:
+        for (seq,) in rows:
+            try:
+                page = c.get(f"{MARKET}/api/ledger", params={"after": seq - 1}).json()
+            except Exception:
+                continue
+            e = next((e for e in page if e["seq"] == seq), None)
+            unit = ((e or {}).get("data") or {}).get("unit") or "-"
+            db.execute("UPDATE settles SET unit=? WHERE seq=?", (unit, seq))
+
+
 def refresh(force=False, log=print):
     db = connect()
     now = time.time()
@@ -117,12 +140,14 @@ def refresh(force=False, log=print):
         sku = d.get("sku") or d.get("item")
         avg, _ = sku_avg(db, sku, e["ts"])
         url = (d.get("shop") or "").rstrip("/")
-        db.execute("INSERT OR IGNORE INTO settles VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        db.execute("INSERT OR IGNORE INTO settles VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                    (e["seq"], e["ts"], d.get("buyer"), url, names.get(url), sku, d.get("name"), d.get("grade"),
-                    d.get("amount"), None if d.get("claim_honest") is None else int(bool(d["claim_honest"])), avg))
+                    d.get("amount"), None if d.get("claim_honest") is None else int(bool(d["claim_honest"])), avg,
+                    d.get("unit")))
         added += 1
     if entries:
         db.execute("INSERT OR REPLACE INTO meta VALUES ('last_seq', ?)", (str(entries[-1]["seq"]),))
+    backfill_units(db)
 
     # snapshot: per SKU sold in the last 30 minutes, plus every SKU I hold or bought before
     stats = {"ts": now, "skus": {}, "hot": [], "my_buys": {}}

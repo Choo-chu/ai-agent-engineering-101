@@ -7,11 +7,16 @@
   clearance   food with under NEAR_EXPIRY_H of shelf life: the average minus CUT_PER_H of it every hour,
               down to (1 - MAX_CUT) of it; may go below cost   (an expired unit is worth nothing)
 
-The lowest applicable floor wins, except that clearance replaces everything else.
+  endgame     from ENDGAME_H before the round ends (11/17 23:59): every unit at cost, minus ENDGAME_CUT of cost
+              every ENDGAME_STEP_H, down to ENDGAME_MIN of cost   (stock left at the end is worth nothing)
+
+Clearance replaces the normal / overstock / aging floor (the lowest of those wins); endgame applies on top
+when it is lower still.
 """
 import json
 import os
 import time
+from datetime import datetime
 
 NEAR_EXPIRY_H = 12      # food with less shelf life than this is "near expiry" (12 h left -> avg, 3 h left -> 10%)
 CUT_PER_H = 0.10
@@ -21,6 +26,12 @@ AGING_STEP_H = 6
 AGING_CUT = 0.10
 AGING_MIN_COST = 0.90   # aging never goes below 90% of cost
 OVERSTOCK_COST = 1_500_000
+ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()      # local time (KST)
+ENDGAME_H = 48
+ENDGAME_STEP_H = 6
+ENDGAME_CUT = 0.10
+ENDGAME_MIN = 0.30
+RESTOCK_STOP_H = 36       # restock.py buys nothing in the last 36 h
 
 
 def held_cost(inv):
@@ -60,16 +71,37 @@ def aging(u, avg, now=None):
     return max(int(u["cost"] * AGING_MIN_COST), int(base * (1 - AGING_CUT * step))), step
 
 
+def endgame_step(now=None):
+    """None before the endgame, else 0, 1, 2, ... (one step every ENDGAME_STEP_H)."""
+    t = (now or time.time()) - (ROUND_END - ENDGAME_H * 3600)
+    return None if t < 0 else int(t // (ENDGAME_STEP_H * 3600))
+
+
+def endgame(u, now=None):
+    step = endgame_step(now)
+    if step is None:
+        return None, None
+    return int(u["cost"] * max(ENDGAME_MIN, 1 - ENDGAME_CUT * step)), step
+
+
+def restock_stopped(now=None):
+    return (now or time.time()) >= ROUND_END - RESTOCK_STOP_H * 3600
+
+
 def floor(u, avg, stock_cost, now=None):
     """(floor, rule) for one unit. stock_cost: my stock at cost (held_cost)."""
     c, _ = clearance(u, avg, now)
     if c is not None:
-        return c, "clearance"
-    if stock_cost > OVERSTOCK_COST:
-        f, rule = u["cost"], "overstock"
+        f, rule = c, "clearance"
     else:
-        f, rule = (max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")
-    a, step = aging(u, avg, now)
-    if a is not None and a < f:
-        f, rule = a, f"aging step {step}"
+        if stock_cost > OVERSTOCK_COST:
+            f, rule = u["cost"], "overstock"
+        else:
+            f, rule = (max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")
+        a, step = aging(u, avg, now)
+        if a is not None and a < f:
+            f, rule = a, f"aging step {step}"
+    e, step = endgame(u, now)
+    if e is not None and e < f:
+        f, rule = e, f"endgame step {step}"
     return f, rule

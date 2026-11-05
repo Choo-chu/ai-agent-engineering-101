@@ -2,9 +2,10 @@
 
 1. Refreshes market.db / market_stats.json (at most once per 5 minutes, market_db.REFRESH_S).
 2. Records the units my shop holds in market.db (my_stock: cost and the market average when they arrived).
-3. Buys more of what sells fast across the market: SKUs ranked by units sold in the last 5 and 30 minutes,
-   kept only when the market average is above the expected supply cost (the shop sells at or above
-   the market average, see seller_r3.py), so every sale should make money.
+3. Cash snapshot (market_db.record_cash), hourly/daily sales reports (sales_report.py), forum posts (forum_post.py).
+4. Buys more of what sells fast across the market, only from cash above CUSHION, only while stock at cost is
+   under MAX_STOCK_COST, never in the last 36 h of the round. Low-price SKUs (unit cost <= 100k) as before;
+   high-price SKUs (100k-500k) in busy categories, one unit each, within the policy's share and unit cap.
 Last line: {"buy": [{"sku": ..., "qty": ...}, ...]} (the kit buys at most 10 lines per run).
 """
 import argparse
@@ -17,7 +18,10 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import forum_post  # noqa: E402
-from market_db import load_stats, price_of, record_cash, record_stock, refresh  # noqa: E402
+import pricing  # noqa: E402
+import sales_report  # noqa: E402
+from market_db import connect, load_stats, price_of, record_cash, record_stock, refresh  # noqa: E402
+from sales_report import HIGH_MAX, HIGH_MIN  # noqa: E402
 
 COST_SHARE = {"goods": 0.60, "food": 0.50}   # expected cost / list price, averaged over the grade draw
 MIN_MARGIN = 0.10      # market average must beat the expected cost by 10%
@@ -25,13 +29,15 @@ MIN_SOLD_30M = 3       # market-wide units sold in 30 min to count as "selling"
 MY_SHARE = 0.25        # share of the market's sales I plan stock for, until the next window (20 min)
 MAX_QTY = 20
 SPEND_SHARE = 0.4      # at most this share of the spendable balance per run
-CUSHION = 1_000_000    # never spend below this balance; under it restock stops entirely
+CUSHION = 1_500_000    # cash reserve: restock spends only (cash - CUSHION)
+WARN_CASH = 1_000_000  # under this a warning goes to the log on every run
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
 MAX_BREAK = 0.15       # skip goods that break this often after a sale
 WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
 MAX_STOCK_COST = 1_500_000   # never hold more than this much stock at cost (11/05: the shop was offline for
                              # 7 h while restock kept buying, and 4.1M of the 5M start sat on the shelf)
-MAX_UNIT_COST = 100_000      # skip big-ticket SKUs: one unsold mattress ties up a third of a day's budget
+# unit cost <= HIGH_MIN is low price; HIGH_MIN..HIGH_MAX is high price, bought only in busy categories, with
+# its share of the budget and its unit cap from sales_report.policy() (30% and 2 at the start, adjusted daily)
 
 
 def log(msg):
@@ -65,13 +71,21 @@ def main():
         record_cash(inv, log=log)
     except Exception as e:
         log(f"record_cash failed: {e}")
-    if inv.get("balance", 0) < CUSHION:
-        log(f"WARNING cash {inv.get('balance', 0):,} < {CUSHION:,}: restock stopped until sales bring it back")
+    if inv.get("balance", 0) < WARN_CASH:
+        log(f"WARNING cash {inv.get('balance', 0):,} < {WARN_CASH:,}: restock stopped until sales bring it back")
+    try:
+        sales_report.tick(inv, catalog, log=log)
+    except Exception as e:
+        log(f"sales report failed: {e}")
     try:
         forum_post.run(state, inv, catalog, log=log)
     except Exception as e:
         log(f"forum post failed: {e}")
 
+    if pricing.restock_stopped():
+        log("last 36 h of the round: restock stopped, selling what is left")
+        print(json.dumps({"buy": []}))
+        return
     if inv.get("balance", 0) < CUSHION:
         print(json.dumps({"buy": []}))
         return
@@ -81,54 +95,87 @@ def main():
         print(json.dumps({"buy": []}))           # window not open soon: nothing to plan yet
         return
 
-    held = {}
+    held, held_high = {}, 0
     for u in units:
         if u.get("grade") != "expired":
             held[u["sku"]] = held.get(u["sku"], 0) + 1
+            held_high += u.get("cost", 0) > HIGH_MIN
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
     stats = load_stats()
-    held_cost = sum(u.get("cost", 0) for u in units if u.get("grade") != "expired")
-    spend_left = min(max(0, (inv.get("balance", 0) - CUSHION)) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
-    if spend_left <= 0:
-        log(f"stock at cost {held_cost:,} >= cap {MAX_STOCK_COST:,} (or balance under cushion): no restock")
+    held_cost = pricing.held_cost(inv)
+    if held_cost >= MAX_STOCK_COST:
+        log(f"stock at cost {held_cost:,} >= cap {MAX_STOCK_COST:,}: no restock (low/high split waits)")
         print(json.dumps({"buy": []}))
         return
+    budget = min((inv.get("balance", 0) - CUSHION) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
+    if budget <= 0:
+        log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")
+        print(json.dumps({"buy": []}))
+        return
+    pol = sales_report.policy()
+    left = {"high": budget * pol["high_share"], "low": budget * (1 - pol["high_share"])}
+    high_room = max(0, pol["high_max"] - held_high)
+    hot_cats = busy_categories(catalog)
+    log(f"budget {int(budget):,}: low {int(left['low']):,} / high {int(left['high']):,} "
+        f"({pol['high_share']:.0%}), high-price units {held_high}/{pol['high_max']}, busy categories {hot_cats}")
 
     wanted_cats = set(stats.get("wanted_cats", []))
     wanted = set(stats.get("wanted", [])) | {k for k in stats["skus"]
                                             if (catalog.get(k) or {}).get("category", "").split(">")[-1] in wanted_cats}
+    hot = list(stats.get("hot", []))
+    rest = sorted(set(stats["skus"]) - set(hot), key=lambda k: -stats["skus"][k]["sold_30m"])
     plan = []
-    for sku in list(stats.get("hot", [])) + sorted(wanted - set(stats.get("hot", []))):
+    for sku in hot + sorted(wanted - set(hot)) + rest:
         s = stats["skus"].get(sku)
-        if not s:
+        c = catalog.get(sku) or {}
+        if not s or not c.get("list_price"):
             continue
         forum = sku in wanted
-        c = catalog.get(sku) or {}
         avg, n = price_of(sku, stats)
-        if avg is None or (s["sold_30m"] < MIN_SOLD_30M and not forum) or not c.get("list_price"):
-            continue
-        if stats.get("sku_break", {}).get(sku, 0) > MAX_BREAK:
+        if avg is None or stats.get("sku_break", {}).get(sku, 0) > MAX_BREAK:
             continue
         kind = c.get("kind", "goods")
         if kind == "food" and (c.get("shelf_hours") or 0) < FOOD_MIN_SHELF_H:
             continue
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
-        if cost > MAX_UNIT_COST or avg < cost * (1 + MIN_MARGIN):
+        if cost > HIGH_MAX or avg < cost * (1 + MIN_MARGIN):
             continue
-        target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
-        qty = min(MAX_QTY, target - held.get(sku, 0))
+        if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
+            if (c.get("category") or "").split(">")[-1] not in hot_cats or s["sold_30m"] < 1 or held.get(sku):
+                continue
+            tier, qty = "high", min(1, high_room)
+        else:                                     # low price: as before, hot or wanted on the forum
+            if sku not in hot and not forum or (s["sold_30m"] < MIN_SOLD_30M and not forum):
+                continue
+            target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
+            tier, qty = "low", min(MAX_QTY, target - held.get(sku, 0))
+        qty = min(qty, int(left[tier] // cost))
         if qty <= 0:
             continue
-        qty = min(qty, int(spend_left // cost))
-        if qty <= 0:
-            continue
-        spend_left -= qty * cost
+        left[tier] -= qty * cost
+        if tier == "high":
+            high_room -= qty
         plan.append({"sku": sku, "qty": qty})
-        log(f"{s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
+        log(f"[{tier}] {s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
             f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''} -> buy {qty}")
         if len(plan) == 10:
             break
     print(json.dumps({"buy": plan}))
+
+
+def busy_categories(catalog, top=5):
+    """The leaf categories with the most settles in the last 2 hours, market-wide."""
+    db = connect()
+    try:
+        rows = db.execute("SELECT sku, COUNT(*) FROM settles WHERE ts>=? GROUP BY sku", (time.time() - 7200,)).fetchall()
+    finally:
+        db.close()
+    cats = {}
+    for sku, n in rows:
+        leaf = ((catalog.get(sku) or {}).get("category") or "").split(">")[-1]
+        if leaf:
+            cats[leaf] = cats.get(leaf, 0) + n
+    return sorted(cats, key=cats.get, reverse=True)[:top]
 
 
 if __name__ == "__main__":
