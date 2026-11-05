@@ -11,6 +11,7 @@ import base64
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 import uvicorn
@@ -192,11 +193,22 @@ class Seller(AgentExecutor):
             print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
             price = reserve
         deal["ask"] = int(price)
-        wty = " Grade A, with a forty-eight hour warranty from our balance." if deal["warranty"] else ""
-        reply = (f"{u['name']}: {promo()}{wty} Asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
-                 else f"Counteroffer: {deal['ask']}.")
+        first = len(deal["lines"]) == 1
+        if first:                                       # what a buyer's accept policy checks, before any offer
+            facts = f" SKU {u['sku']}, grade {u['grade']}"
+            if u.get("expires_at"):
+                facts += f", {max(0, (u['expires_at'] - time.time()) / 3600):.1f} h shelf life left"
+            facts += (", forty-eight hour warranty from our balance" if deal["warranty"] else ", no warranty")
+            facts += "; the market certificate of this unit is in the data part."
+            reply = f"{u['name']}: {promo()}{facts} Asking {deal['ask']}. Send your offer as a number."
+        else:
+            reply = f"Counteroffer: {deal['ask']}."
         deal["lines"].append(f"you: {reply}")
-        await up.requires_input(say(reply))
+        if first and u.get("cert"):                     # [C] the certificate goes with the first reply too
+            await up.requires_input(up.new_agent_message(parts=[new_text_part(reply),
+                                                                new_data_part({"unit": u["unit"], "cert": u["cert"]})]))
+        else:
+            await up.requires_input(say(reply))
 
     async def cancel(self, context, event_queue):
         task = context.current_task
