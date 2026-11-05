@@ -19,6 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import forum_post  # noqa: E402
 import pricing  # noqa: E402
+import strategy  # noqa: E402
 import sales_report  # noqa: E402
 from market_db import connect, load_stats, price_of, record_cash, record_stock, refresh  # noqa: E402
 from sales_report import HIGH_MAX, HIGH_MIN  # noqa: E402
@@ -29,13 +30,12 @@ MIN_SOLD_30M = 3       # market-wide units sold in 30 min to count as "selling"
 MY_SHARE = 0.25        # share of the market's sales I plan stock for, until the next window (20 min)
 MAX_QTY = 20
 SPEND_SHARE = 0.4      # at most this share of the spendable balance per run
-CUSHION = 1_500_000    # cash reserve: restock spends only (cash - CUSHION)
-WARN_CASH = 1_000_000  # under this a warning goes to the log on every run
+CUSHION = strategy.CASH_RESERVE    # 1.5M: restock spends only (cash - CUSHION); under it the case is cash_low
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
 MAX_BREAK = 0.15       # skip goods that break this often after a sale
 WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
-MAX_STOCK_COST = 1_500_000   # never hold more than this much stock at cost (11/05: the shop was offline for
-                             # 7 h while restock kept buying, and 4.1M of the 5M start sat on the shelf)
+MAX_STOCK_COST = strategy.STOCK_CAP   # 2.5M: at or over it the case is overstock (11/05: the shop was offline
+                                      # 7 h while restock kept buying, and 4.1M of the 5M start sat on the shelf)
 # unit cost <= HIGH_MIN is low price; HIGH_MIN..HIGH_MAX is high price, bought only in busy categories, with
 # its share of the budget and its unit cap from sales_report.policy() (30% and 2 at the start, adjusted daily)
 
@@ -71,8 +71,10 @@ def main():
         record_cash(inv, log=log)
     except Exception as e:
         log(f"record_cash failed: {e}")
-    if inv.get("balance", 0) < WARN_CASH:
-        log(f"WARNING cash {inv.get('balance', 0):,} < {WARN_CASH:,}: restock stopped until sales bring it back")
+    try:
+        strategy.tick(inv, log=log)
+    except Exception as e:
+        log(f"strategy tick failed: {e}")
     try:
         sales_report.tick(inv, catalog, log=log)
     except Exception as e:
@@ -82,11 +84,10 @@ def main():
     except Exception as e:
         log(f"forum post failed: {e}")
 
-    if pricing.restock_stopped():
-        log("last 36 h of the round: restock stopped, selling what is left")
-        print(json.dumps({"buy": []}))
-        return
-    if inv.get("balance", 0) < CUSHION:
+    case = strategy.shop_case(inv)
+    if case in ("cash_low", "overstock") or pricing.restock_stopped():
+        if (inv.get("restock") or {}).get("open"):
+            log(f"case {case}{', last 36 h' if pricing.restock_stopped() else ''}: no restock")
         print(json.dumps({"buy": []}))
         return
     r = inv.get("restock") or {}
@@ -103,10 +104,6 @@ def main():
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
     stats = load_stats()
     held_cost = pricing.held_cost(inv)
-    if held_cost >= MAX_STOCK_COST:
-        log(f"stock at cost {held_cost:,} >= cap {MAX_STOCK_COST:,}: no restock (low/high split waits)")
-        print(json.dumps({"buy": []}))
-        return
     budget = min((inv.get("balance", 0) - CUSHION) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
     if budget <= 0:
         log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")

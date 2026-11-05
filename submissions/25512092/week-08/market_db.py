@@ -60,11 +60,28 @@ def connect():
         low_cost INTEGER, low_profit INTEGER, high_cost INTEGER, high_profit INTEGER, cats TEXT,
         stock_cost INTEGER, cash INTEGER);
     CREATE TABLE IF NOT EXISTS policy (ts REAL PRIMARY KEY, high_share REAL, high_max INTEGER, reason TEXT);
+    CREATE TABLE IF NOT EXISTS cases (ts REAL PRIMARY KEY, shop_case TEXT, buyer_case TEXT, cash INTEGER,
+        stock_cost INTEGER);
+    CREATE TABLE IF NOT EXISTS buyer_deals (ts REAL, shop TEXT, shop_url TEXT, sku TEXT, list_price INTEGER,
+        buyer_case TEXT, variant_key TEXT, variant TEXT, min_offers INTEGER, offers INTEGER, outcome TEXT,
+        reason TEXT, price INTEGER, warranty_hours REAL);
+    CREATE TABLE IF NOT EXISTS shop_deals (task TEXT PRIMARY KEY, ts REAL, shop_case TEXT, variant_key TEXT,
+        variant TEXT, sku TEXT, unit TEXT, cost INTEGER, first_ask INTEGER, floor INTEGER, outcome TEXT,
+        price INTEGER, warranty_hours REAL);
+    CREATE TABLE IF NOT EXISTS my_broken (broke_at INTEGER, name TEXT, buy_seq INTEGER, sku TEXT, shop TEXT,
+        paid INTEGER, warranty_hours REAL, hours_after_buy REAL, in_warranty INTEGER, refunded INTEGER,
+        PRIMARY KEY (broke_at, name));
+    CREATE TABLE IF NOT EXISTS want_replies (ts REAL, post_id INTEGER PRIMARY KEY, category TEXT, sku TEXT);
+    CREATE TABLE IF NOT EXISTS variant_weights (ts REAL, key TEXT, variant TEXT, weight REAL, metric REAL,
+        n INTEGER, reason TEXT);
     CREATE TABLE IF NOT EXISTS cash (ts REAL PRIMARY KEY, balance INTEGER, stock_cost INTEGER, units INTEGER,
         storage_per_day INTEGER);
     """)
-    if "unit" not in [r[1] for r in db.execute("PRAGMA table_info(settles)")]:
+    cols = [r[1] for r in db.execute("PRAGMA table_info(settles)")]
+    if "unit" not in cols:
         db.execute("ALTER TABLE settles ADD COLUMN unit TEXT")       # links my sales to my_stock (cost)
+    if "warranty_hours" not in cols:
+        db.execute("ALTER TABLE settles ADD COLUMN warranty_hours REAL")
     return db
 
 
@@ -140,14 +157,15 @@ def refresh(force=False, log=print):
         sku = d.get("sku") or d.get("item")
         avg, _ = sku_avg(db, sku, e["ts"])
         url = (d.get("shop") or "").rstrip("/")
-        db.execute("INSERT OR IGNORE INTO settles VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        db.execute("INSERT OR IGNORE INTO settles VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                    (e["seq"], e["ts"], d.get("buyer"), url, names.get(url), sku, d.get("name"), d.get("grade"),
                     d.get("amount"), None if d.get("claim_honest") is None else int(bool(d["claim_honest"])), avg,
-                    d.get("unit")))
+                    d.get("unit"), d.get("warranty_hours")))
         added += 1
     if entries:
         db.execute("INSERT OR REPLACE INTO meta VALUES ('last_seq', ?)", (str(entries[-1]["seq"]),))
     backfill_units(db)
+    match_broken(db)
 
     # snapshot: per SKU sold in the last 30 minutes, plus every SKU I hold or bought before
     stats = {"ts": now, "skus": {}, "hot": [], "my_buys": {}}
@@ -190,6 +208,64 @@ BAD_DISHONEST = 2          # a shop with this many dishonest grade claims is avo
 BAD_BROKEN_SHARE = 0.10    # ... or with this share of its sold units broken (at least 3)
 
 
+def catalog_leaves():
+    try:
+        with open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8") as f:
+            return {(c.get("category") or "").split(">")[-1] for c in json.load(f).values()} - {""}
+    except (OSError, ValueError):
+        return set()
+
+
+def load_forum():
+    try:
+        with open(FORUM_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+def demand_posts(posts=None, leaves=None):
+    """Buyer posts that ask for something ('구합니다', 'wanted', ...): [{id, ts, author, skus, cats}].
+    The one keyword extractor: restock (what to buy) and forum_post (what to answer) both use it.
+    Only codes and catalog category names come out of a post; its text never reaches a harness."""
+    posts = load_forum() if posts is None else posts
+    leaves = catalog_leaves() if leaves is None else leaves
+    out = []
+    for p in posts:
+        text = str(p.get("text", ""))
+        if p.get("role") != "buyer" or not WANT.search(text):
+            continue
+        cats = [leaf for leaf in leaves if any(part and part in text for part in leaf.split("/"))]
+        out.append({"id": p.get("id"), "ts": p.get("ts") or 0, "author": p.get("author"),
+                    "skus": SKU_RE.findall(text), "cats": cats})
+    return out
+
+
+def match_broken(db):
+    """broken.jsonl (name, broke_at: goods I bought that broke) matched to my purchase of that name before it;
+    in warranty when it broke within the warranty hours; refunded from the market's broken entry."""
+    try:
+        with open(os.path.join(HERE, ".market", "broken.jsonl"), encoding="utf-8") as f:
+            news = [json.loads(line) for line in f if line.strip()]
+    except (OSError, ValueError):
+        return
+    for n in news:
+        if db.execute("SELECT 1 FROM my_broken WHERE broke_at=? AND name=?", (n["broke_at"], n["name"])).fetchone():
+            continue
+        row = db.execute("SELECT seq, ts, sku, COALESCE(shop, shop_url), amount, warranty_hours FROM settles "
+                         "WHERE buyer=? AND name=? AND ts<=? ORDER BY ts DESC LIMIT 1",
+                         (ME, n["name"], n["broke_at"])).fetchone()
+        if not row:
+            continue
+        seq, ts, sku, shop, paid, wh = row
+        after = (n["broke_at"] - ts) / 3600
+        ref = db.execute("SELECT refunded FROM broken WHERE buyer=? AND sku=? AND ABS(ts-?)<120",
+                         (ME, sku, n["broke_at"])).fetchone()
+        db.execute("INSERT INTO my_broken VALUES (?,?,?,?,?,?,?,?,?,?)",
+                   (n["broke_at"], n["name"], seq, sku, shop, paid, wh, after,
+                    int(bool(wh) and after <= wh), None if ref is None else int(bool(ref[0]))))
+
+
 def signals(db, names):
     """Shop flags, SKU break rates and forum demand. Everything is checked against the ledger."""
     flags = {}
@@ -214,25 +290,14 @@ def signals(db, names):
         if broke:
             sku_break[sku] = round(broke / sold, 3)
 
-    try:
-        with open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8") as f:
-            leaves = {(c.get("category") or "").split(">")[-1] for c in json.load(f).values()} - {""}
-    except (OSError, ValueError):
-        leaves = set()
+    posts = load_forum()
     wanted, wanted_cats = {}, {}
-    try:
-        with open(FORUM_PATH, encoding="utf-8") as f:
-            posts = json.load(f)
-    except (OSError, ValueError):
-        posts = []
+    for d in demand_posts(posts):
+        for sku in d["skus"]:
+            wanted[sku] = wanted.get(sku, 0) + 1
+        for leaf in d["cats"]:
+            wanted_cats[leaf] = wanted_cats.get(leaf, 0) + 1
     for p in posts:
-        text = str(p.get("text", ""))
-        if p.get("role") == "buyer" and WANT.search(text):
-            for sku in SKU_RE.findall(text):
-                wanted[sku] = wanted.get(sku, 0) + 1
-            for leaf in leaves:
-                if any(part and part in text for part in leaf.split("/")):
-                    wanted_cats[leaf] = wanted_cats.get(leaf, 0) + 1
         for r in p.get("refs") or []:            # a ref the market resolved: trust its data, not the post text
             if not (isinstance(r, dict) and r.get("found")):
                 continue
@@ -244,9 +309,39 @@ def signals(db, names):
     for f in flags.values():
         f["bad"] = (f["dishonest"] + f["forum_dishonest"] >= BAD_DISHONEST
                     or (f["broken"] >= 3 and f["broken"] / max(f["deals"], 1) >= BAD_BROKEN_SHARE))
-    return {"shop_flags": flags, "sku_break": sku_break,
+    sku_n = {sku: n for sku, n in db.execute("SELECT sku, COUNT(*) FROM settles GROUP BY sku HAVING COUNT(*) >= 5")}
+    grade_break = {}                              # per grade: breaks / units sold, over SKUs that ever broke;
+    sold = dict(db.execute("SELECT grade, COUNT(*) FROM settles WHERE sku IN (SELECT DISTINCT sku FROM broken) "
+                           "GROUP BY grade"))     # each break counts once, on the buyer's last purchase before it
+    broke = dict(db.execute("SELECT (SELECT s.grade FROM settles s WHERE s.buyer=b.buyer AND s.sku=b.sku AND s.ts<=b.ts "
+                            "ORDER BY s.ts DESC LIMIT 1) g, COUNT(*) FROM broken b GROUP BY g"))
+    for g, n in sold.items():
+        if g:
+            grade_break[g] = round(broke.get(g, 0) / n, 3)
+    return {"shop_flags": flags, "sku_break": sku_break, "sku_n": sku_n, "grade_break": grade_break,
+            "shop_score": shop_scores(db),
             "wanted": sorted(wanted, key=wanted.get, reverse=True)[:20],
             "wanted_cats": sorted(wanted_cats, key=wanted_cats.get, reverse=True)[:10]}
+
+
+def shop_scores(db):
+    """[15] per shop name: cheap (its prices vs the SKU average when sold), honest (share of honest grade
+    claims), success (my negotiations there that ended in a deal), each 0..1; score = their mean.
+    Also how many of my failures there came while the 3-offer rule forced my counters."""
+    out = {}
+    for shop, ratio, honest, n in db.execute(
+            "SELECT shop, AVG(amount / market_avg_at), AVG(claim_honest), COUNT(*) FROM settles "
+            "WHERE shop IS NOT NULL AND market_avg_at > 0 GROUP BY shop"):
+        out[shop] = {"ratio": round(ratio, 3), "cheap": round(min(1, max(0, (1.2 - ratio) / 0.4)), 3),
+                     "honest": round(honest if honest is not None else 0.75, 3), "deals": n}
+    for shop, tries, ok, guard in db.execute(
+            "SELECT shop, COUNT(*), SUM(outcome='deal'), SUM(reason='haggle_guard') FROM buyer_deals GROUP BY shop"):
+        o = out.setdefault(shop, {"ratio": None, "cheap": 0.5, "honest": 0.75, "deals": 0})
+        o.update(tries=tries, ok=ok or 0, guard_fails=guard or 0)
+    for o in out.values():
+        o["success"] = round((o.get("ok", 0) + 1) / (o.get("tries", 0) + 2), 3)     # 0.5 with no history
+        o["score"] = round((o["cheap"] + o["honest"] + o["success"]) / 3, 3)
+    return out
 
 
 def record_stock(units, log=print):

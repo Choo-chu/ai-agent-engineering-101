@@ -1,17 +1,17 @@
-"""The shop's selling floor, in one place: seller_r3.py enforces it and forum_post.py advertises it.
+"""The shop's selling floor: one rule set per shop case (strategy.py decides the case).
 
   normal      max(cost, market average)                       sell at or above the market average
-  overstock   cost                                            while my stock at cost is over OVERSTOCK_COST
+  cash_low    cost
+  overstock   cost (x the overstock floor variant), or the aging markdown when lower
+  endgame     the endgame markdown, or the aging markdown when lower
+  always      food clearance when lower                       (an expired unit is worth nothing)
+
   aging       non-food on the shelf over AGING_AFTER_H: the average minus AGING_CUT of it every AGING_STEP_H,
-              never below AGING_MIN_COST x cost                (storage costs 1%/day; old stock is worse)
+              never below AGING_MIN_COST x cost                (storage costs 1%/day)
   clearance   food with under NEAR_EXPIRY_H of shelf life: the average minus CUT_PER_H of it every hour,
-              down to (1 - MAX_CUT) of it; may go below cost   (an expired unit is worth nothing)
-
-  endgame     from ENDGAME_H before the round ends (11/17 23:59): every unit at cost, minus ENDGAME_CUT of cost
-              every ENDGAME_STEP_H, down to ENDGAME_MIN of cost   (stock left at the end is worth nothing)
-
-Clearance replaces the normal / overstock / aging floor (the lowest of those wins); endgame applies on top
-when it is lower still.
+              down to (1 - MAX_CUT) of it; may go below cost
+  endgame     from ENDGAME_H before the round ends (11/17 23:59): cost, minus ENDGAME_CUT of cost every
+              ENDGAME_STEP_H, down to ENDGAME_MIN of cost
 """
 import json
 import os
@@ -25,7 +25,6 @@ AGING_AFTER_H = 24      # non-food older than this starts its markdown
 AGING_STEP_H = 6
 AGING_CUT = 0.10
 AGING_MIN_COST = 0.90   # aging never goes below 90% of cost
-OVERSTOCK_COST = 1_500_000
 ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()      # local time (KST)
 ENDGAME_H = 48
 ENDGAME_STEP_H = 6
@@ -88,20 +87,23 @@ def restock_stopped(now=None):
     return (now or time.time()) >= ROUND_END - RESTOCK_STOP_H * 3600
 
 
-def floor(u, avg, stock_cost, now=None):
-    """(floor, rule) for one unit. stock_cost: my stock at cost (held_cost)."""
+def floor(u, avg, case, now=None, overstock_mult=1.0):
+    """(floor, rule) for one unit in the given shop case: the lowest of the rules that case turns on."""
+    now = now or time.time()
+    if case == "endgame":
+        e, step = endgame(u, now)
+        cands = [(e, f"endgame step {step}")] if e is not None else [(u["cost"], "cost")]
+    elif case == "cash_low":
+        cands = [(u["cost"], "cash_low")]
+    elif case == "overstock":
+        cands = [(int(u["cost"] * overstock_mult), "overstock")]
+    else:
+        cands = [(max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")]
+    if case in ("endgame", "overstock"):
+        a, step = aging(u, avg, now)
+        if a is not None:
+            cands.append((a, f"aging step {step}"))
     c, _ = clearance(u, avg, now)
     if c is not None:
-        f, rule = c, "clearance"
-    else:
-        if stock_cost > OVERSTOCK_COST:
-            f, rule = u["cost"], "overstock"
-        else:
-            f, rule = (max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")
-        a, step = aging(u, avg, now)
-        if a is not None and a < f:
-            f, rule = a, f"aging step {step}"
-    e, step = endgame(u, now)
-    if e is not None and e < f:
-        f, rule = e, f"endgame step {step}"
-    return f, rule
+        cands.append((c, "clearance"))
+    return min(cands)

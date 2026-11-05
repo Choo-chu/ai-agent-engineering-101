@@ -2,9 +2,12 @@
 The market accepts one post per 5 minutes per role, so each role has its own slot and its own priority queue
 (kept in .market/forum_state.json). Events are queued when they happen; one post per slot leaves when it is due.
 
-  shop slot   0  food clearance    a food SKU near expiry whose markdown stepped down (pricing.clearance)
-              1  aging markdown    a non-food SKU whose 6-hourly markdown stepped down (pricing.aging)
-              1  endgame markdown  the last 48 h of the round: every 6-hourly step of the store-wide floor
+  shop slot   0  endgame markdown  the last 48 h of the round: every 6-hourly step of the store-wide floor
+              1  food clearance    a food SKU near expiry whose markdown stepped down (pricing.clearance)
+              2  wanted answer     a buyer's '구합니다' post (market_db.demand_posts, last 2 h) for a category or
+                                   SKU I hold: a reply in that post's thread, once per post
+              3  aging markdown    a non-food SKU whose 6-hourly markdown stepped down (overstock/endgame
+                                   cases only: the normal case has no aging floor)
               -  comparison ad     when the queue is empty: my floor vs the 2-hour market average, my prices only
   buyer slot  rotates purchase record -> market report -> ledger record; a turn with nothing to post is skipped
               purchase record   my newest settled purchase not reported yet, with its ledger ref
@@ -24,7 +27,9 @@ import random
 import sqlite3
 import time
 
-from pricing import NEAR_EXPIRY_H, aging, clearance, endgame_step, floor, held_cost
+import strategy
+from market_db import demand_posts
+from pricing import NEAR_EXPIRY_H, aging, clearance, endgame_step, floor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "market.db")
@@ -35,6 +40,7 @@ MIN_N = 3                        # an average needs this many deals in the windo
 CALLOUT_MIN_NEW = 2
 CALLOUT_EVERY_S = 6 * 3600
 AD_REPEAT_S = 3600               # the same SKU is advertised at most once an hour
+WANT_FRESH_S = 2 * 3600          # answer '구합니다' posts of the last 2 hours only
 CALLOUT_GAP_S = 1800             # at least 30 min between two ledger records
 BUYER_TURNS = ["purchase", "report", "callout"]
 
@@ -107,21 +113,32 @@ def _enqueue(st, role, prio, key, kind, log, **data):
     log(f"[forum] queued {role} {kind} {data.get('id')} ({key})")
 
 
+def _fits(u, d):
+    return u["sku"] in d["skus"] or (u.get("category") or "").split(">")[-1] in d["cats"]
+
+
 def collect(st, inv, db, log):
     now = time.time()
+    case = strategy.shop_case(inv, now)
     for u in _live(inv):
         avg = _price(u["sku"])
         c, left = clearance(u, avg, now)
         if c is not None:
-            _enqueue(st, "shop", 0, f"clear:{u['sku']}:{int(NEAR_EXPIRY_H - left)}", "clearance", log, id=u["sku"])
+            _enqueue(st, "shop", 1, f"clear:{u['sku']}:{int(NEAR_EXPIRY_H - left)}", "clearance", log, id=u["sku"])
             continue
         a, step = aging(u, avg, now)
-        if a is not None:
-            _enqueue(st, "shop", 1, f"aging:{u['sku']}:{step}", "aging", log, id=u["sku"])
+        if a is not None and case in ("overstock", "endgame"):
+            _enqueue(st, "shop", 3, f"aging:{u['sku']}:{step}", "aging", log, id=u["sku"])
 
     step = endgame_step(now)
     if step is not None and _live(inv):
-        _enqueue(st, "shop", 1, f"endgame:{step}", "endgame", log, id="all")
+        _enqueue(st, "shop", 0, f"endgame:{step}", "endgame", log, id="all")
+
+    for d in demand_posts():
+        if now - d["ts"] > WANT_FRESH_S or d["author"] == ME or not d["id"]:
+            continue
+        if any(_fits(u, d) for u in _live(inv)):
+            _enqueue(st, "shop", 2, f"want:{d['id']}", "want", log, id=d["id"])
 
     rows = db.execute("SELECT seq, COALESCE(shop, shop_url) FROM settles WHERE claim_honest=0 AND "
                       "COALESCE(shop, shop_url) IS NOT NULL AND COALESCE(shop, '') != ? ORDER BY seq", (ME,)).fetchall()
@@ -138,9 +155,28 @@ def collect(st, inv, db, log):
 
 # --- rendering (at send time)
 
+def render_want(it, inv, db):
+    """[18] a reply in the thread of a '구합니다' post: the unit the seller would ship, at its floor now."""
+    d = next((d for d in demand_posts() if d["id"] == it["id"]), None)
+    if d is None:
+        return None
+    now, case = time.time(), strategy.shop_case(inv)
+    fit = sorted((u for u in _live(inv) if _fits(u, d)),
+                 key=lambda u: (u["sku"] not in d["skus"], u.get("expires_at") or float("inf"), u.get("supplied_at") or 0))
+    if not fit:
+        return None
+    u = fit[0]
+    cat = (u.get("category") or "").split(">")[-1]
+    f, _ = floor(u, _price(u["sku"]), case, now)
+    db.execute("INSERT OR REPLACE INTO want_replies VALUES (?,?,?,?)", (now, d["id"], cat, u["sku"]))
+    db.commit()
+    return {"post": f"[Choo Shop] {cat} 재고 있음: {u['name']} ({u['sku']}), {f:,}원. 주문에 '{u['sku']}'를 넣어 불러 주세요.",
+            "refs": [], "thread": d["id"], "as": "shop"}
+
+
 def render_markdown(it, inv, kind):
     """A clearance or aging post for the SKU, at the floor the seller enforces right now."""
-    now, stock = time.time(), held_cost(inv)
+    now, case = time.time(), strategy.shop_case(inv)
     units = [u for u in _live(inv) if u["sku"] == it["id"]]
     test = clearance if kind == "clearance" else aging
     units = [u for u in units if test(u, _price(u["sku"]), now)[0] is not None]
@@ -148,7 +184,7 @@ def render_markdown(it, inv, kind):
         return None                               # sold or no longer marked down
     u = units[0]
     avg = _price(u["sku"])
-    f, _ = floor(u, avg, stock, now)
+    f, _ = floor(u, avg, case, now)
     base = avg or u["list_price"]
     off = round(100 * (1 - f / base))
     if kind == "clearance":
@@ -163,14 +199,14 @@ def render_markdown(it, inv, kind):
 
 
 def render_endgame(inv):
-    now, stock = time.time(), held_cost(inv)
+    now, case = time.time(), strategy.shop_case(inv)
     by_sku = {}
     for u in _live(inv):
         by_sku.setdefault(u["sku"], []).append(u)
     if not by_sku:
         return None
     top = sorted(by_sku.values(), key=len, reverse=True)[:3]
-    items = "; ".join(f"{_short(us[0]['name'], 20)} ({us[0]['sku']}) {floor(us[0], _price(us[0]['sku']), stock, now)[0]:,}원부터"
+    items = "; ".join(f"{_short(us[0]['name'], 20)} ({us[0]['sku']}) {floor(us[0], _price(us[0]['sku']), case, now)[0]:,}원부터"
                       for us in top)
     return {"post": f"[Choo Shop 폐점 정리] 라운드 종료 전 전 품목 정리 중, 6시간마다 더 내려갑니다. {items}. "
                     f"{promo()} 주문에 SKU를 넣어 불러 주세요.", "refs": [], "as": "shop"}
@@ -219,7 +255,7 @@ def render_callout(it, db, st):
 
 
 def comparison_ad(inv, db, st):
-    now, stock = time.time(), held_cost(inv)
+    now, case = time.time(), strategy.shop_case(inv)
     best = None
     seen = set()
     for u in sorted(_live(inv), key=lambda u: (u.get("expires_at") or float("inf"), u.get("supplied_at") or 0)):
@@ -231,7 +267,7 @@ def comparison_ad(inv, db, st):
         x, n = avg_2h(db, u["sku"], now)
         if x is None:
             continue
-        y, _ = floor(u, _price(u["sku"]), stock, now)
+        y, _ = floor(u, _price(u["sku"]), case, now)
         z = 1 - y / x
         if z > 0 and (best is None or z > best[3]):
             best = (u, int(x), y, z)
@@ -295,6 +331,7 @@ def run(state_dir, inv, catalog, log=print):
         collect(st, inv, db, log)
         if now - st["shop_ts"] >= POST_EVERY_S:
             p, it = _pop(st, "shop", lambda it: render_endgame(inv) if it["kind"] == "endgame"
+                         else render_want(it, inv, db) if it["kind"] == "want"
                          else render_markdown(it, inv, it["kind"]))
             p = p or comparison_ad(inv, db, st)
             if p:

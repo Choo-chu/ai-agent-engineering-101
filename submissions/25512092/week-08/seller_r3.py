@@ -26,8 +26,9 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
 from forum_post import promo
-from market_db import price_of
-from pricing import floor, held_cost, load_inventory
+import strategy
+from market_db import load_stats, price_of
+from pricing import floor
 
 NAME = "Choo Shop"
 
@@ -98,7 +99,9 @@ class Seller(AgentExecutor):
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
-            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"]}
+            case = strategy.current()[0]                # decided every 5 min by restock.py (strategy.tick)
+            deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
+                                         "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats())}
         else:
             deal["lines"].append(f"buyer: {text}")
             m = re.search(r"\d+", text)
@@ -106,10 +109,10 @@ class Seller(AgentExecutor):
 
         u = deal["unit"]
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
-        reserve, rule = floor(u, avg, held_cost(load_inventory(MARKET_DIR)))   # see pricing.py
+        reserve, rule = floor(u, avg, deal["case"])     # the rules of the shop case, see pricing.py
         if len(deal["lines"]) == 1:
-            print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), rule {rule} -> floor {reserve}",
-                  flush=True)
+            print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), case {deal['case']}, rule {rule} "
+                  f"-> floor {reserve}" + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""), flush=True)
         move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
                                            market=int(avg) if avg is not None else "an unknown price",
                                            transcript="\n".join(deal["lines"])))
@@ -123,6 +126,8 @@ class Seller(AgentExecutor):
             receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
             if u["unit"]:
                 receipt["unit"] = u["unit"]
+            if deal["warranty"]:                        # [16] not under sig_seller; the kit puts it in the checkout
+                receipt["warranty_hours"] = deal["warranty"]
             receipt = sign(receipt)
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
@@ -141,7 +146,8 @@ class Seller(AgentExecutor):
             print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
             price = reserve
         deal["ask"] = int(price)
-        reply = (f"{u['name']}: {promo()} Asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
+        wty = " Grade A, with a forty-eight hour warranty from our balance." if deal["warranty"] else ""
+        reply = (f"{u['name']}: {promo()}{wty} Asking {deal['ask']}. Send your offer as a number." if len(deal["lines"]) == 1
                  else f"Counteroffer: {deal['ask']}.")
         deal["lines"].append(f"you: {reply}")
         await up.requires_input(say(reply))
