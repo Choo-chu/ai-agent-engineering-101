@@ -339,7 +339,8 @@ def shop_scores(db):
         out[shop] = {"ratio": round(ratio, 3), "cheap": round(min(1, max(0, (1.2 - ratio) / 0.4)), 3),
                      "honest": round(honest if honest is not None else 0.75, 3), "deals": n}
     for shop, tries, ok, guard in db.execute(
-            "SELECT shop, COUNT(*), SUM(outcome='deal'), SUM(reason='haggle_guard') FROM buyer_deals GROUP BY shop"):
+            "SELECT shop, COUNT(*), SUM(outcome='deal'), SUM(reason='haggle_guard') FROM buyer_deals "
+            "WHERE outcome != 'skip' GROUP BY shop"):
         o = out.setdefault(shop, {"ratio": None, "cheap": 0.5, "honest": 0.75, "deals": 0})
         o.update(tries=tries, ok=ok or 0, guard_fails=guard or 0)
     for o in out.values():

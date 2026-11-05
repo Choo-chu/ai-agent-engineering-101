@@ -106,6 +106,32 @@ def extras(db, t0, t1, catalog):
     return out
 
 
+def payment_counts():
+    """payments.jsonl so far: (lines, unpaid, unpaid for shelf life). The file has no time stamps, so hourly
+    reports store these counts and report the growth since the last report."""
+    lines = unpaid = shelf = 0
+    try:
+        with open(os.path.join(HERE, ".market", "payments.jsonl"), encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                lines += 1
+                p = json.loads(line)
+                if not p.get("paid"):
+                    unpaid += 1
+                    shelf += "shelf life" in (p.get("reason") or "")
+    except (OSError, ValueError):
+        pass
+    return {"lines": lines, "unpaid": unpaid, "shelf": shelf}
+
+
+def payment_delta(db):
+    now = payment_counts()
+    prev = json.loads(meta(db, "pay_seen") or "null") or now
+    db.execute("INSERT OR REPLACE INTO meta VALUES ('pay_seen', ?)", (json.dumps(now),))
+    return {k: now[k] - prev.get(k, 0) for k in now}
+
+
 def hourly(db, inv, catalog, log):
     now = time.time()
     hour = now // 3600 * 3600 - 3600                  # the last full hour (epoch hours line up with KST hours)
@@ -116,6 +142,7 @@ def hourly(db, inv, catalog, log):
     stock = sum(u.get("cost", 0) for u in inv.get("units", []) if u.get("grade") != "expired")
     cash = int(inv.get("balance", 0))
     x = extras(db, hour, hour + 3600, catalog)
+    x["payments"] = payment_delta(db)
     db.execute("INSERT OR REPLACE INTO hourly VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                (hour, s["sales"], s["revenue"], s["profit"], s["low_cost"], s["low_profit"], s["high_cost"],
                 s["high_profit"], json.dumps(s["cats"], ensure_ascii=False), stock, cash,
@@ -131,6 +158,9 @@ def hourly(db, inv, catalog, log):
         f"{x['buyer_surplus']:,} (refunds {x['buyer_refunds']:,}), warranty sales {x['warranty_sales']}, "
         f"warranty refunds {x['warranty_refunds']['n']} ({x['warranty_refunds']['amount']:,}), wanted-reply sales "
         f"{x['want_sales']}, top shops {x['top_shops']}")
+    pay = x["payments"]
+    log(f"[report] {datetime.fromtimestamp(hour):%H}:00 buyer payments: {pay['lines']} checkouts, {pay['unpaid']} unpaid, "
+        f"{pay['shelf']} of them for shelf life")
 
 
 def extras_md(db, t0, t1, catalog):
@@ -144,6 +174,12 @@ def extras_md(db, t0, t1, catalog):
     changes = db.execute("SELECT datetime(ts,'unixepoch','localtime'), key, reason FROM variant_weights "
                          "WHERE ts>=? AND ts<? AND reason!='start' GROUP BY ts, key", (t0, t1)).fetchall()
     lines += [f"- weight change {ts} {key}: {reason}" for ts, key, reason in changes] or ["- no weight change"]
+    pays = [json.loads(e).get("payments") for (e,) in db.execute(
+        "SELECT extra FROM hourly WHERE hour>=? AND hour<? AND extra IS NOT NULL", (t0, t1))]
+    pays = [p for p in pays if p]
+    if pays:
+        lines.append(f"- buyer checkouts {sum(p['lines'] for p in pays)}, unpaid {sum(p['unpaid'] for p in pays)}, "
+                     f"for shelf life {sum(p['shelf'] for p in pays)} (hourly growth of payments.jsonl)")
     lines += ["", "## Buyer, warranty, forum", "",
               f"- buyer surplus (list - paid + refunds) {x['buyer_surplus']:,}, refunds {x['buyer_refunds']:,}",
               f"- my warranty sales {x['warranty_sales']}, warranty refunds {x['warranty_refunds']['n']} "

@@ -202,7 +202,7 @@ def performance(db, key, now=None):
         rows = db.execute(
             "SELECT d.variant, d.list_price, (SELECT s.amount FROM settles s WHERE s.buyer=? AND s.sku=d.sku "
             "AND s.ts BETWEEN d.ts - 60 AND d.ts + 900 ORDER BY s.ts LIMIT 1) FROM buyer_deals d "
-            "WHERE d.variant_key=?", (ME_NAME, key)).fetchall()
+            "WHERE d.variant_key=? AND d.outcome != 'skip'", (ME_NAME, key)).fetchall()
         for v, lp, amount in rows:
             if v in out:
                 out[v][0] += 1

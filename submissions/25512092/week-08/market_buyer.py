@@ -168,6 +168,58 @@ Reply with ONE JSON object only, no other text:
 """
 
 
+SHELF_RE = [re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of\s+)?shelf life left", re.I),
+            re.compile(r"shelf life left:?\s*(\d+(?:\.\d+)?)\s*h", re.I),
+            re.compile(r"lasts\s+(\d+(?:\.\d+)?)\s+more hours", re.I)]
+WARRANTY_RE = re.compile(r"(\d+(?:\.\d+)?)[- ]?(?:h|hours?)\b[^.]{0,12}warranty|warranty[^.]{0,20}?(\d+(?:\.\d+)?)\s*h", re.I)
+GRADE_RE = re.compile(r"grade\s+([ABC])\b")
+
+
+def find_cert(obj):
+    """The market certificate body ({unit, sku, expires_at, grade, ...}) anywhere in the seller's reply."""
+    if isinstance(obj, dict):
+        if "grade" in obj and "unit" in obj and ("expires_at" in obj or "supplied_at" in obj):
+            return obj
+        for v in obj.values():
+            c = find_cert(v)
+            if c:
+                return c
+    elif isinstance(obj, list):
+        for v in obj:
+            c = find_cert(v)
+            if c:
+                return c
+    return None
+
+
+def precheck(task, text, kind, need_hours):
+    """[2] before the first offer: would the kit's accept policy refuse this unit at checkout?
+    Food: shelf life left < the order's use_within_hours. Goods: grade C without a warranty ([14])."""
+    cert = find_cert(task.get("status", {}).get("message")) or find_cert(task.get("artifacts"))
+    if kind == "food" and need_hours:
+        hours = None
+        if cert and cert.get("expires_at"):
+            hours = (cert["expires_at"] - time.time()) / 3600
+        else:
+            for rx in SHELF_RE:
+                m = rx.search(text)
+                if m:
+                    hours = float(m.group(1))
+                    break
+        if hours is not None and hours < need_hours:
+            return f"shelf life {hours:.1f} h < {need_hours:.0f} h the order needs"
+    if kind == "goods":
+        grade = (cert or {}).get("grade")
+        if grade is None:
+            m = GRADE_RE.search(text)
+            grade = m.group(1) if m else None
+        w = WARRANTY_RE.search(text)
+        has_w = bool(w) and float(w.group(1) or w.group(2) or 0) > 0
+        if grade == "C" and not has_w:
+            return "grade C without a warranty"
+    return None
+
+
 def get_receipt(task):
     for art in task.get("artifacts", []) or []:
         for p in art.get("parts", []):
@@ -178,7 +230,7 @@ def get_receipt(task):
 
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
-              force_first=False):
+              force_first=False, kind=None, need_hours=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": ""}
@@ -218,6 +270,13 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             client.cancel(tid)
             return res
 
+        if n_offers == 0 and last is None:
+            why = precheck(task, text, kind, need_hours)
+            if why:                                   # the kit would refuse to pay: do not haggle at all
+                log(f"[precheck] skip before haggling: {why}")
+                res["ended"], res["skip"] = "precheck", why
+                client.cancel(tid)
+                return res
         ask = last_number(text)
         if ask is not None:
             res["last_ask"] = ask
@@ -383,7 +442,7 @@ def main():
         variant, w = strategy.pick(variant_key)
         first_offer = float(variant)
         log(f"[variant] {variant_key} -> {variant} (weights {w})")
-    tries = ordered[:2]  # if the picked shop does not answer, try the next candidate once
+    tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
     for i, c in enumerate(tries):
         chosen = c
         first, cap, market = None, args.budget, ""
@@ -405,7 +464,11 @@ def main():
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
         try:
             res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer,
-                            force_first=variant_key is not None)
+                            force_first=variant_key is not None, kind=order.get("kind"),
+                            need_hours=order.get("use_within_hours"))
+            if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
+                log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
+                continue
             break
         except Exception as e:
             log(f"shop {c['name']} failed: {e}")
@@ -444,6 +507,8 @@ def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, w
     """[15] / stage 2: one row per negotiation in market.db (buyer_deals)."""
     if res["deal"]:
         outcome, reason = "deal", flag
+    elif res.get("skip"):
+        outcome, reason = "skip", res["skip"][:40]     # not a haggling result: kept out of scores and variants
     elif res["error"]:
         outcome, reason = "error", "error"
     elif res["guard_last"] and res["ended"] in ("seller_ended", "time_limit", "turn_limit"):
