@@ -77,6 +77,7 @@ def extras(db, t0, t1, catalog):
         if b > a:
             dur[c] = dur.get(c, 0) + round((b - a) / 60)
     out["case_minutes"] = dur
+    out["case_switches"] = sum(1 for (_, a), (ts, b) in zip(rows, rows[1:]) if a != b and t0 <= ts < t1)
     import strategy
     out["variants"] = {}
     for key in strategy.VARIANTS:
@@ -125,7 +126,8 @@ def hourly(db, inv, catalog, log):
     log(f"[report] {datetime.fromtimestamp(hour):%m-%d %H}:00 sold {s['sales']}, revenue {s['revenue']:,}, "
         f"profit {s['profit']:,} (low {pct(rate(s['low_profit'], s['low_cost']))}, "
         f"high {pct(rate(s['high_profit'], s['high_cost']))}), by category: {cats}; stock {stock:,}, cash {cash:,}")
-    log(f"[report] {datetime.fromtimestamp(hour):%H}:00 cases {x['case_minutes']} min, buyer surplus "
+    log(f"[report] {datetime.fromtimestamp(hour):%H}:00 cases {x['case_minutes']} min, "
+        f"{x['case_switches']} switches, buyer surplus "
         f"{x['buyer_surplus']:,} (refunds {x['buyer_refunds']:,}), warranty sales {x['warranty_sales']}, "
         f"warranty refunds {x['warranty_refunds']['n']} ({x['warranty_refunds']['amount']:,}), wanted-reply sales "
         f"{x['want_sales']}, top shops {x['top_shops']}")
@@ -134,7 +136,8 @@ def hourly(db, inv, catalog, log):
 def extras_md(db, t0, t1, catalog):
     x = extras(db, t0, t1, catalog)
     lines = ["## Cases and variants", "",
-             "- time per shop case (min): " + (", ".join(f"{k} {v}" for k, v in x["case_minutes"].items()) or "-")]
+             "- time per shop case (min): " + (", ".join(f"{k} {v}" for k, v in x["case_minutes"].items()) or "-")
+             + f"; {x['case_switches']} switches"]
     for key, vs in x["variants"].items():
         lines.append(f"- {key}: " + ", ".join(f"{v} weight {d['weight']:.2f} (n {d['n']}, per negotiation {d['metric']})"
                                                for v, d in vs.items()))
