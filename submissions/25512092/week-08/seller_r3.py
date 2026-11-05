@@ -11,7 +11,6 @@ import base64
 import json
 import os
 import re
-import time
 from pathlib import Path
 
 import uvicorn
@@ -26,27 +25,11 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
-from forum_post import promo
+from forum_post import clearance, promo
 from market_db import price_of
 
 NAME = "Choo Shop"
-NEAR_EXPIRY_H = 12      # a unit with less shelf life than this is "near expiry" (12 h left -> avg, 3 h left -> 10%)
-CUT_PER_H = 0.10        # near expiry, the floor drops 10% of the market average for every hour since
-MAX_CUT = 0.90          # never below 10% of the average: something back beats a unit that expires
 
-
-def clearance(u, avg):
-    """(floor, hours_left) for a unit near expiry, else (None, hours_left). The floor starts at the market
-    average (or 70% of list when there is none) and drops CUT_PER_H of it for every full hour the unit has
-    been near expiry. It may go below cost: a unit that expires is worth nothing."""
-    if not u.get("expires_at"):
-        return None, None
-    left = (u["expires_at"] - time.time()) / 3600
-    if left >= NEAR_EXPIRY_H:
-        return None, left
-    base = avg if avg is not None else u["list_price"] * 0.7
-    cut = min(MAX_CUT, CUT_PER_H * int(NEAR_EXPIRY_H - left))
-    return int(base * (1 - cut)), left
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", ".market"))
 

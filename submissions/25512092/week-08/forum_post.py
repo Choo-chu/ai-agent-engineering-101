@@ -3,7 +3,8 @@ per role is all the market accepts, so this file keeps the same pace).
 
   as buyer : a report of one of my settled purchases, with its ledger ref (paid vs list price, grade, the
              market average then). Buyer posts and the votes on them count in the buyer's ALL.
-  as shop  : an ad for the stock that sits longest on my shelf, with a promo line from PROMO.
+  as shop  : first a clearance notice for a unit near expiry each time its discount steps down (clearance(),
+             also the seller's floor); otherwise an ad for the slowest stock, with a promo line from PROMO.
 
 The promo lines are sales talk invented for the game; seller_r3.py uses the same lines in its first reply.
 They contain no digits, because buyers read prices out of shop messages.
@@ -17,6 +18,23 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 POST_EVERY_S = 300
 SLOW_AFTER_S = 3600          # a unit on the shelf this long counts as slow stock
+NEAR_EXPIRY_H = 12      # a unit with less shelf life than this is "near expiry" (12 h left -> avg, 3 h left -> 10%)
+CUT_PER_H = 0.10        # near expiry, the floor drops 10% of the market average for every hour since
+MAX_CUT = 0.90          # never below 10% of the average: something back beats a unit that expires
+
+
+def clearance(u, avg):
+    """(floor, hours_left) for a unit near expiry, else (None, hours_left). The floor starts at the market
+    average (or 70% of list when there is none) and drops CUT_PER_H of it for every full hour the unit has
+    been near expiry. It may go below cost: a unit that expires is worth nothing."""
+    if not u.get("expires_at"):
+        return None, None
+    left = (u["expires_at"] - time.time()) / 3600
+    if left >= NEAR_EXPIRY_H:
+        return None, left
+    base = avg if avg is not None else u["list_price"] * 0.7
+    cut = min(MAX_CUT, CUT_PER_H * int(NEAR_EXPIRY_H - left))
+    return int(base * (1 - cut)), left
 
 PROMO = [
     "요즘 SNS 인플루언서들 사이에서 입소문 난 바로 그 제품!",
@@ -59,7 +77,37 @@ def buyer_post(db, catalog, st):
             "refs": [seq], "as": "buyer"}
 
 
-def shop_post(inv):
+def clearance_post(inv, st):
+    """A unit near expiry whose current discount step has not been announced yet (one post per step)."""
+    from market_db import price_of
+    best = None
+    for u in inv.get("units", []):
+        if u.get("grade") == "expired":
+            continue
+        avg, _ = price_of(u["sku"])
+        floor, left = clearance(u, avg)
+        if floor is None:
+            continue
+        key = f"{u['sku']}:{int(NEAR_EXPIRY_H - left)}"
+        if key in st.setdefault("clear_posted", []):
+            continue
+        if best is None or left < best[2]:
+            best = (u, floor, left, avg, key)
+    if best is None:
+        return None
+    u, floor, left, avg, key = best
+    st["clear_posted"] = (st["clear_posted"] + [key])[-300:]
+    base = avg or u["list_price"]
+    return {"post": f"[Choo Shop 마감 할인] {u['name']} ({u['sku']}) 유통기한 {left:.0f}시간 남음, 지금 {floor:,}원부터! "
+                    f"(시장 평균 {int(base):,}원 대비 {round(100 * (1 - floor / base))}% 할인, 1시간마다 10%씩 더 내려갑니다) "
+                    f"{promo()} 주문에 '{u['sku']}'를 넣어 불러 주세요.", "refs": [], "as": "shop"}
+
+
+def shop_post(inv, st=None):
+    if st is not None:
+        p = clearance_post(inv, st)
+        if p:
+            return p
     now = time.time()
     slow = [u for u in inv.get("units", []) if u.get("grade") != "expired" and now - (u.get("supplied_at") or now) > SLOW_AFTER_S]
     if not slow:
@@ -87,7 +135,7 @@ def run(state_dir, inv, catalog, log=print):
             st["buyer_ts"] = now
             log(f"[forum] buyer post: {p['post'][:90]}")
     if now - st["shop_ts"] >= POST_EVERY_S:
-        p = shop_post(inv)
+        p = shop_post(inv, st)
         if p:
             _send(state_dir, p)
             st["shop_ts"] = now
