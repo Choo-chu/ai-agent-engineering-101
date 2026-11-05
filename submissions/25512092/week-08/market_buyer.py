@@ -27,6 +27,8 @@ MEMORY_PATH = os.path.join(HERE, "memory.jsonl")
 NEW_SHOP_SCORE = 3.0   # score for a shop nobody has reviewed yet
 TOP_K = 3              # candidates shown to the harness
 SCORE_MARGIN = 1.0     # how far below the best score a candidate may be
+MIN_OFFERS = 3         # counteroffers the buyer makes before it may accept or walk
+FIRST_OFFER = 0.6      # the code's opening counter, as a share of the asking price
 
 # seller text that tries to instruct the buying agent
 INJECTION = re.compile(r"market notice|for ai (buying )?agents|ignore (all|any|your|previous)|"
@@ -160,11 +162,13 @@ Conversation so far (oldest first):
 
 The seller's current asking price: {ask}
 Your last offer: {last}
+Offers you have made so far: {n_offers} (you must make at least {min_offers} before you may accept or walk away)
 
 Rules:
-- If the asking price is within your budget, you may accept it.
-- Otherwise make an offer. Start low and raise gradually; never go above your budget.
-- If the seller clearly will not come down to your budget, walk away.
+- Haggle hard. Your first offer is around 60% of the asking price; raise in small steps.
+- Do not accept the first price you hear. Accept only after at least {min_offers} offers of your own.
+- Never go above your budget.
+- If the seller clearly will not come down to your budget after that, walk away.
 
 Reply with ONE JSON object only, no other text:
 {{"action": "offer" | "accept" | "walk", "price": <your offer, integer, only for offer>}}
@@ -192,6 +196,7 @@ def negotiate(url, item, budget, start, first=None):
     tid = task.get("id")
     history = [f"you: {first}"]
     last = None
+    n_offers = 0
     log(f"task {tid}")
 
     for _ in range(MAX_TURNS):
@@ -222,8 +227,16 @@ def negotiate(url, item, budget, start, first=None):
                 res["first_ask"] = ask
         history.append(f"seller: {text}")
         prompt = NEG_PROMPT.format(item=item, budget=budget, history="\n".join(history),
-                                   ask=ask, last=last if last is not None else "none yet")
+                                   ask=ask, last=last if last is not None else "none yet",
+                                   n_offers=n_offers, min_offers=MIN_OFFERS)
         d = ask_harness(prompt)
+        if n_offers < MIN_OFFERS and ask is not None and (d is None or d["action"] != "offer"):
+            # haggle guard: no accept / walk before MIN_OFFERS counteroffers; the code names the counter
+            step = int(ask * FIRST_OFFER) if last is None else last + max(1, (ask - last) // 3)
+            counter = min(step, ask - 1, budget)
+            log(f"HAGGLE {d['action'] if d else 'no answer'} before {MIN_OFFERS} offers "
+                f"({n_offers} so far) -> offer {counter}")
+            d = {"action": "offer", "price": counter}
         if d is None or d["action"] == "walk" or (d["action"] == "accept" and ask is None):
             log(f"WALK ({'harness' if d else 'no usable answer'})")
             client.cancel(tid)
@@ -250,6 +263,7 @@ def negotiate(url, item, budget, start, first=None):
                 d, offer = {"action": "offer", "price": budget}, budget
                 log(f"GUARD clamp -> offer {offer}")
         last = offer
+        n_offers += 1
         history.append(f"you: {offer}")
         log(f"-> {d['action']} {offer}")
         task = client.send(str(offer), tid)
