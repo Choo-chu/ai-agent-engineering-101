@@ -180,14 +180,14 @@ def get_receipt(task):
     return None
 
 
-def negotiate(url, item, budget, start):
+def negotiate(url, item, budget, start, first=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None}
     client = A2AClient(url)
     skills = [s.get("name") for s in client.card.get("skills", [])]
     log(f"card: {client.card.get('name')} skills={skills} jsonrpc={client.url}")
 
-    first = f"I want to buy a {item}"
+    first = first or f"I want to buy a {item}"
     task = client.send(first)
     tid = task.get("id")
     history = [f"you: {first}"]
@@ -260,8 +260,8 @@ def negotiate(url, item, budget, start):
 
 
 # ---------- stars and review (code rules) ----------
-def judge(res, item, budget):
-    """Returns (stars, review, flag)."""
+def judge(res, item, budget, acceptable=()):
+    """Returns (stars, review, flag). Round 3: the receipt names a SKU, fine when it is in `acceptable`."""
     if res["error"]:
         return 1, f"Shop did not answer properly: {clean(res['error'], 80)}.", "error"
     if res["deal"]:
@@ -276,7 +276,7 @@ def judge(res, item, budget):
             return 1, f"Agreed {res['agreed']}, receipt says {rp}.", "receipt_mismatch"
         if rp > budget:
             return 1, f"Receipt {rp} is above my budget.", "over_budget"
-        if r.get("item") not in (None, item):
+        if r.get("item") not in (None, item, *acceptable):
             return 1, f"Ordered {item}, receipt says {r.get('item')}.", "item_mismatch"
         if res["injection"]:
             return 1, (f"Deal at {rp} and the receipt matches, but the shop's message tried to "
@@ -300,11 +300,23 @@ def main():
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order", help="Round 3: .market/order.json (acceptable SKUs, kind, use_within_hours)")
     args = ap.parse_args()
     start = time.time()
 
     with open(args.shops, encoding="utf-8") as f:
         shops = json.load(f)
+    order = {}
+    if args.order and os.path.exists(args.order):
+        with open(args.order, encoding="utf-8") as f:
+            order = json.load(f)
+    acceptable = order.get("acceptable") or []
+    if acceptable:  # Round 3: only shops that have a SKU of this order in stock
+        for s in shops:
+            s["offers"] = [o for o in (s.get("offers") or []) if o.get("qty", 0) > 0 and o.get("sku") in acceptable]
+        stocked = [s for s in shops if s["offers"]]
+        log(f"[order] {args.item}: {len(acceptable)} acceptable SKUs, {len(stocked)}/{len(shops)} shops in stock")
+        shops = stocked
     memory = load_memory()
     ordered, why = choose(shops, memory, args.item)
     if not ordered:
@@ -317,8 +329,12 @@ def main():
     tries = ordered[:2]  # if the picked shop does not answer, try the next candidate once
     for i, c in enumerate(tries):
         chosen = c
+        first = None
+        offers = next((s.get("offers") for s in shops if s["name"] == c["name"]), None)
+        if offers:  # Round 3: ask for one SKU by name; which SKU to pick is a design choice (first one for now)
+            first = f"I want to buy {offers[0]['name']} ({offers[0]['sku']})"
         try:
-            res = negotiate(c["url"], args.item, args.budget, start)
+            res = negotiate(c["url"], args.item, args.budget, start, first)
             break
         except Exception as e:
             log(f"shop {c['name']} failed: {e}")
@@ -327,14 +343,17 @@ def main():
             if i + 1 < len(tries):
                 log(f"[choose] trying next candidate {tries[i + 1]['url']}")
 
-    stars, review, flag = judge(res, args.item, args.budget)
+    stars, review, flag = judge(res, args.item, args.budget, acceptable)
     rp = res["receipt"].get("price") if res["receipt"] else None
     remember({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "shop": chosen["name"], "item": args.item,
+              "sku": res["receipt"].get("item") if res["receipt"] else None,
               "budget": args.budget, "agreed": res["agreed"], "receipt_price": rp,
               "deal": res["deal"], "flag": flag, "stars": stars})
     log(f"stars {stars} ({flag}): {review}")
     out = {"shop": chosen["url"], "receipt": res["receipt"] if res["deal"] else None,
            "stars": stars, "review": review}
+    if order.get("use_within_hours"):  # food must last as long as the order needs, or the deal is worth 0
+        out["accept"] = {"min_hours_left": order["use_within_hours"]}
     print(json.dumps(out, ensure_ascii=False), flush=True)  # last line: the kit reads this
 
 
