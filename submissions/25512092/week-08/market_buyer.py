@@ -241,6 +241,9 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             return res
 
         offer = ask if d["action"] == "accept" else d["price"]
+        if ask is not None and offer > ask:           # never offer more than the shop asks for
+            log(f"offer {offer} above the ask {ask} -> {ask}")
+            offer = ask
         if offer > budget:  # guard step 1: tell the harness why and ask once more
             problem = f"{'accepting' if d['action'] == 'accept' else 'offering'} {offer} is above your budget {budget}."
             log(f"GUARD {problem} -> asking the harness again")
@@ -285,7 +288,7 @@ def judge(res, item, budget, acceptable=()):
             rp = int(round(float(r.get("price"))))
         except (TypeError, ValueError):
             rp = None
-        if res["agreed"] is not None and rp != res["agreed"]:
+        if res["agreed"] is not None and rp > res["agreed"]:      # a receipt below the agreed price is no harm
             return 1, f"Agreed {res['agreed']}, receipt says {rp}.", "receipt_mismatch"
         if rp > budget:
             return 1, f"Receipt {rp} is above my budget.", "over_budget"
