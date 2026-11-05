@@ -29,6 +29,9 @@ CUSHION = 1_000_000    # never spend below this balance
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
 MAX_BREAK = 0.15       # skip goods that break this often after a sale
 WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
+MAX_STOCK_COST = 1_500_000   # never hold more than this much stock at cost (11/05: the shop was offline for
+                             # 7 h while restock kept buying, and 4.1M of the 5M start sat on the shelf)
+MAX_UNIT_COST = 100_000      # skip big-ticket SKUs: one unsold mattress ties up a third of a day's budget
 
 
 def log(msg):
@@ -75,7 +78,12 @@ def main():
             held[u["sku"]] = held.get(u["sku"], 0) + 1
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
     stats = load_stats()
-    spend_left = max(0, (inv.get("balance", 0) - CUSHION)) * SPEND_SHARE
+    held_cost = sum(u.get("cost", 0) for u in units if u.get("grade") != "expired")
+    spend_left = min(max(0, (inv.get("balance", 0) - CUSHION)) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
+    if spend_left <= 0:
+        log(f"stock at cost {held_cost:,} >= cap {MAX_STOCK_COST:,} (or balance under cushion): no restock")
+        print(json.dumps({"buy": []}))
+        return
 
     wanted_cats = set(stats.get("wanted_cats", []))
     wanted = set(stats.get("wanted", [])) | {k for k in stats["skus"]
@@ -96,7 +104,7 @@ def main():
         if kind == "food" and (c.get("shelf_hours") or 0) < FOOD_MIN_SHELF_H:
             continue
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
-        if avg < cost * (1 + MIN_MARGIN):
+        if cost > MAX_UNIT_COST or avg < cost * (1 + MIN_MARGIN):
             continue
         target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
         qty = min(MAX_QTY, target - held.get(sku, 0))
