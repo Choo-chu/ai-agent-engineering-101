@@ -56,6 +56,8 @@ def connect():
     CREATE TABLE IF NOT EXISTS broken (seq INTEGER PRIMARY KEY, ts REAL, buyer TEXT, shop_url TEXT, shop TEXT,
         sku TEXT, hours_after_sale REAL, warranty_hours REAL, refunded INTEGER);
     CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+    CREATE TABLE IF NOT EXISTS cash (ts REAL PRIMARY KEY, balance INTEGER, stock_cost INTEGER, units INTEGER,
+        storage_per_day INTEGER);
     """)
     return db
 
@@ -237,6 +239,29 @@ def record_stock(units, log=print):
     db.close()
     if new:
         log(f"[market_db] recorded {new} new stock units")
+
+
+CASH_EVERY_S = 300
+
+
+def record_cash(inv, log=print):
+    """Every 5 minutes: cash, stock at cost and the storage it costs per day (rate from inventory.json)."""
+    db = connect()
+    now = time.time()
+    try:
+        if now - float(meta(db, "cash_ts", 0)) < CASH_EVERY_S:
+            return None
+        units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+        stock = sum(u.get("cost", 0) for u in units)
+        storage = round(stock * float(inv.get("storage_per_day") or 0.01))
+        row = (now, int(inv.get("balance", 0)), stock, len(units), storage)
+        db.execute("INSERT OR REPLACE INTO cash VALUES (?,?,?,?,?)", row)
+        db.execute("INSERT OR REPLACE INTO meta VALUES ('cash_ts', ?)", (str(now),))
+        db.commit()
+        log(f"[cash] balance {row[1]:,}, stock at cost {stock:,} ({len(units)} units), storage ~{storage:,}/day")
+        return row
+    finally:
+        db.close()
 
 
 def load_stats():

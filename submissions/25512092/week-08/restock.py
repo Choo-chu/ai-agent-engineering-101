@@ -17,7 +17,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import forum_post  # noqa: E402
-from market_db import load_stats, price_of, record_stock, refresh  # noqa: E402
+from market_db import load_stats, price_of, record_cash, record_stock, refresh  # noqa: E402
 
 COST_SHARE = {"goods": 0.60, "food": 0.50}   # expected cost / list price, averaged over the grade draw
 MIN_MARGIN = 0.10      # market average must beat the expected cost by 10%
@@ -25,7 +25,7 @@ MIN_SOLD_30M = 3       # market-wide units sold in 30 min to count as "selling"
 MY_SHARE = 0.25        # share of the market's sales I plan stock for, until the next window (20 min)
 MAX_QTY = 20
 SPEND_SHARE = 0.4      # at most this share of the spendable balance per run
-CUSHION = 1_000_000    # never spend below this balance
+CUSHION = 1_000_000    # never spend below this balance; under it restock stops entirely
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
 MAX_BREAK = 0.15       # skip goods that break this often after a sale
 WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
@@ -62,10 +62,19 @@ def main():
         log(f"record_stock failed: {e}")
 
     try:
+        record_cash(inv, log=log)
+    except Exception as e:
+        log(f"record_cash failed: {e}")
+    if inv.get("balance", 0) < CUSHION:
+        log(f"WARNING cash {inv.get('balance', 0):,} < {CUSHION:,}: restock stopped until sales bring it back")
+    try:
         forum_post.run(state, inv, catalog, log=log)
     except Exception as e:
         log(f"forum post failed: {e}")
 
+    if inv.get("balance", 0) < CUSHION:
+        print(json.dumps({"buy": []}))
+        return
     r = inv.get("restock") or {}
     now = time.time()
     if not r.get("open") and (r.get("opens_at") or now) - now > 60:

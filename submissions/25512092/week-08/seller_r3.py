@@ -25,8 +25,9 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
-from forum_post import clearance, promo
+from forum_post import promo
 from market_db import price_of
+from pricing import floor, held_cost, load_inventory
 
 NAME = "Choo Shop"
 
@@ -105,13 +106,10 @@ class Seller(AgentExecutor):
 
         u = deal["unit"]
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
-        reserve = max(u["cost"], int(avg)) if avg is not None else u["cost"]   # sell at or above the market average
-        clear, left = clearance(u, avg)
-        if clear is not None:
-            reserve = clear                              # near expiry: clearance floor instead
+        reserve, rule = floor(u, avg, held_cost(load_inventory(MARKET_DIR)))   # see pricing.py
         if len(deal["lines"]) == 1:
-            print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n})"
-                  + (f", {left:.1f} h left, clearance" if clear is not None else "") + f" -> floor {reserve}", flush=True)
+            print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), rule {rule} -> floor {reserve}",
+                  flush=True)
         move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
                                            market=int(avg) if avg is not None else "an unknown price",
                                            transcript="\n".join(deal["lines"])))
@@ -137,7 +135,7 @@ class Seller(AgentExecutor):
         price = (move or {}).get("price")
         if not isinstance(price, (int, float)):
             price = deal["ask"] or u["list_price"]      # unparsed answer: repeat the last ask
-        if clear is not None and avg is not None:       # clearance: never ask above the market average
+        if rule != "normal" and avg is not None:        # any markdown: never ask above the market average
             price = min(price, max(reserve, int(avg)))
         if price < reserve:                             # the harness may forget the cost; the code does not
             print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
