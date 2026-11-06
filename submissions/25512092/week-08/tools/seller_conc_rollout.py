@@ -152,6 +152,18 @@ def report(t, conc):
                      + "\n하루 전 같은 시간: " + alerts.shop_text(alerts.shop_numbers(since - 86400, time.time() - 86400)))
     except Exception as e:
         text += f"\n박리다매 결과 계산 실패: {type(e).__name__}"
+    try:                                             # 11/07: the 1-star 'grade / quality / broken' bucket, split
+        from depts import insights
+        cat = json.load(open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8"))
+        day0 = T("2026-11-07 00:00")
+        db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+        try:
+            text += ("\n\n" + insights.grade_detail_text(insights.grade_detail(db, day0 - 86400, day0, cat), "11/06")
+                     + "\n" + insights.grade_detail_text(insights.grade_detail(db, day0, time.time(), cat), "11/07 00~09시"))
+        finally:
+            db.close()
+    except Exception as e:
+        text += f"\n1점 등급 분석 실패: {type(e).__name__}"
     alerts.send("daily", "conc_report", text, log)
     log("report sent; done")
 

@@ -69,7 +69,8 @@ def main():
         return
     cats, counts, overall = breadth_cats()
     rules = {"enabled": True, "since": round(time.time()), "breadth_cats": cats, "surge_min": 1.05,
-             "max_first_run": True}
+             "max_first_run": True,
+             "first_run_share": 0.7, "breadth_max_lines": 5}
     with open(os.path.join(HERE, "restock_c.json"), "w", encoding="utf-8") as f:
         json.dump(rules, f, ensure_ascii=False)
     decisions.record("purchasing", "breadth_on", "restock_c.breadth_cats", cats,

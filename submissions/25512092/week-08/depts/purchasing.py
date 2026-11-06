@@ -57,6 +57,7 @@ def c_rules():
 
 
 BREADTH_MAX = 2
+BREADTH_LINES = 5          # 11/07: at most this many breadth lines per run (restock_c.json breadth_max_lines)
 
 
 def make_plan(inv, units, catalog, budget, log):
@@ -90,6 +91,7 @@ def make_plan(inv, units, catalog, budget, log):
     plan, line_of = [], {}                       # line_of: sku -> (index in plan, the list it came from)
     order = [(k, "hot") for k in hot] + [(k, "wanted") for k in sorted(wanted - set(hot))] + [(k, "rest") for k in rest]
     C = c_rules()
+    n_breadth = 0
     leaf_of = lambda k: ((catalog.get(k) or {}).get("category") or "").split(">")[-1]
     breadth = set(C.get("breadth_cats") or [])
     if breadth:                                  # bundle 2 (13): SKUs I do not hold in the low-share categories first
@@ -127,6 +129,8 @@ def make_plan(inv, units, catalog, budget, log):
                 continue
             tier, qty = "high", min(1, high_room)
         elif src == "breadth":                    # bundle 2 (13): a SKU I do not hold, 1-2 units
+            if n_breadth >= int(C.get("breadth_max_lines", BREADTH_LINES)):
+                continue
             tier, qty = "low", 1 if s["sold_30m"] < MIN_SOLD_30M else BREADTH_MAX
         else:                                     # low price: as before, hot or wanted on the forum
             if sku not in hot and not forum or (s["sold_30m"] < MIN_SOLD_30M and not forum):
@@ -160,6 +164,7 @@ def make_plan(inv, units, catalog, budget, log):
             plan[i]["qty"] = q
             continue
         line_of[sku] = (len(plan), src)
+        n_breadth += src == "breadth"
         left[tier] -= qty * cost
         if tier == "high":
             high_room -= qty

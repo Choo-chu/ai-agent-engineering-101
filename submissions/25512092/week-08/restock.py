@@ -123,9 +123,10 @@ def main():
         if C.get("max_first_run") and win:
             last = json.load(open(wpath)).get("opens_at") if os.path.exists(wpath) else None
             if last != win:
-                full = min(inv.get("balance", 0) - CUSHION, MAX_STOCK_COST - held_cost)
+                share = float(C.get("first_run_share", 0.7))   # 11/07: at most 70% of the cash above the reserve
+                full = min((inv.get("balance", 0) - CUSHION) * share, MAX_STOCK_COST - held_cost)
                 log(f"[window] first plan of the window opening {time.strftime('%H:%M', time.localtime(win))}: "
-                    f"budget {int(budget):,} -> {int(full):,} (all cash above the reserve, within STOCK_CAP)")
+                    f"budget {int(budget):,} -> {int(full):,} ({share:.0%} of the cash above the reserve, within STOCK_CAP)")
                 budget = max(budget, full)
                 json.dump({"opens_at": win, "ts": now, "budget": int(budget)}, open(wpath, "w"))
     except Exception as e:

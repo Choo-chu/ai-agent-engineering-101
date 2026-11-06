@@ -13,7 +13,8 @@ import statistics
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORTS = os.path.join(HERE, "reports")
 ME = "choo-chu"
-CAUSES = [("stock / wrong item", r"no stock|out of stock|none of that|sold out|wrong|not what"),
+CAUSES = [("settled, no complaint", r"^payment settled; no unobserved"),   # a 1-star with a neutral text (11/07)
+          ("stock / wrong item", r"no stock|out of stock|none of that|sold out|wrong|not what"),
           ("price / no deal", r"no deal|too (high|expensive)|price|budget|walked|reject"),
           ("slow / timeout", r"time ?out|timed out|slow|no answer|did not respond|took too long"),
           ("grade / quality / broken", r"grade|quality|broken|broke|damag|defect|claim"),
@@ -97,3 +98,42 @@ def latest_top_shops():
         return None
     o = json.load(open(files[-1], encoding="utf-8"))
     return {"day": o["day"], "top10": o["top10"], "mine": o["mine"], "note": o["note"]}
+
+
+def grade_detail(db, t0, t1, catalog):
+    """1-star results whose text matches the grade / quality / broken keywords (the raw bucket, as first reported),
+    split into the neutral 'Payment settled; no unobserved quality or failure claims' texts and real complaints;
+    each matched to that buyer's latest sale from my shop in the 15 min before (no order id in settles), then
+    non-food sold without a warranty by grade."""
+    pat = r"grade|quality|broken|broke|damag|defect|claim"
+    stock = r"no stock|out of stock|none of that|sold out|wrong|not what"
+    rows = [r for r in db.execute("SELECT ts, buyer, review FROM my_results WHERE ts>=? AND ts<? AND stars<=1",
+                                  (t0, t1)) if r[2] and re.search(pat, r[2], re.I) and not re.search(stock, r[2], re.I)]
+    out = {"raw": len(rows), "neutral": 0, "neutral_buyers": {}, "complaints": 0, "unmatched": 0,
+           "nonfood_no_warranty": {"A": 0, "B": 0, "C": 0}, "food": 0, "with_warranty": 0}
+    for ts, buyer, text in rows:
+        if re.match(r"payment settled; no unobserved", text, re.I):
+            out["neutral"] += 1
+            out["neutral_buyers"][buyer] = out["neutral_buyers"].get(buyer, 0) + 1
+        else:
+            out["complaints"] += 1
+        s = db.execute("SELECT sku, grade, warranty_hours FROM settles WHERE shop=? AND buyer=? AND ts<=? AND ts>=? "
+                       "ORDER BY ts DESC LIMIT 1", (ME, buyer, ts + 5, ts - 900)).fetchone()
+        if not s:
+            out["unmatched"] += 1
+        elif (catalog.get(s[0]) or {}).get("kind") == "food":
+            out["food"] += 1
+        elif s[2]:
+            out["with_warranty"] += 1
+        elif s[1] in out["nonfood_no_warranty"]:
+            out["nonfood_no_warranty"][s[1]] += 1
+    return out
+
+
+def grade_detail_text(o, label):
+    nw = o["nonfood_no_warranty"]
+    nb = ", ".join(f"{b} {n}" for b, n in sorted(o["neutral_buyers"].items(), key=lambda kv: -kv[1])) or "-"
+    return (f"{label} 1점 '등급/품질/고장' 키워드 {o['raw']}건: 그중 '정산 완료, 불만 없음' 문구 {o['neutral']}건 ({nb}), "
+            f"실제 불만 {o['complaints']}건" + chr(10) +
+            f"판매와 연결: 보증 없이 판 비식품 {sum(nw.values())}건 (A {nw['A']}, B {nw['B']}, C {nw['C']}), "
+            f"식품 {o['food']}, 보증 있음 {o['with_warranty']}, 연결 안 됨 {o['unmatched']}")
