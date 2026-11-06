@@ -133,8 +133,9 @@ def make_plan(inv, units, catalog, budget, log):
                                             if (catalog.get(k) or {}).get("category", "").split(">")[-1] in wanted_cats}
     hot = list(stats.get("hot", []))
     rest = sorted(set(stats["skus"]) - set(hot), key=lambda k: -stats["skus"][k]["sold_30m"])
-    plan = []
-    for sku in hot + sorted(wanted - set(hot)) + rest:
+    plan, line_of = [], {}                       # line_of: sku -> (index in plan, the list it came from)
+    order = [(k, "hot") for k in hot] + [(k, "wanted") for k in sorted(wanted - set(hot))] + [(k, "rest") for k in rest]
+    for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}
         if not s or not c.get("list_price"):
@@ -172,6 +173,17 @@ def make_plan(inv, units, catalog, budget, log):
                 log(f"[{tier}] {s['name'] or sku}: est. cost {int(cost)}{rot} -> skip")
         if qty <= 0:
             continue
+        if sku in line_of:                        # second time this run: keep one line, the larger qty
+            i, first = line_of[sku]
+            q1 = plan[i]["qty"]
+            q = max(q1, qty)
+            log(f"[dedup] {sku} {first} {q1} / {src} {qty} -> {q}")
+            left[tier] -= (q - q1) * cost
+            if tier == "high":
+                high_room -= q - q1
+            plan[i]["qty"] = q
+            continue
+        line_of[sku] = (len(plan), src)
         left[tier] -= qty * cost
         if tier == "high":
             high_room -= qty
