@@ -479,8 +479,8 @@ def main():
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
         t_line = None
         try:
-            if tactic == "facts":
-                t_line = buyer_tactic.line("facts", c["name"], cap=cap, avg=avg if offers else None,
+            if tactic == "facts2":
+                t_line = buyer_tactic.line("facts2", c["name"], avg=avg if offers else None,
                                            low=buyer_tactic.other_shop_low(sku, c["name"]) if offers else None)
             elif tactic == "appeal":
                 t_line = buyer_tactic.line("appeal", c["name"])

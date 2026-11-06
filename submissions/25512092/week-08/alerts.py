@@ -163,6 +163,10 @@ def watch(reports=None, log=print):
         endgame_request(seen, log)
     except Exception as e:
         log(f"[alert] endgame request: {type(e).__name__}")
+    try:
+        haggle_report(seen, log)
+    except Exception as e:
+        log(f"[alert] haggle report: {type(e).__name__}")
     try:                                            # buyer tactic experiment: stop rule + 24 h interim (11/07)
         from depts import buyer_tactic
         buyer_tactic.guard(send, log)
@@ -465,6 +469,48 @@ def endgame_request(seen, log=print, now=None):
     import decisions
     decisions.record("ceo", "endgame_request", "telegram", None, "11/14 09:00 scheduled request for the endgame decisions")
     return None
+
+
+def haggle_numbers(t0, t1):
+    """Code vs harness haggling (11/07 experiment), sofas left out: per arm negotiations, success rate, profit per
+    negotiation (settled price - cost over all its negotiations), harness calls per negotiation."""
+    from market_db import connect
+    db = connect()
+    try:
+        rows = db.execute(
+            "SELECT h.haggle, d.outcome, d.cost, h.harness_calls, (SELECT s.amount FROM settles s WHERE s.unit=d.unit "
+            "AND s.ts>=d.ts - 60 ORDER BY s.ts LIMIT 1) FROM shop_haggle h JOIN shop_deals d ON d.task=h.task "
+            "WHERE h.ts>=? AND h.ts<? AND h.haggle IS NOT NULL AND COALESCE(h.rule,'')!='sofa'", (t0, t1)).fetchall()
+    finally:
+        db.close()
+    out = {}
+    for arm in ("code", "harness"):
+        x = [r for r in rows if r[0] == arm]
+        n = len(x)
+        out[arm] = {"n": n, "deal_rate": round(sum(r[1] == "receipt" for r in x) / n, 3) if n else None,
+                    "profit_per_neg": round(sum((r[4] - r[2]) for r in x if r[4] is not None) / n) if n else None,
+                    "calls_per_neg": round(sum(r[3] or 0 for r in x) / n, 2) if n else None}
+    return out
+
+
+def haggle_report(seen, log=print, now=None):
+    """Once, 24 h after code_haggle.json 'since'."""
+    now = now or time.time()
+    try:
+        j = json.load(open(os.path.join(HERE, "code_haggle.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    since = j.get("since")
+    if not (j.get("enabled") and since) or now < since + 86400 or seen.get(f"haggle_report:{int(since)}"):
+        return None
+    seen[f"haggle_report:{int(since)}"] = now
+    o = haggle_numbers(since, since + 86400)
+    f = lambda a: (f"{a}: 협상 {o[a]['n']}, 성사율 {o[a]['deal_rate']}, 협상당 이익 {o[a]['profit_per_neg']}, "
+                   f"하네스 호출/협상 {o[a]['calls_per_neg']}")
+    import decisions
+    decisions.record("sales", "code_haggle_report", "code_haggle", o, "24 h result")
+    return send("daily", f"haggle_report:{int(since)}", "전 품목 코드 흥정 30% 실험 24시간 결과 (소파 제외)\n"
+                + f("code") + "\n" + f("harness"), log)
 
 
 MO_SHIFT = os.path.join(HERE, "logs", "buyer_mo_shift.json")

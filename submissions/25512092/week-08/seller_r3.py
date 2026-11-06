@@ -110,6 +110,35 @@ def msg_log(task, who, text, sku=None):
         print(f"[msg_log] {e}", flush=True)
 
 
+HAGGLE_FLAG = Path(__file__).with_name("code_haggle.json")    # 11/07 experiment: {"enabled", "share", "since"}
+
+
+def haggle_pick():
+    """'code' with the flag's share, else 'harness'; None while the experiment is off (read per negotiation)."""
+    try:
+        j = json.loads(HAGGLE_FLAG.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not j.get("enabled") or time.time() < (j.get("since") or 0):
+        return None
+    import random
+    return "code" if random.random() < float(j.get("share", 0.3)) else "harness"
+
+
+def haggle_log(task, deal, rule):
+    """One row per finished negotiation: which haggling arm, how many harness calls it made (market.db shop_haggle)."""
+    try:
+        db = connect()
+        db.execute("CREATE TABLE IF NOT EXISTS shop_haggle (task TEXT PRIMARY KEY, ts REAL, haggle TEXT, rule TEXT, "
+                   "harness_calls INTEGER)")
+        db.execute("INSERT OR REPLACE INTO shop_haggle VALUES (?,?,?,?,?)",
+                   (task, time.time(), deal.get("haggle"), rule, deal.get("calls", 0)))
+        db.commit()
+        db.close()
+    except Exception as e:
+        print(f"[haggle_log] {e}", flush=True)
+
+
 def finish(task, outcome, price=None):
     try:
         db = connect()
@@ -210,7 +239,8 @@ class Seller(AgentExecutor):
             case = strategy.current()[0]                # decided every 5 min by restock.py (strategy.tick)
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
                                          "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats()),
-                                         "key": None, "variant": None, "mult": 1.0}
+                                         "key": None, "variant": None, "mult": 1.0,
+                                         "haggle": haggle_pick(), "calls": 0}      # 11/07: code vs harness arm
             if case in ("normal", "overstock"):         # stage 2: one variant per negotiation, by weight
                 key = "shop_normal_ask" if case == "normal" else "shop_overstock_floor"
                 v, w = strategy.pick(key)
@@ -225,6 +255,7 @@ class Seller(AgentExecutor):
         msg_log(task.id, "buyer", text, u["sku"])
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
         reserve, rule = floor(u, avg, deal["case"], overstock_mult=deal["mult"])   # pricing.py, the case's rules
+        deal["rule"] = rule
         if len(deal["lines"]) == 1:
             ask = first_ask(u, avg, reserve, rule, deal)    # stage 2: the code names the first ask, not the harness
             print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), case {deal['case']}, rule {rule} "
@@ -236,13 +267,14 @@ class Seller(AgentExecutor):
                              + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""))
             deal["first_ask"] = ask
             move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
-        elif rule == "sofa":                            # sofa haggling by code (depts/sofa.py D), no harness call
-            nxt = sofa.next_counter(deal, reserve)
+        elif rule == "sofa" or deal.get("haggle") == "code":   # haggling by code (depts/sofa.py D): sofas, and the
+            nxt = sofa.next_counter(deal, reserve)             # 'code' arm of the 11/07 experiment; no harness call
+            tag = "sofa" if rule == "sofa" else "code haggle"
             if deal["offer"] is not None and deal["offer"] >= max(reserve, nxt):
-                move, raw = {"action": "accept"}, f"(sofa code: offer {deal['offer']} >= next counter {nxt})"
+                move, raw = {"action": "accept"}, f"({tag}: offer {deal['offer']} >= next counter {nxt})"
             else:
-                move, raw = {"action": "counter", "price": nxt}, f"(sofa code: counter {nxt}, floor {reserve})"
-            print(f"[sofa] {u['sku']} offer {deal['offer']}, last ask {deal['ask']} -> {raw}", flush=True)
+                move, raw = {"action": "counter", "price": nxt}, f"({tag}: counter {nxt}, floor {reserve})"
+            print(f"[{tag}] {u['sku']} offer {deal['offer']}, last ask {deal['ask']} -> {raw}", flush=True)
         elif code_accept_on() and deal["offer"] is not None and deal["ask"] \
                 and deal["offer"] >= CODE_ACCEPT * deal["ask"] and deal["offer"] >= reserve:
             move, raw = {"action": "accept"}, f"(code: offer {deal['offer']} >= {CODE_ACCEPT:.0%} of ask {deal['ask']})"
@@ -251,6 +283,7 @@ class Seller(AgentExecutor):
             move, raw = await harness_move(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
                                                          market=int(avg) if avg is not None else "an unknown price",
                                                          transcript="\n".join(deal["lines"])))
+            deal["calls"] = deal.get("calls", 0) + 1
             print(f"[harness] {raw}", flush=True)
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
@@ -269,6 +302,7 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             finish(task.id, "receipt", price)
+            haggle_log(task.id, deal, rule)
             msg_log(task.id, "shop", f"accept {price}", u["sku"])
             decisions.record("cs", "receipt", u["sku"], price, f"unit {u['unit']}, floor {reserve}, offer accepted")
             if u["unit"]:
@@ -278,6 +312,7 @@ class Seller(AgentExecutor):
         if action == "reject":
             await up.reject(say("No deal."))
             finish(task.id, "rejected")
+            haggle_log(task.id, deal, rule)
             msg_log(task.id, "shop", "reject", u["sku"])
             del self.open[task.id]
             return
@@ -312,8 +347,10 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context, event_queue):
         task = context.current_task
-        if self.open.pop(task.id, None) is not None:
+        d = self.open.pop(task.id, None)
+        if d is not None:
             finish(task.id, "cancelled")
+            haggle_log(task.id, d, d.get("rule"))
             msg_log(task.id, "cancel", "")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 

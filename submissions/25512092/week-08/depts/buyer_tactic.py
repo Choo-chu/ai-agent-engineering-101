@@ -4,8 +4,10 @@
   plain   60%  the old way
   appeal  20%  once, with my first offer: a short hardship line asking for a bit more off. One fixed line per shop
                (crc32 of the shop name). Never in reviews or forum posts (only negotiate() sends it).
-  facts   20%  once, with my first offer: real numbers only - my price limit for this order, the market average
-               (market_stats), the lowest price another shop sold this SKU for in the last 24 h (ledger)
+  facts2  20%  (from 11/07 ~02:20) once, with my first offer, only when another shop's lowest price in the last
+               24 h (ledger) is at least FACTS_GAP under the market average (market_stats): those two numbers, nothing
+               else; otherwise the order goes the old way (tactic_used 0)
+  facts        the first version (11/07 02:09 - ~02:20) also told my price limit; kept apart in the comparison
 
 The offer number always comes first (sellers read the first number). Recorded per negotiation in buyer_deals
 (tactic, tactic_used, secs, harness_calls), next to variant / mo_variant, so every combination can be compared.
@@ -20,7 +22,8 @@ import zlib
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = os.path.join(HERE, "buyer_tactic.json")
-TACTICS = ["plain", "appeal", "facts"]
+TACTICS = ["plain", "appeal", "facts2", "facts"]
+FACTS_GAP = 0.05
 STORIES = [
     "Honestly, my business is close to going bankrupt this week, so every bit off really helps.",
     "Money is tight this week because baby formula ate most of my budget, so a little lower would help a lot.",
@@ -76,15 +79,10 @@ def line(tactic, shop, cap=None, avg=None, low=None):
     """The sentence sent after the offer number, or None."""
     if tactic == "appeal":
         return story(shop) + " Could you accept this?"
-    if tactic == "facts":
-        parts = []
-        if cap:
-            parts.append(f"my limit for this order is {int(cap)}")
-        if avg:
-            parts.append(f"the market average is {int(avg)}")
-        if low:
-            parts.append(f"another shop sold it for {int(low)} in the last day")
-        return ("For reference: " + "; ".join(parts) + ".") if parts else None
+    if tactic == "facts2":                            # 11/07: no limit; only a real gap of >= FACTS_GAP
+        if not (avg and low and low <= avg * (1 - FACTS_GAP)):
+            return None
+        return f"For reference: the market average is {int(avg)}; another shop sold it for {int(low)} in the last day."
     return None
 
 
@@ -164,7 +162,8 @@ def interim(send, log=print):
     m = metrics(r["since"])
     r["interim_sent"] = round(time.time())
     save(r)
-    fmt = lambda k, v: (f"{k}: n {v.get('n', 0)}/{v['n_all']}, saved {v.get('saved')}, 성사 {v.get('deal_rate')}, "
+    names = {"facts": "facts_v1(한도 포함)", "facts2": "facts2"}
+    fmt = lambda k, v: (f"{names.get(k.split('|')[0], k.split('|')[0])}{'|' + k.split('|')[1] if '|' in k else ''}: n {v.get('n', 0)}/{v['n_all']}, saved {v.get('saved')}, 성사 {v.get('deal_rate')}, "
                         f"흥정 {v.get('offers')}, {v.get('secs')}s, timeout {v.get('timeouts')}, 하네스 {v.get('harness_calls')}")
     text = ("buyer 협상 실험 24시간 중간 결과 (같은 협상 수 기준)\n" + "\n".join(fmt(k, v) for k, v in m["tactic"].items())
             + "\n조합별:\n" + "\n".join(fmt(k, v) for k, v in sorted(m["combo"].items()))
