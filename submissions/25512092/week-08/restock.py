@@ -18,6 +18,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import alerts  # noqa: E402
 import decisions  # noqa: E402
 import dept_reports  # noqa: E402
 from depts import ceo_policy  # noqa: E402
@@ -36,6 +37,12 @@ from sales_report import HIGH_MAX, HIGH_MIN  # noqa: E402
 
 def log(msg):
     print(f"[restock] {msg}", flush=True)
+    if " failed" in msg and not msg.startswith("market_db refresh"):     # refresh blips: qc's refresh-age check
+        try:
+            import alerts
+            alerts.send("urgent", "restock:" + msg.split(" failed")[0][:40], msg[:300])
+        except Exception:
+            pass
 
 
 def main():
@@ -85,6 +92,10 @@ def main():
         ceo_policy.tick(inv, catalog, log=log)          # CEO: policy proposals (shadow) or policy.json (live)
     except Exception as e:
         log(f"ceo failed: {e}")
+    try:
+        alerts.watch(dept_reports.load(), log=log)     # urgent issues, kit restarts -> file, console, Telegram
+    except Exception as e:
+        print(f"[restock] alerts watch: {type(e).__name__}", flush=True)
 
     case = strategy.shop_case(inv)
     r = inv.get("restock") or {}

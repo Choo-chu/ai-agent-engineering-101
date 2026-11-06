@@ -322,6 +322,25 @@ def daily(db, inv, catalog, log):
     db.execute("INSERT OR REPLACE INTO meta VALUES ('daily_done', ?)", (day.strftime("%Y%m%d"),))
     db.commit()
     log(f"[report] daily {day:%Y-%m-%d}: {money_line(money)}")
+    try:                                              # the once-a-day message for the person
+        import alerts
+        import policy as _pol
+        ceo = json.load(open(os.path.join(HERE, "ceo_state.json"), encoding="utf-8")).get("mode", "?")
+        n_alerts = 0
+        try:
+            n_alerts = sum(1 for ln in open(alerts.PATH, encoding="utf-8")
+                           if '"level": "urgent"' in ln and t0 <= json.loads(ln)["ts"] < t1)
+        except OSError:
+            pass
+        alerts.send("daily", f"daily:{day:%Y%m%d}", chr(10).join([
+            f"{day:%m-%d} sold {s['sales']}, revenue {s['revenue']:,}, sales profit {s['profit']:,}",
+            f"cash {money.get('cash1', 0):,}, stock at cost {money.get('stock1', 0):,}, book change "
+            f"{money.get('book_change', 0):+,}, storage ~{money.get('storage', 0):,}",
+            f"STOCK_CAP runs {money['cap_runs']}, budget held back {money['cap_budget_cut']:,}",
+            f"CEO {ceo}, policy v{_pol.version()}; buying split {share:.0%} / {cap} ({reason})",
+            f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
+    except Exception as e:
+        log(f"[report] daily message: {type(e).__name__}")
     log(f"[report] daily {day:%Y-%m-%d}: sold {s['sales']}, profit {s['profit']:,} -> {os.path.basename(path)}; "
         f"high share {share:.0%}, max {cap} ({reason})")
 

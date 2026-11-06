@@ -76,3 +76,38 @@ def send(level, key, text, log=print):
         pass
     log(f"[alert] {level} {key}: {text} (telegram {tg})")
     return tg
+
+
+KEEPALIVE_LOG = os.path.join(HERE, "logs", "keepalive.log")
+SEEN = os.path.join(HERE, "logs", "alerts_seen.json")
+
+
+def watch(reports=None, log=print):
+    """Called by restock.py every minute: urgent issues in the department reports, and new keepalive.log lines
+    (kit restarted, public card not answering twice or more in a row)."""
+    try:
+        seen = json.load(open(SEEN, encoding="utf-8"))
+    except (OSError, ValueError):
+        seen = {"keepalive_lines": None}
+    try:
+        lines = open(KEEPALIVE_LOG, encoding="utf-8").read().splitlines()
+    except OSError:
+        lines = []
+    start = seen.get("keepalive_lines")
+    if start is None:
+        start = len(lines)                             # first run: only lines from now on
+    for ln in lines[start:]:
+        if "kit started" in ln:
+            send("urgent", "kit_restart", f"keepalive restarted the kit: {ln[:160]}", log)
+        elif "not answering (2/" in ln or "not answering (3/" in ln:
+            send("urgent", "shop_offline", f"public shop card not answering: {ln[:160]}", log)
+    seen["keepalive_lines"] = len(lines)
+    for dept, r in (reports or {}).items():
+        for i in r.get("issues", []):
+            if i.get("level") == "urgent":
+                send("urgent", f"dept:{dept}:{i['text'][:30]}", f"{dept}: {i['text']}", log)
+    try:
+        with open(SEEN, "w", encoding="utf-8") as f:
+            json.dump(seen, f)
+    except OSError:
+        pass

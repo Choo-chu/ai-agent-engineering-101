@@ -128,10 +128,12 @@ def build(inv, catalog, now=None):
         # cs
         posts = [d for d in dec if d["dept"] == "cs" and d["action"] == "post"]
         guards = [d for d in dec if d["dept"] == "cs" and d["action"] == "guard"]
+        share1 = w["one_star"] / w["reviews"] if w["reviews"] else 0
         reports["cs"] = {"metrics": {"reviews": w["reviews"], "stars": w["stars"], "one_star": w["one_star"],
                                      "cancelled": w["cancelled"], "posts": len(posts), "guards": len(guards)},
-                         "issues": [] if not w["reviews"] or w["one_star"] / w["reviews"] < 0.3 else
-                         [{"level": "warn", "text": f"{w['one_star']} of {w['reviews']} reviews are 1 star", "refs": []}]}
+                         "issues": [] if share1 < 0.3 else
+                         [{"level": "urgent" if share1 >= 0.5 and w["reviews"] >= 20 else "warn",
+                           "text": f"{w['one_star']} of {w['reviews']} reviews in {WINDOW_H} h are 1 star", "refs": []}]}
 
         # qc
         no_cost = db.execute("SELECT COUNT(*) FROM settles s WHERE s.shop=? AND s.ts>=? AND "
