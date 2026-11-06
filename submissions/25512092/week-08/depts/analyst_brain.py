@@ -1,8 +1,8 @@
-"""Strategy analyst, step 2: collect (every 15 min, rule-based) and analyse (every 60 min, sonnet).
+"""Strategy analyst, step 2: collect (every 15 min, rule-based) and analyse (every 2 h, haiku; 11/06: was 60 min, sonnet).
 
 Schedule (person's decisions 11/06): from START (11/07 20:00); before SEND_FROM (11/08 07:00) proposals are only
 recorded; 01:00-07:00 they wait ("queued") and go out together; at most DAY_PROPOSALS sent a day, the same key at
-most once in KEY_GAP_S. LLM: sonnet, at most DAY_CALLS calls a day; a usage-limit message pauses the analyst
+most once in KEY_GAP_S. LLM: haiku, at most DAY_CALLS (12) calls a day; a usage-limit message pauses the analyst
 (only) until the reset time it names (1 h if none) and alerts. Usage of each call is kept (analyst_calls).
 Injection: the model gets no tools; forum text is cleaned, capped and flagged; the prompt marks all data as
 untrusted; the answer must be JSON and every proposal passes validate() (allowed key, right type, inside the
@@ -26,10 +26,10 @@ HERE = analyst.HERE
 START = datetime(2026, 11, 7, 20, 0).timestamp()
 SEND_FROM = datetime(2026, 11, 8, 7, 0).timestamp()
 QUIET = (1, 7)
-COLLECT_S, ANALYSE_S = 900, 3600
-DAY_CALLS = 24
+COLLECT_S, ANALYSE_S = 900, 7200          # 11/06 evening: analysis every 2 h (was 1 h) to save the weekly limit
+DAY_CALLS = 12                             # was 24
 DAY_PROPOSALS, KEY_GAP_S = 6, 6 * 3600
-LLM_CMD = 'claude -p --model sonnet --tools "" --setting-sources "" --no-session-persistence --output-format json'
+LLM_CMD = 'claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence --output-format json'  # was sonnet
 MARKET = "https://market.ourolabs.ai"
 
 POLICY_KEYS = {"purchasing.spend_share", "purchasing.high_share", "purchasing.high_max", "purchasing.min_margin",

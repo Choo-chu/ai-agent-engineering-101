@@ -1,8 +1,8 @@
 """Rollout of seller concurrency (option A, person's decision 11/06). Runs once, detached:
 
   19:01, 20:01  seller busy share of 18:00 and 19:00 -> Telegram
-                either under 70% -> "hold, confirm first", stop (nothing applied)
-  22:00         seller_concurrency.json {"enabled": true, "limit": 3}; restart the seller only (the kit starts it
+                either under 70% -> concurrency held ("confirm first"); code accept (98%) still goes on at 22:00
+  22:00         seller_concurrency.json {"enabled": <both >= 70%>, "limit": 3, "code_accept": true}; restart the seller only (the kit starts it
                 again; the 15-min receipt hold is restored from shop_deals); check it came back -> Telegram
   11/07 09:00   before / after: harness calls per hour, 'timed out' reviews per hour, profit per negotiation -> Telegram
 Log: logs/seller_conc_rollout.log
@@ -99,15 +99,17 @@ def main():
     until(T("2026-11-06 20:01"))
     u19, _ = util_of(T("2026-11-06 19:00"))
     log(f"18h {u18}, 19h {u19}")
-    if u18 is None or u19 is None or u18 < 0.70 or u19 < 0.70:
+    conc = not (u18 is None or u19 is None or u18 < 0.70 or u19 < 0.70)
+    if not conc:
         alerts.send("urgent", "conc_hold", f"seller 사용률 18시 {pc(u18)}, 19시 {pc(u19)}: 70% 밑이 있어 A(동시 처리) "
-                    "적용 보류. 적용하려면 확인 필요 (22:00 자동 적용 안 함)", log)
-        log("held: under 70%")
-        return
-    alerts.send("info", "conc_go", f"seller 사용률 18시 {pc(u18)}, 19시 {pc(u19)}: 22:00에 A(동시 처리, 3개) 적용 예정", log)
+                    "적용 보류 (적용하려면 확인 필요). 22:00 재시작은 코드 수락(98%)만 켜고 진행", log)
+        log("concurrency held: under 70%; code accept only")
+    else:
+        alerts.send("info", "conc_go", f"seller 사용률 18시 {pc(u18)}, 19시 {pc(u19)}: 22:00에 A(동시 처리, 3개) + "
+                    "코드 수락(98%) 적용 예정", log)
     until(T("2026-11-06 22:00"))
-    with open(FLAG, "w", encoding="utf-8") as f:
-        json.dump({"enabled": True, "limit": 3, "since": round(time.time())}, f)
+    with open(FLAG, "w", encoding="utf-8") as f:                 # code accept: person's decision, regardless of 70%
+        json.dump({"enabled": conc, "limit": 3, "code_accept": True, "since": round(time.time())}, f)
     t = time.time()
     killed = restart_seller()
     log(f"flag on, seller restarted (killed {killed})")
@@ -115,10 +117,10 @@ def main():
     back = seller_back(t)
     json.dump({"ts": t}, open(APPLIED, "w"))
     alerts.send("urgent" if not back else "info", "conc_applied",
-                f"A 적용 {datetime.fromtimestamp(t):%H:%M}: seller 재시작 " + (f"정상 ({back})" if back else "후 확인 안 됨, 점검 필요"), log)
+                f"{'A + ' if conc else ''}코드 수락 적용 {datetime.fromtimestamp(t):%H:%M}: seller 재시작 " + (f"정상 ({back})" if back else "후 확인 안 됨, 점검 필요"), log)
     until(T("2026-11-07 09:00"))
     before, after = metrics(t - 6 * 3600, t), metrics(t, time.time())
-    alerts.send("daily", "conc_report", "A(동시 처리) 전후 비교 (시간대가 달라 참고용)\n"
+    alerts.send("daily", "conc_report", f"{'A(동시 처리) + ' if conc else ''}코드 수락 전후 비교 (시간대가 달라 참고용)\n"
                 f"전 {before['hours']}h: 호출 {before['calls_per_h']}/h, timed out {before['timed_out_per_h']}/h, "
                 f"협상 {before['negotiations_per_h']}/h, 협상당 이익 {before['profit_per_negotiation']}\n"
                 f"후 {after['hours']}h: 호출 {after['calls_per_h']}/h, timed out {after['timed_out_per_h']}/h, "

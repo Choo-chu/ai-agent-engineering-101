@@ -123,6 +123,19 @@ def concurrency():
         return 0
 
 
+CODE_ACCEPT = 0.98           # person's decision 11/06: an offer this close to my last ask is accepted without the harness
+
+
+def code_accept_on():
+    """Code acceptance (saves harness calls): from CONC_FROM, while seller_concurrency.json has code_accept true."""
+    if time.time() < CONC_FROM:
+        return False
+    try:
+        return bool(json.loads(CONC_FLAG.read_text(encoding="utf-8")).get("code_accept"))
+    except (OSError, ValueError):
+        return False
+
+
 async def harness_move(prompt):
     """The harness's next move. With concurrency on, the call runs in a worker thread (the event loop keeps
     serving other negotiations) and at most `limit` calls run at once (asyncio.Semaphore). Unit choice and the
@@ -206,6 +219,10 @@ class Seller(AgentExecutor):
                              f"case {deal['case']}, rule {rule}, floor {reserve}, variant {deal['key']} {deal['variant']}"
                              + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""))
             move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
+        elif code_accept_on() and deal["offer"] is not None and deal["ask"] \
+                and deal["offer"] >= CODE_ACCEPT * deal["ask"] and deal["offer"] >= reserve:
+            move, raw = {"action": "accept"}, f"(code: offer {deal['offer']} >= {CODE_ACCEPT:.0%} of ask {deal['ask']})"
+            print(f"[code] accept {deal['offer']} >= {CODE_ACCEPT:.0%} of ask {deal['ask']}, no harness call", flush=True)
         else:
             move, raw = await harness_move(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
                                                          market=int(avg) if avg is not None else "an unknown price",
