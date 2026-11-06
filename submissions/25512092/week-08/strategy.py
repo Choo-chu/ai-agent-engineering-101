@@ -119,6 +119,8 @@ def tick(inv, log=print):
             if old != new:
                 held = f", {old} held {(now - st.get(role + '_since', now)) / 60:.0f} min" if old else ""
                 log(f"[case] {role} {old or '-'} -> {new}: {why}{held}")
+                __import__("decisions").record("ceo", "case", role, new, f"{why}{held}",
+                                               limit_hit={"overstock": "STOCK_CAP", "cash_low": "CASH_RESERVE"}.get(new))
                 st[role], st[role + "_since"] = new, now
         db.execute("INSERT INTO cases VALUES (?,?,?,?,?,?)", (now, sc, bc, cash, stock, f"{sr} | {br}"))
         db.execute("INSERT OR REPLACE INTO meta VALUES ('case_ts', ?)", (str(now),))
@@ -239,6 +241,8 @@ def adjust(log=print, force=False):
                 db.execute("INSERT INTO variant_weights VALUES (?,?,?,?,?,?,?)",
                            (now, key, v, w[v], perf[v][1], perf[v][0], reason))
             log(f"[variant] {key}: {reason} -> weights {w}")
+            __import__("decisions").record("buyer" if key.startswith("buyer") else "sales", "variant_weights", key,
+                                           dict(w), reason)
         db.commit()
     finally:
         db.close()

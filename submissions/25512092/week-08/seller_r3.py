@@ -27,6 +27,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 from harness import CMD, ask_json
 from forum_post import promo
+import decisions
 import strategy
 from market_db import connect, load_stats, price_of
 from pricing import floor
@@ -179,6 +180,9 @@ class Seller(AgentExecutor):
                   f"-> floor {reserve}, first ask {ask}" + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""),
                   flush=True)
             record(task.id, deal, u, reserve, ask)
+            decisions.record("sales", "first_ask", u["sku"], ask, f"unit {u['unit']}, cost {u['cost']}, avg {avg}, "
+                             f"case {deal['case']}, rule {rule}, floor {reserve}, variant {deal['key']} {deal['variant']}"
+                             + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""))
             move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
         else:
             move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
@@ -188,6 +192,8 @@ class Seller(AgentExecutor):
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
             print(f"[guard] accept of {deal['offer']} below floor {reserve} -> counter", flush=True)
+            decisions.record("cs", "guard", u["sku"], deal["offer"], f"harness accepted under floor {reserve}",
+                             limit_hit="floor")
             action, move = "counter", {"price": deal["ask"] or u["list_price"]}
         if action == "accept":
             price = deal["offer"]
@@ -200,6 +206,7 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             finish(task.id, "receipt", price)
+            decisions.record("cs", "receipt", u["sku"], price, f"unit {u['unit']}, floor {reserve}, offer accepted")
             if u["unit"]:
                 self.sold[u["unit"]] = time.time()
             del self.open[task.id]

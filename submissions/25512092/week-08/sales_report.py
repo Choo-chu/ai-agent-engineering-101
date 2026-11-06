@@ -327,6 +327,8 @@ def daily(db, inv, catalog, log):
     else:
         reason = f"no change (high {pct(hr)}, low {pct(lr)})"
     db.execute("INSERT INTO policy VALUES (?,?,?,?)", (now, share, cap, f"{day:%Y-%m-%d}: {reason}"))
+    __import__("decisions").record("ceo", "buying_split", "high_share/high_max", {"high_share": share, "high_max": cap},
+                                   f"{day:%Y-%m-%d}: {reason}")
 
     money = day_money(db, t0, t1, s)
     lines = [f"# Choo Shop daily report {day:%Y-%m-%d}", "",

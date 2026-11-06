@@ -349,12 +349,17 @@ def run(state_dir, inv, catalog, log=print):
                 _send(state_dir, p)
                 st["shop_ts"] = now
                 log(f"[forum] shop {it['kind'] if it else 'comparison ad'}: {p['post'][:110]}")
+                __import__("decisions").record("cs", "post", f"shop {it['kind'] if it else 'comparison ad'}",
+                                               p["post"][:200], "shop slot, queue order endgame > clearance > want "
+                                               "> aging > comparison ad")
         once = _once(st)                               # a one-off record (forum_once.json) takes the next buyer slot
         if now - st["buyer_ts"] >= POST_EVERY_S and once:
             _send(state_dir, {k: once[k] for k in ("post", "refs", "as")})
             st["once_done"].append(once["key"])
             st["buyer_ts"] = now
             log(f"[forum] buyer once {once['key']}: {once['post'][:110]}")
+            __import__("decisions").record("cs", "post", f"buyer once {once['key']}", once["post"][:200],
+                                           "forum_once.json, posted once")
         elif now - st["buyer_ts"] >= POST_EVERY_S:
             for i in range(len(BUYER_TURNS)):          # this turn first; skip turns with nothing to post
                 k = (st["buyer_turn"] + i) % len(BUYER_TURNS)
@@ -364,6 +369,8 @@ def run(state_dir, inv, catalog, log=print):
                     _send(state_dir, p)
                     st["buyer_ts"] = now
                     log(f"[forum] buyer {BUYER_TURNS[k]}: {p['post'][:110]}")
+                    __import__("decisions").record("cs", "post", f"buyer {BUYER_TURNS[k]}", p["post"][:200],
+                                                   f"buyer rotation {BUYER_TURNS}")
                     break
     finally:
         db.close()

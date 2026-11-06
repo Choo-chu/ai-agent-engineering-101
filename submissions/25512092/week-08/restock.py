@@ -17,6 +17,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import decisions  # noqa: E402
 import forum_post  # noqa: E402
 import pricing  # noqa: E402
 import strategy  # noqa: E402
@@ -92,8 +93,10 @@ def main():
     if case in ("cash_low", "overstock") or pricing.restock_stopped():
         if (inv.get("restock") or {}).get("open"):
             log(f"case {case}{', last 36 h' if pricing.restock_stopped() else ''}: no restock")
+            decisions.record("purchasing", "no_restock", case, 0, f"shop case {case}"
+                             + (", last 36 h" if pricing.restock_stopped() else ""), limit_hit={"overstock": "STOCK_CAP", "cash_low": "CASH_RESERVE"}.get(case, "RESTOCK_STOP_H"))
         if case == "overstock" and not pricing.restock_stopped() and soon:
-            cap_record(inv, units, catalog, 0, [], case)          # log only: what the cap kept from buying
+            safe(cap_record, inv, units, catalog, 0, [], case)    # log only: what the cap kept from buying
         print(json.dumps({"buy": []}))
         return
     if not soon:
@@ -104,12 +107,31 @@ def main():
     budget = min((inv.get("balance", 0) - CUSHION) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
     if budget <= 0:
         log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")
-        cap_record(inv, units, catalog, 0, [], case)
+        decisions.record("purchasing", "no_restock", case, 0, f"budget {int(budget):,}: cash "
+                         f"{inv.get('balance', 0):,}, stock at cost {held_cost:,}", limit_hit="CASH_RESERVE/STOCK_CAP")
+        safe(cap_record, inv, units, catalog, 0, [], case)
         print(json.dumps({"buy": []}))
         return
-    plan = make_plan(inv, units, catalog, budget, log)
-    cap_record(inv, units, catalog, budget, plan, case)
+    lines = []
+
+    def plan_log(m):
+        log(m)
+        lines.append(m)
+    plan = make_plan(inv, units, catalog, budget, plan_log)
+    for m in lines:                                  # one decision per planned / skipped / merged line
+        kind = "dedup" if m.startswith("[dedup]") else "skip" if m.endswith("-> skip") else "buy" if " -> buy " in m else None
+        if kind:
+            decisions.record("purchasing", kind, m.split(":")[0][:60], m.rsplit("-> ", 1)[-1], m[:300])
+    safe(cap_record, inv, units, catalog, budget, plan, case)
     print(json.dumps({"buy": plan}))
+
+
+def safe(fn, *a):
+    """Logging helpers must never cost the run its buy line."""
+    try:
+        fn(*a)
+    except Exception as e:
+        log(f"{fn.__name__} failed: {e}")
 
 
 def make_plan(inv, units, catalog, budget, log):
@@ -217,6 +239,9 @@ def cap_record(inv, units, catalog, budget, plan, case):
     log(f"[cap] case {case}, cash {cash:,}, stock at cost {stock:,}: budget without the cap {int(free):,} vs "
         f"actual {int(max(budget, 0)):,}; without the cap would also buy: "
         + (", ".join(f"{names[k][:24]} x{q}" for k, q in extra) or "nothing more"))
+    decisions.record("purchasing", "cap", case, {"budget_free": int(free), "budget": int(max(budget, 0)),
+                                                 "extra": dict(extra)},
+                     f"cash {cash:,}, stock at cost {stock:,}", limit_hit="STOCK_CAP")
     db = connect()
     try:
         db.execute("CREATE TABLE IF NOT EXISTS cap_runs (ts REAL PRIMARY KEY, shop_case TEXT, cash INTEGER, "

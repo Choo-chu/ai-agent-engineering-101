@@ -522,6 +522,8 @@ def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, w
     else:
         outcome, reason = "fail", res["ended"] or res["last_state"] or "no answer"
     price = (res["receipt"] or {}).get("price") if res["deal"] else None
+    __import__("decisions").record("buyer", outcome, sku, price, f"shop {c['name']}, case {case}, {variant_key} "
+                                   f"{variant}, min offers {min_offers}, offers {res.get('offers', 0)}, {reason}")
     try:
         db = connect()
         db.execute("INSERT INTO buyer_deals (ts, shop, shop_url, sku, list_price, buyer_case, variant_key, variant, "
