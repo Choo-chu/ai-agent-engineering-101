@@ -140,6 +140,10 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] tunnel check: {type(e).__name__}")
     try:
+        forum_check(seen, log)
+    except Exception as e:
+        log(f"[alert] forum check: {type(e).__name__}")
+    try:
         cap_review(seen, log)
     except Exception as e:
         log(f"[alert] cap review: {type(e).__name__}")
@@ -160,6 +164,30 @@ def watch(reports=None, log=print):
             json.dump(seen, f)
     except OSError:
         pass
+
+
+FORUM_DROP = 0.01           # buyer forum rating (Wilson lower bound) down this much between board snapshots
+
+
+def forum_check(seen, log=print):
+    """Replaces tools/patch35_watch.py (option C, after Patch 3.5 went live 11/06 18:05): compare my buyer's
+    forum rating in the two newest 30-min board snapshots (board_hist, no extra request); a drop of FORUM_DROP or
+    more (a dislike?) -> urgent alert, once per snapshot."""
+    from market_db import connect
+    db = connect()
+    try:
+        rows = db.execute("SELECT ts, buyer FROM board_hist ORDER BY ts DESC LIMIT 2").fetchall()
+    finally:
+        db.close()
+    if len(rows) < 2 or seen.get("forum_checked") == rows[0][0]:
+        return None
+    seen["forum_checked"] = rows[0][0]
+    new, old = json.loads(rows[0][1]).get("forum"), json.loads(rows[1][1]).get("forum")
+    if new is not None and old is not None and old - new >= FORUM_DROP:
+        return send("urgent", f"forum_drop:{int(rows[0][0])}", f"buyer forum rating fell {old:.3f} -> {new:.3f} "
+                    f"between {time.strftime('%H:%M', time.localtime(rows[1][0]))} and "
+                    f"{time.strftime('%H:%M', time.localtime(rows[0][0]))} (a dislike?)", log)
+    return None
 
 
 SWAPS = os.path.join(HERE, "logs", "tunnel_swaps.jsonl")

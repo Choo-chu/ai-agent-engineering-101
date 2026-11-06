@@ -1,5 +1,5 @@
 @echo off
-rem Starts keepalive.py (which runs the market kit) and tools\patch35_watch.py, each only if it is not running yet.
+rem Starts keepalive.py (which runs the market kit) if it is not running yet.
 rem Task Scheduler "ChooMarket" runs this at logon. MARKET_OWNER (claim code) and TELEGRAM_* are read from the user's
 rem environment (setx); nothing secret is in this file. Output: logs\start_market.log
 setlocal
@@ -27,13 +27,6 @@ if errorlevel 1 (
 )
 
 :watch
-powershell -NoProfile -ExecutionPolicy Bypass -File "%W%\tools\is_running.ps1" patch35_watch.py
-if errorlevel 1 (
-  echo %date% %time% patch35_watch already running: skipped >> "%LOG%"
-) else (
-  cd /d "%W%"
-  start "patch35_watch" /min "%PY%" -X utf8 tools\patch35_watch.py
-  echo %date% %time% patch35_watch started >> "%LOG%"
-)
+rem tools\patch35_watch.py is no longer started: its checks moved into the restock hook (alerts.forum_check) on 11/06
 endlocal
 exit /b 0
