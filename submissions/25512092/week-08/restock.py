@@ -28,7 +28,7 @@ COST_SHARE = {"goods": 0.60, "food": 0.50}   # expected cost / list price, avera
 MIN_MARGIN = 0.10      # market average must beat the expected cost by 10%
 MIN_SOLD_30M = 3       # market-wide units sold in 30 min to count as "selling"
 MY_SHARE = 0.25        # share of the market's sales I plan stock for, until the next window (20 min)
-MAX_QTY = 20
+from limits import MAX_LINES, MAX_QTY  # noqa: E402  hard limits (limits.py)
 SPEND_SHARE = 0.4      # at most this share of the spendable balance per run
 CUSHION = strategy.CASH_RESERVE    # 1.5M: restock spends only (cash - CUSHION); under it the case is cash_low
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
@@ -190,7 +190,7 @@ def make_plan(inv, units, catalog, budget, log):
         plan.append({"sku": sku, "qty": qty})
         log(f"[{tier}] {s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
             f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''}{rot} -> buy {qty}")
-        if len(plan) == 10:
+        if len(plan) == MAX_LINES:
             break
     return plan
 

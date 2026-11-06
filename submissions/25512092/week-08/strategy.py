@@ -24,10 +24,7 @@ import time
 import pricing
 from market_db import ME as ME_NAME, connect, meta
 
-CASH_RESERVE = 1_500_000
-CASH_WARN = 1_000_000
-STOCK_CAP = 4_000_000          # 11/06: was 2.5M
-STOCK_EXIT = 3_520_000         # overstock ends only under this (was 2.2M)
+from limits import CASH_RESERVE, CASH_WARN, STOCK_CAP, STOCK_EXIT  # noqa: E402  hard limits (limits.py)
 MIN_HOLD_S = 30 * 60
 IMMEDIATE = ("endgame", "cash_low")
 CASE_EVERY_S = 300

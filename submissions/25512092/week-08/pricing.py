@@ -25,13 +25,10 @@ AGING_AFTER_H = 24      # non-food older than this starts its markdown
 AGING_STEP_H = 6
 AGING_CUT = 0.10
 AGING_MIN_COST = 0.90   # aging never goes below 90% of cost
-ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()      # local time (KST)
+from limits import ENDGAME_MIN, RESTOCK_STOP_H, ROUND_END  # noqa: E402,F401  hard limits (limits.py)
 ENDGAME_H = 48
 ENDGAME_STEP_H = 6
 ENDGAME_CUT = 0.10
-ENDGAME_MIN = 1.00     # 11/06: was 0.30; ALL ranks shops by book = cash + unsold units at cost (agent.md),
-                       # so a sale below cost lowers book while an unsold goods unit keeps its cost in book
-RESTOCK_STOP_H = 36       # restock.py buys nothing in the last 36 h
 
 
 def held_cost(inv):
