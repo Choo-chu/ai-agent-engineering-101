@@ -15,7 +15,9 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 os.chdir(HERE)
-from depts import analyst, analyst_brain  # noqa: E402
+from depts import analyst, analyst_apply, analyst_brain  # noqa: E402
+
+analyst_apply.register()                              # step 3: approvals apply, 되돌리기 undoes
 
 
 def main():

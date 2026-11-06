@@ -98,12 +98,14 @@ def version():
     return load().get("version")
 
 
-def write(sections, reason, by="ceo"):
-    """New version with these sections changed ({section: {key: value}}); values are checked like reads."""
+def write(sections, reason, by="ceo", replace=False):
+    """New version with these sections changed ({section: {key: value}}); values are checked like reads.
+    replace=True: each given section is replaced whole (a key left out is removed; used by undo)."""
     cur = load()
     new = {k: v for k, v in cur.items() if k in DEFAULTS}
     for sec, kv in sections.items():
-        new[sec] = dict(new.get(sec) or {}, **{k: _check(sec, k, v) for k, v in kv.items()})
+        checked = {k: _check(sec, k, v) for k, v in kv.items()}
+        new[sec] = checked if replace else dict(new.get(sec) or {}, **checked)
     new.update(version=(cur.get("version") or 0) + 1, ts=round(time.time()), by=by, reason=reason)
     tmp = PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:

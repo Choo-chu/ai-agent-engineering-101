@@ -96,6 +96,8 @@ def send_proposal(kind, key, value, reason, evidence="", expire_s=EXPIRE_S):
 
 
 HANDLERS = {}        # kind -> function(proposal row dict) -> result text; steps 3-4 register appliers here
+REVERT = None        # function(proposal row dict) -> result text (depts/analyst_apply.revert)
+UNDO_BUTTON = lambda pid: {"inline_keyboard": [[{"text": "되돌리기", "callback_data": f"revert:{pid}"}]]}
 
 
 def _finish(p, status, result, cq_id):
@@ -105,12 +107,13 @@ def _finish(p, status, result, cq_id):
         d.commit()
     finally:
         d.close()
-    label = {"approved": "승인됨", "rejected": "거절됨", "failed": "승인했지만 반영 실패"}[status]
+    label = {"approved": "승인됨", "rejected": "거절됨", "failed": "승인했지만 반영 실패", "reverted": "되돌림"}[status]
     _call("answerCallbackQuery", callback_query_id=cq_id, text=label)
     if p.get("message_id"):
+        extra = {"reply_markup": UNDO_BUTTON(p["id"])} if status == "approved" and p["kind"] in ("policy", "limit") else {}
         _call("editMessageText", chat_id=chat_id(), message_id=p["message_id"],
               text=(f"[제안 #{p['id']}] {p['key']} -> {json.loads(p['value'])}\n{p['reason']}\n"
-                    f"=> {label} {datetime.now():%m-%d %H:%M}" + (f": {result}" if result else ""))[:4000])
+                    f"=> {label} {datetime.now():%m-%d %H:%M}" + (f": {result}" if result else ""))[:4000], **extra)
     decisions.record("analyst", status, p["key"], json.loads(p["value"]), f"#{p['id']}: {result or label}")
     log(f"proposal #{p['id']} {status}: {result}")
 
@@ -134,6 +137,16 @@ def handle_callback(cq):
         _call("answerCallbackQuery", callback_query_id=cq["id"], text="없는 제안")
         return "unknown"
     p = dict(row)
+    if action == "revert":                         # the 되돌리기 button on an applied approval
+        if p["status"] != "approved" or REVERT is None:
+            _call("answerCallbackQuery", callback_query_id=cq["id"], text="되돌릴 수 없음")
+            return "no revert"
+        try:
+            _finish(p, "reverted", REVERT(p), cq["id"])
+        except Exception as e:
+            _call("answerCallbackQuery", callback_query_id=cq["id"], text="되돌리기 실패")
+            alerts.send("urgent", f"analyst_revert:{p['id']}", f"#{p['id']} 되돌리기 실패: {type(e).__name__}: {str(e)[:120]}")
+        return "revert"
     if p["status"] != "sent" or time.time() > p["expires"]:
         _call("answerCallbackQuery", callback_query_id=cq["id"], text="이미 처리됨")
         return "done already"
