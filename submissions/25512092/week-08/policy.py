@@ -23,7 +23,8 @@ HISTORY = os.path.join(HERE, "logs", "policy_history.jsonl")
 DEFAULTS = {
     "purchasing": {"spend_share": 0.4, "min_margin": 0.10, "my_share": 0.25, "wanted_qty": 3, "min_sold_30m": 3,
                    "food_min_shelf_h": 24, "max_break": 0.15, "perishable_trial_market_30m": 3,
-                   "perishable_trial_qty": 2},
+                   "perishable_trial_qty": 2,
+                   "sofa_trial_start": 0.0, "sofa_trial_end": 0.0},      # person's decision 11/06 (not a CEO key)
     "sales": {"warranty_enabled": True, "warranty_h": 48, "warranty_max_break": 0.05, "warranty_min_n": 5},
     "logistics": {"near_expiry_h": 12, "clearance_cut_per_h": 0.10, "clearance_max_cut": 0.90,
                   "aging_after_h": 24, "aging_step_h": 6, "aging_cut": 0.10, "aging_min_cost": 0.90},
@@ -32,6 +33,8 @@ DEFAULTS = {
 }
 # keys the policy may add that have no default: until the CEO sets them, the department keeps its old source
 OPTIONAL = {"purchasing": {"high_share", "high_max"}}
+# keys set by the person, not the CEO: reset() keeps their current values
+USER_KEYS = {"purchasing": {"sofa_trial_start", "sofa_trial_end"}}
 
 _cache = {"mtime": None, "data": None, "clipped": set()}
 
@@ -115,6 +118,10 @@ def reset(reason, by="ceo_guard"):
     """Back to DEFAULTS (version 1's values), dropping every key the CEO added; the version number still grows."""
     cur = load()
     new = {k: dict(v) for k, v in DEFAULTS.items()}
+    for sec, keys in USER_KEYS.items():                 # the person's keys survive a CEO revert
+        for k in keys:
+            if (cur.get(sec) or {}).get(k) is not None:
+                new[sec][k] = cur[sec][k]
     new.update(version=(cur.get("version") or 0) + 1, ts=round(time.time()), by=by, reason=reason)
     tmp = PATH + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:

@@ -298,13 +298,14 @@ def daily(db, inv, catalog, log):
 
     money = day_money(db, t0, t1, s)
     hc = high_cancel_reasons(db, t0, t1, catalog)
+    sofa = sofa_trial_text(sofa_trial_numbers(db, catalog, t1), now=t1).replace(chr(10), "; ")
     lines = [f"# Choo Shop daily report {day:%Y-%m-%d}", "",
              f"- sales {s['sales']}, revenue {s['revenue']:,}, profit {s['profit']:,}",
              f"- profit / cost: low-price {pct(lr)} ({s['low_profit']:,} on {s['low_cost']:,}), "
              f"high-price {pct(hr)} ({s['high_profit']:,} on {s['high_cost']:,})",
              f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}",
              f"- {perishable_line(perishable_numbers(db, t0, t1, catalog, inv))}", "",
-             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["", f"- {high_cancel_line(hc)}", ""] +             cap_compare_md(cap_compare(db, t1)) + ["",
+             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["", f"- {high_cancel_line(hc)}", f"- {sofa}", ""] +             cap_compare_md(cap_compare(db, t1)) + ["",
              "## Sales by category", ""] + \
             [f"- {k}: {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])] + \
             ["", "## Top 3 SKUs by profit", ""] + \
@@ -340,6 +341,7 @@ def daily(db, inv, catalog, log):
             f"STOCK_CAP runs {money['cap_runs']}, budget held back {money['cap_budget_cut']:,}",
             cap_compare_line(cap_compare(db, t1)) or "no STOCK_CAP change",
             high_cancel_line(hc),
+            sofa,
             f"CEO {ceo}, policy v{_pol.version()}; buying split {share:.0%} / {cap} ({reason})",
             f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
     except Exception as e:
@@ -489,3 +491,56 @@ def high_cancel_line(h):
     return (f"high-price negotiations {h['negotiations']}, cancelled {h['cancelled']}, receipts {h['receipts']}; "
             f"reasons from the {n} reviews that name a high-price SKU (most reviews name none): price {share('price')}, stock {share('stock')}, "
             f"delay {share('delay')}, other {share('other')}")
+
+
+SOFA_CAT = "소파/의자/스툴"
+
+
+def sofa_trial_numbers(db, catalog, now=None):
+    """The sofa trial so far (policy purchasing.sofa_trial_start/end): units bought, sold, hours held, profit,
+    storage (1% of cost a day while held), my sofa negotiations and the buyers' reasons where a review names one."""
+    import re
+    import policy
+    now = now or time.time()
+    t0, t1 = policy.get("purchasing", "sofa_trial_start"), policy.get("purchasing", "sofa_trial_end")
+    if not t0:
+        return None
+    sofas = {k for k, c in catalog.items() if (c.get("category") or "").split(">")[-1] == SOFA_CAT}
+    q = ",".join("?" * len(sofas)) or "''"
+    units = db.execute(f"SELECT unit, sku, cost, supplied_at FROM my_stock WHERE supplied_at>=? AND sku IN ({q})",
+                       (t0, *sofas)).fetchall()
+    out = {"start": t0, "end": t1, "bought": len(units), "cost": sum(u[2] or 0 for u in units), "sold": 0,
+           "profit": 0, "hours": [], "storage": 0, "negotiations": 0, "cancelled": 0, "price": 0, "stock": 0,
+           "delay": 0, "other": 0}
+    for unit, sku, cost, sup in units:
+        s = db.execute("SELECT ts, amount FROM settles WHERE unit=?", (unit,)).fetchone()
+        end = s[0] if s else now
+        out["hours"].append((end - sup) / 3600)
+        out["storage"] += round((cost or 0) * 0.01 * (end - sup) / 86400)
+        if s:
+            out["sold"] += 1
+            out["profit"] += s[1] - (cost or 0)
+    n = db.execute(f"SELECT COUNT(*), SUM(outcome='cancelled') FROM shop_deals WHERE ts>=? AND sku IN ({q})",
+                   (t0, *sofas)).fetchone()
+    out["negotiations"], out["cancelled"] = n[0], n[1] or 0
+    for (text,) in db.execute("SELECT review FROM my_results WHERE has_receipt=0 AND ts>=?", (t0,)):
+        if set(re.findall(r"G[0-9a-f]{8}", text or "")) & sofas:
+            out[next((k for k, p in REASONS if re.search(p, text, re.I)), "other")] += 1
+    return out
+
+
+def sofa_trial_text(o, final=False, now=None):
+    if not o:
+        return "sofa trial: not started"
+    now = now or time.time()
+    h = o["hours"]
+    state = "ended" if now >= o["end"] else f"{(now - o['start']) / 3600:.0f} h of 24"
+    lines = [f"sofa trial {datetime.fromtimestamp(o['start']):%m-%d %H:%M} - {datetime.fromtimestamp(o['end']):%m-%d %H:%M} ({state})",
+             f"bought {o['bought']} (cost {o['cost']:,}), sold {o['sold']}, avg hours held {sum(h) / len(h):.1f}" if h else
+             f"bought 0, sold 0",
+             f"profit on sold {o['profit']:,}, storage ~{o['storage']:,}",
+             f"sofa negotiations {o['negotiations']}, cancelled {o['cancelled']}; reasons in reviews naming a sofa: "
+             f"price {o['price']}, stock {o['stock']}, delay {o['delay']}, other {o['other']}"]
+    if final:
+        lines.append("확대 / 유지 / 중단 중 결정 필요 (no decision: sofa buying stops; sofas held keep selling)")
+    return "\n".join(lines)

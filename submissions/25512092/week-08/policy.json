@@ -8,7 +8,9 @@
   "food_min_shelf_h": 24,
   "max_break": 0.15,
   "perishable_trial_market_30m": 3,
-  "perishable_trial_qty": 2
+  "perishable_trial_qty": 2,
+  "sofa_trial_start": 1793951508,
+  "sofa_trial_end": 1794037908
  },
  "sales": {
   "warranty_enabled": true,
@@ -38,8 +40,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 1,
- "ts": 1793946299,
- "by": "init",
- "reason": "start: the values the code used before policy.json"
+ "version": 2,
+ "ts": 1793951508,
+ "by": "person",
+ "reason": "sofa trial (person's decision 11/06): one sofa/chair/stool unit per restock window, est. cost <= 1.0M, 11-06 16:51 - 11-07 16:51"
 }

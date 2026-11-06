@@ -135,6 +135,10 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] cap review: {type(e).__name__}")
     try:
+        sofa_check(seen, log)
+    except Exception as e:
+        log(f"[alert] sofa check: {type(e).__name__}")
+    try:
         seller_check(seen, log)
     except Exception as e:
         log(f"[alert] seller check: {type(e).__name__}")
@@ -147,6 +151,30 @@ def watch(reports=None, log=print):
             json.dump(seen, f)
     except OSError:
         pass
+
+
+def sofa_check(seen, log=print, now=None):
+    """Sofa trial reminders: 12 h after the start (interim) and at the end (final, asks for a decision). Once each."""
+    import json as _j
+    import policy
+    import sales_report
+    from market_db import connect
+    now = now or time.time()
+    t0, t1 = policy.get("purchasing", "sofa_trial_start"), policy.get("purchasing", "sofa_trial_end")
+    if not t0:
+        return None
+    cat = _j.load(open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8"))
+    for tag, due, final in (("mid", t0 + 12 * 3600, False), ("final", t1, True)):
+        key = f"sofa_{tag}:{int(t0)}"
+        if now >= due and not seen.get(key):
+            db = connect()
+            try:
+                text = sales_report.sofa_trial_text(sales_report.sofa_trial_numbers(db, cat, now), final=final, now=now)
+            finally:
+                db.close()
+            seen[key] = now
+            send("daily", key, ("Sofa trial final report" + chr(10) if final else "Sofa trial 12 h report" + chr(10)) + text, log)
+    return None
 
 
 UTIL_ALERT = 0.70        # seller busy share in the last full hour (decision 11/06: tell the person above 70%)

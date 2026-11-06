@@ -130,7 +130,8 @@ def main():
         lines.append(m)
     plan = make_plan(inv, units, catalog, budget, plan_log)
     for m in lines:                                  # one decision per planned / skipped / merged line
-        kind = "dedup" if m.startswith("[dedup]") else "skip" if m.endswith("-> skip") else "buy" if " -> buy " in m else None
+        kind = ("sofa_trial" if m.startswith("[sofa trial]") else "dedup" if m.startswith("[dedup]")
+                else "skip" if m.endswith("-> skip") else "buy" if " -> buy " in m else None)
         if kind:
             decisions.record("purchasing", kind, m.split(":")[0][:60], m.rsplit("-> ", 1)[-1], m[:300])
     safe(cap_record, inv, units, catalog, budget, plan, case)
