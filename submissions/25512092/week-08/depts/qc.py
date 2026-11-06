@@ -20,9 +20,9 @@ from depts.logistics import perishable, perishable_line, perishable_numbers  # n
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # week-08/ (this file is in depts/)
 REPORTS = os.path.join(HERE, "reports")
 HIGH_MIN = 100_000              # unit cost above this is "high price" ...
-HIGH_MAX = 500_000              # ... up to this
+HIGH_MAX = 1_000_000            # ... up to this (11/06: was 500,000; sofas cost ~0.6 x list)
 START_SHARE, START_MAX = 0.30, 2
-SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.50, 5
+SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.50, 10   # MAX_CAP 5 -> 10 on 11/06 (units held 8)
 
 
 def policy(db=None):
@@ -297,13 +297,14 @@ def daily(db, inv, catalog, log):
                                    f"{day:%Y-%m-%d}: {reason}")
 
     money = day_money(db, t0, t1, s)
+    hc = high_cancel_reasons(db, t0, t1, catalog)
     lines = [f"# Choo Shop daily report {day:%Y-%m-%d}", "",
              f"- sales {s['sales']}, revenue {s['revenue']:,}, profit {s['profit']:,}",
              f"- profit / cost: low-price {pct(lr)} ({s['low_profit']:,} on {s['low_cost']:,}), "
              f"high-price {pct(hr)} ({s['high_profit']:,} on {s['high_cost']:,})",
              f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}",
              f"- {perishable_line(perishable_numbers(db, t0, t1, catalog, inv))}", "",
-             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + [""] +             cap_compare_md(cap_compare(db, t1)) + ["",
+             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["", f"- {high_cancel_line(hc)}", ""] +             cap_compare_md(cap_compare(db, t1)) + ["",
              "## Sales by category", ""] + \
             [f"- {k}: {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])] + \
             ["", "## Top 3 SKUs by profit", ""] + \
@@ -338,6 +339,7 @@ def daily(db, inv, catalog, log):
             f"{money.get('book_change', 0):+,}, storage ~{money.get('storage', 0):,}",
             f"STOCK_CAP runs {money['cap_runs']}, budget held back {money['cap_budget_cut']:,}",
             cap_compare_line(cap_compare(db, t1)) or "no STOCK_CAP change",
+            high_cancel_line(hc),
             f"CEO {ceo}, policy v{_pol.version()}; buying split {share:.0%} / {cap} ({reason})",
             f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
     except Exception as e:
@@ -455,3 +457,35 @@ def auto_commit(day, log=print, dry=False):
     except Exception as e:
         log(f"[report] auto commit failed: {type(e).__name__}")
         return "error"
+
+
+REASONS = [("price", r"price|budget|expensive|too high|come down|agree|value|walked away|asks \[|my offers"),
+           ("stock", r"no stock|out of stock|not in stock|none of that|sold out|unavailable"),
+           ("delay", r"time ?out|timed out|slow|no answer|did not respond|unresponsive|no reply|took too long")]
+
+
+def high_cancel_reasons(db, t0, t1, catalog):
+    """High-price negotiations (unit cost > HIGH_MIN) that did not end in a receipt, and the buyers' reasons from
+    their review text (results naming my shop without a receipt whose text names a high-price SKU)."""
+    import re
+    nego = db.execute("SELECT COUNT(*), SUM(outcome='cancelled'), SUM(outcome='receipt') FROM shop_deals "
+                      "WHERE cost>? AND ts>=? AND ts<?", (HIGH_MIN, t0, t1)).fetchone()
+    high = {k for k, c in catalog.items() if (c.get("list_price") or 0) * 0.6 > HIGH_MIN}
+    out = {"negotiations": nego[0], "cancelled": nego[1] or 0, "receipts": nego[2] or 0,
+           "reviews": 0, "price": 0, "stock": 0, "delay": 0, "other": 0}
+    for (text,) in db.execute("SELECT review FROM my_results WHERE has_receipt=0 AND ts>=? AND ts<?", (t0, t1)):
+        skus = set(re.findall(r"G[0-9a-f]{8}", text or ""))
+        if not skus & high:
+            continue
+        out["reviews"] += 1
+        kind = next((k for k, p in REASONS if re.search(p, text, re.I)), "other")
+        out[kind] += 1
+    return out
+
+
+def high_cancel_line(h):
+    n = h["reviews"]
+    share = lambda k: f"{h[k]} ({h[k] / n:.0%})" if n else "0"
+    return (f"high-price negotiations {h['negotiations']}, cancelled {h['cancelled']}, receipts {h['receipts']}; "
+            f"reasons from the {n} reviews that name a high-price SKU (most reviews name none): price {share('price')}, stock {share('stock')}, "
+            f"delay {share('delay')}, other {share('other')}")

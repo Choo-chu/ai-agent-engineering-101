@@ -7,7 +7,7 @@ Runs from restock.py every RUN_EVERY_S. Mode (ceo_state.json):
 Keys the CEO may set (step 7 opens only these):
   purchasing.high_share / high_max   once a day, the buying-split rule that sales_report.daily used:
         high-price units unsold > 24 h or a high-price refund -> share -10 %p (min 20%)
-        else high-price profit/cost >= low-price profit/cost -> share +10 %p (max 50%), units held +1 (max 5)
+        else high-price profit/cost >= low-price profit/cost -> share +10 %p (max 50%), units held +1 (max 10)
   purchasing.spend_share             stock within 10% of STOCK_CAP -> no change (the cap binds anyway);
         cash < 2.5M -> 0.3; 6 h profit > 0, stock < half the cap, cash > 3M -> 0.5; else 0.4
   purchasing.perishable_trial_qty    perishable units wasted in 24 h -> 1, else 2
@@ -103,7 +103,7 @@ def split_rule(inv, catalog, now):
         return {"high_share": max(0.2, round(share - 0.1, 2)), "high_max": cap}, \
             f"{today - __import__('datetime').timedelta(days=1):%m-%d}: {len(stale)} high-price units unsold > 24 h, {refunds} high-price refunds"
     if hr is not None and (lr is None or hr >= lr):
-        return {"high_share": min(0.5, round(share + 0.1, 2)), "high_max": min(5, cap + 1)}, \
+        return {"high_share": min(0.5, round(share + 0.1, 2)), "high_max": min(10, cap + 1)}, \
             f"high profit/cost {sales_report.pct(hr)} >= low {sales_report.pct(lr)}"
     return None, f"no change (high {sales_report.pct(hr)}, low {sales_report.pct(lr)})"
 
@@ -153,24 +153,37 @@ def proposals(inv, catalog, reports, st, now):
     return held
 
 
+def anchor(L, now):
+    """Start of the live window the guard compares (option B, 11/06). Normally live_since. When a STOCK_CAP change
+    falls within a day before it (or after it), the window starts 24 h after the latest such change, so the base
+    hours (the same hours a day earlier) are all after the change: (start, None), or (None, reason) while the
+    window is still shorter than GUARD_MIN_H."""
+    from limits import STOCK_CAP_CHANGES
+    a = L
+    for t, _ in STOCK_CAP_CHANGES:
+        if L - 86400 < t < now:
+            a = max(a, t + 86400)
+    if now - a < GUARD_MIN_H * 3600:
+        return None, (f"comparison starts {datetime.fromtimestamp(a):%m-%d %H:%M} (24 h after the STOCK_CAP change)"
+                      f" and needs {GUARD_MIN_H} h" if a > L else "live window still short")
+    return a, None
+
+
 def guard(st, now, log):
     """Live window vs the same hours a day before; revert to shadow when one measure is clearly worse."""
     L = st.get("live_since")
     if st.get("mode") != "live" or not L or now - L < GUARD_MIN_H * 3600 or now - st.get("last_guard", 0) < GUARD_EVERY_S:
         return None
     st["last_guard"] = now
-    from limits import STOCK_CAP_CHANGES
-    crossed = [t for t, _ in STOCK_CAP_CHANGES if L - 86400 < t < now]
-    if crossed:                                    # the base hours (a day before) would include a STOCK_CAP change
-        why = (f"base window {datetime.fromtimestamp(L - 86400):%m-%d %H:%M}-{datetime.fromtimestamp(now - 86400):%H:%M}"
-               f" spans the STOCK_CAP change at {datetime.fromtimestamp(max(crossed)):%m-%d %H:%M}: no comparison")
+    A, why = anchor(L, now)
+    if A is None:                                  # within 24 h of a STOCK_CAP change: no comparison yet
         decisions.record("ceo", "guard_check", "live vs a day before", None, why)
-        log(f"[ceo] guard skipped: {why}")
+        log(f"[ceo] guard waits: {why}")
         return None
     db = connect()
     try:
-        cur = dept_reports.window(db, L, now, _catalog())
-        base = dept_reports.window(db, L - 86400, now - 86400, _catalog())
+        cur = dept_reports.window(db, A, now, _catalog())
+        base = dept_reports.window(db, A - 86400, now - 86400, _catalog())
     finally:
         db.close()
     bad = []

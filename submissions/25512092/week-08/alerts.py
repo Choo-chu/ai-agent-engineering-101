@@ -134,6 +134,10 @@ def watch(reports=None, log=print):
         cap_review(seen, log)
     except Exception as e:
         log(f"[alert] cap review: {type(e).__name__}")
+    try:
+        seller_check(seen, log)
+    except Exception as e:
+        log(f"[alert] seller check: {type(e).__name__}")
     for dept, r in (reports or {}).items():
         for i in r.get("issues", []):
             if i.get("level") == "urgent":
@@ -143,3 +147,59 @@ def watch(reports=None, log=print):
             json.dump(seen, f)
     except OSError:
         pass
+
+
+UTIL_ALERT = 0.70        # seller busy share in the last full hour (decision 11/06: tell the person above 70%)
+
+
+def seller_utilization(now=None):
+    """Share of the last full hour the seller spent inside harness calls (estimate). The seller calls the harness
+    synchronously, one at a time; each '[seller] [harness]' line is one finished call. Call length = the median gap
+    between back-to-back answers (gaps under 20 s) in that hour, so busy share = calls x that length / 3600."""
+    import glob
+    import re
+    now = now or time.time()
+    h1 = now // 3600 * 3600
+    h0 = h1 - 3600
+    files = sorted(glob.glob(os.path.join(HERE, "logs", "kit-console-*.txt")), key=os.path.getmtime)
+    if not files:
+        return None
+    path = files[-1]
+    size = os.path.getsize(path)
+    with open(path, "rb") as f:
+        f.seek(max(0, size - 4_000_000))             # the last ~4 MB covers more than an hour
+        tail = f.read().decode("utf-8", errors="replace").splitlines()
+    day0 = time.localtime(h0)
+    base = time.mktime((day0.tm_year, day0.tm_mon, day0.tm_mday, 0, 0, 0, 0, 0, -1))
+    ts = []
+    for ln in tail:
+        m = re.match(r"(\d\d):(\d\d):(\d\d) \[seller\] \[harness\]", ln)
+        if m:
+            t = base + int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+            if h0 <= t < h1:
+                ts.append(t)
+    if len(ts) < 2:
+        return {"hour": h0, "calls": len(ts), "call_s": None, "busy": 0.0}
+    gaps = sorted(b - a for a, b in zip(ts, ts[1:]) if 0 < b - a < 20)
+    call_s = gaps[len(gaps) // 2] if gaps else 6.5
+    return {"hour": h0, "calls": len(ts), "call_s": call_s, "busy": min(1.0, len(ts) * call_s / 3600)}
+
+
+def seller_check(seen, log=print):
+    """Once per hour: alert when the seller was busy more than UTIL_ALERT of the last full hour."""
+    h = time.time() // 3600 * 3600 - 3600
+    if seen.get("util_hour") == h:
+        return None
+    seen["util_hour"] = h
+    u = seller_utilization()
+    if not u:
+        return None
+    import decisions
+    decisions.record("qc", "seller_util", time.strftime("%m-%d %H:00", time.localtime(u["hour"])), round(u["busy"], 3),
+                     f"{u['calls']} harness calls x {u['call_s']} s")
+    if u["busy"] > UTIL_ALERT:
+        return send("urgent", f"seller_util:{int(u['hour'])}",
+                    f"seller busy {u['busy']:.0%} of {time.strftime('%H:00', time.localtime(u['hour']))} "
+                    f"({u['calls']} harness calls x ~{u['call_s']} s, one at a time): consider concurrent harness calls",
+                    log)
+    return u

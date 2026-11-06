@@ -8,11 +8,12 @@ from datetime import datetime
 # money and stock
 CASH_RESERVE = 1_500_000      # restock spends only cash above this; under it the shop case is cash_low
 CASH_WARN = 1_000_000         # under this: warning in the log and an urgent alert
-STOCK_CAP = 5_000_000         # stock at cost at or over this: overstock, no restock (11/06 15:54: was 4.0M; before: 2.5M)
-STOCK_EXIT = 4_400_000        # overstock ends only under this (hysteresis; 88% of the cap, was 3.52M)
+STOCK_CAP = 9_000_000         # stock at cost at or over this: overstock, no restock (11/06 16:46: was 5.0M; 15:54: 4.0M -> 5.0M)
+STOCK_EXIT = 7_920_000        # overstock ends only under this (hysteresis; 88% of the cap, was 4.4M)
 # every change of STOCK_CAP: (epoch seconds, new cap). Comparisons that span a change (the CEO guard, the
 # daily before/after section, the 24 h review alert) read it so a cap change is not taken for a policy effect.
-STOCK_CAP_CHANGES = [(1793948058, 5_000_000)]   # 11/06 15:54 KST, 4.0M -> 5.0M
+STOCK_CAP_CHANGES = [(1793948058, 5_000_000),   # 11/06 15:54 KST, 4.0M -> 5.0M
+                     (1793951213, 9_000_000)]   # 11/06 16:46 KST, 5.0M -> 9.0M
 
 # round timing (local time, KST)
 ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()
@@ -27,7 +28,7 @@ MAX_LINES = 10
 POLICY_RANGES = {
     "purchasing.spend_share": (0.2, 0.5),
     "purchasing.high_share": (0.2, 0.5),
-    "purchasing.high_max": (0, 5),
+    "purchasing.high_max": (0, 10),               # 11/06: 5 -> 10 (high-price units held, now 8)
     "purchasing.min_margin": (0.05, 0.5),
     "purchasing.my_share": (0.1, 0.5),
     "purchasing.wanted_qty": (0, 5),
