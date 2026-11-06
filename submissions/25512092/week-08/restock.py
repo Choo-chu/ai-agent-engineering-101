@@ -86,17 +86,34 @@ def main():
         log(f"forum post failed: {e}")
 
     case = strategy.shop_case(inv)
+    r = inv.get("restock") or {}
+    now = time.time()
+    soon = r.get("open") or (r.get("opens_at") or now) - now <= 60
     if case in ("cash_low", "overstock") or pricing.restock_stopped():
         if (inv.get("restock") or {}).get("open"):
             log(f"case {case}{', last 36 h' if pricing.restock_stopped() else ''}: no restock")
+        if case == "overstock" and not pricing.restock_stopped() and soon:
+            cap_record(inv, units, catalog, 0, [], case)          # log only: what the cap kept from buying
         print(json.dumps({"buy": []}))
         return
-    r = inv.get("restock") or {}
-    now = time.time()
-    if not r.get("open") and (r.get("opens_at") or now) - now > 60:
+    if not soon:
         print(json.dumps({"buy": []}))           # window not open soon: nothing to plan yet
         return
 
+    held_cost = pricing.held_cost(inv)
+    budget = min((inv.get("balance", 0) - CUSHION) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
+    if budget <= 0:
+        log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")
+        cap_record(inv, units, catalog, 0, [], case)
+        print(json.dumps({"buy": []}))
+        return
+    plan = make_plan(inv, units, catalog, budget, log)
+    cap_record(inv, units, catalog, budget, plan, case)
+    print(json.dumps({"buy": plan}))
+
+
+def make_plan(inv, units, catalog, budget, log):
+    """The buy lines for this budget (unchanged rules; moved out of main so cap_record can run it without the cap)."""
     held, held_high = {}, 0
     for u in units:
         if u.get("grade") != "expired":
@@ -104,12 +121,6 @@ def main():
             held_high += u.get("cost", 0) > HIGH_MIN
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
     stats = load_stats()
-    held_cost = pricing.held_cost(inv)
-    budget = min((inv.get("balance", 0) - CUSHION) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
-    if budget <= 0:
-        log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")
-        print(json.dumps({"buy": []}))
-        return
     pol = sales_report.policy()
     left = {"high": budget * pol["high_share"], "low": budget * (1 - pol["high_share"])}
     high_room = max(0, pol["high_max"] - held_high)
@@ -169,7 +180,41 @@ def main():
             f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''}{rot} -> buy {qty}")
         if len(plan) == 10:
             break
-    print(json.dumps({"buy": plan}))
+    return plan
+
+
+def cap_record(inv, units, catalog, budget, plan, case):
+    """Log only, buying is not changed: when STOCK_CAP blocked or cut this run, the budget and the buy lines
+    without the cap (same rules, quiet), into the log ([cap]) and market.db cap_runs (for the daily report)."""
+    cash, stock = int(inv.get("balance", 0)), int(pricing.held_cost(inv))
+    free = (cash - CUSHION) * SPEND_SHARE                   # the budget without the cap
+    if free <= 0 or free <= budget + 1:
+        return                                              # the cap did not bind: cash did, or nothing
+    try:
+        free_plan = make_plan(inv, units, catalog, free, lambda m: None)
+    except Exception as e:
+        log(f"[cap] plan without the cap failed: {e}")
+        free_plan = []
+    names = {k: (catalog.get(k) or {}).get("name") or k for k in [p["sku"] for p in free_plan]}
+    mine, free_qty = {}, {}                                 # a SKU can sit on two lines (wanted + rest): add up
+    for p in plan:
+        mine[p["sku"]] = mine.get(p["sku"], 0) + p["qty"]
+    for p in free_plan:
+        free_qty[p["sku"]] = free_qty.get(p["sku"], 0) + p["qty"]
+    extra = [(k, q - mine.get(k, 0)) for k, q in free_qty.items() if q > mine.get(k, 0)]
+    log(f"[cap] case {case}, cash {cash:,}, stock at cost {stock:,}: budget without the cap {int(free):,} vs "
+        f"actual {int(max(budget, 0)):,}; without the cap would also buy: "
+        + (", ".join(f"{names[k][:24]} x{q}" for k, q in extra) or "nothing more"))
+    db = connect()
+    try:
+        db.execute("CREATE TABLE IF NOT EXISTS cap_runs (ts REAL PRIMARY KEY, shop_case TEXT, cash INTEGER, "
+                   "stock_cost INTEGER, budget_free INTEGER, budget INTEGER, plan_free TEXT, plan TEXT)")
+        db.execute("INSERT OR REPLACE INTO cap_runs VALUES (?,?,?,?,?,?,?,?)",
+                   (time.time(), case, cash, stock, int(free), int(max(budget, 0)),
+                    json.dumps(free_plan), json.dumps(plan)))
+        db.commit()
+    finally:
+        db.close()
 
 
 def my_sold_30m(sku):

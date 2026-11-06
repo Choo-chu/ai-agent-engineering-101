@@ -106,6 +106,59 @@ def extras(db, t0, t1, catalog):
     return out
 
 
+def day_money(db, t0, t1, s):
+    """Cash, stock at cost and storage from the 5-min cash table; sales profit; book change; STOCK_CAP runs."""
+    rows = db.execute("SELECT ts, balance, stock_cost, storage_per_day FROM cash WHERE ts>=? AND ts<? ORDER BY ts",
+                      (t0, t1)).fetchall()
+    out = {"profit": s["profit"], "revenue": s["revenue"], "rows": len(rows)}
+    if rows:
+        out.update(cash0=rows[0][1], cash1=rows[-1][1], stock0=rows[0][2], stock1=rows[-1][2],
+                   storage=round(sum(r[3] or 0 for r in rows) / len(rows) * (rows[-1][0] - rows[0][0]) / 86400),
+                   book_change=(rows[-1][1] + rows[-1][2]) - (rows[0][1] + rows[0][2]))
+    try:
+        cap = db.execute("SELECT shop_case, budget_free - budget, plan_free, plan FROM cap_runs WHERE ts>=? AND ts<?",
+                         (t0, t1)).fetchall()
+    except Exception:
+        cap = []
+    out["cap_runs"] = len(cap)
+    out["cap_blocked"] = sum(1 for c in cap if c[0] == "overstock")
+    out["cap_budget_cut"] = sum(c[1] for c in cap)
+    extra = {}
+    for _, _, pf, p in cap:
+        mine, free = {}, {}
+        for x in json.loads(p):
+            mine[x["sku"]] = mine.get(x["sku"], 0) + x["qty"]
+        for x in json.loads(pf):
+            free[x["sku"]] = free.get(x["sku"], 0) + x["qty"]
+        for k, q in free.items():
+            extra[k] = extra.get(k, 0) + max(0, q - mine.get(k, 0))
+    out["cap_extra"] = sorted(((k, v) for k, v in extra.items() if v), key=lambda kv: -kv[1])
+    return out
+
+
+def money_line(m):
+    if not m["rows"]:
+        return f"sales profit {m['profit']:,}; no cash snapshots"
+    return (f"cash {m['cash0']:,} -> {m['cash1']:,}, stock at cost {m['stock0']:,} -> {m['stock1']:,}, "
+            f"storage ~{m['storage']:,}, sales profit {m['profit']:,}, book change {m['book_change']:+,}; "
+            f"STOCK_CAP runs {m['cap_runs']} (blocked {m['cap_blocked']}, budget cut {m['cap_budget_cut']:,})")
+
+
+def money_md(m, catalog):
+    if not m["rows"]:
+        return [f"- sales profit {m['profit']:,}; no cash snapshots"]
+    return [f"- cash {m['cash0']:,} -> {m['cash1']:,}",
+            f"- stock at cost {m['stock0']:,} -> {m['stock1']:,}",
+            f"- storage ~{m['storage']:,} (5-min snapshots of stock x storage_per_day)",
+            f"- sales profit {m['profit']:,} on revenue {m['revenue']:,}; book (cash + stock at cost) change "
+            f"{m['book_change']:+,}",
+            f"- runs where STOCK_CAP ({__import__("strategy").STOCK_CAP:,}) blocked or cut buying: {m['cap_runs']} (blocked "
+            f"{m['cap_blocked']}), budget kept back {m['cap_budget_cut']:,} in total",
+            "- without the cap these runs would also have bought: "
+            + (", ".join(f"{((catalog.get(k) or {}).get('name') or k)[:24]} x{q}" for k, q in m["cap_extra"][:10])
+               or "nothing")]
+
+
 def perishable(c):
     """Food whose category name says '부패주의' (fresh fruit and vegetables)."""
     return c.get("kind") == "food" and "부패주의" in (c.get("category") or "")
@@ -275,12 +328,14 @@ def daily(db, inv, catalog, log):
         reason = f"no change (high {pct(hr)}, low {pct(lr)})"
     db.execute("INSERT INTO policy VALUES (?,?,?,?)", (now, share, cap, f"{day:%Y-%m-%d}: {reason}"))
 
+    money = day_money(db, t0, t1, s)
     lines = [f"# Choo Shop daily report {day:%Y-%m-%d}", "",
              f"- sales {s['sales']}, revenue {s['revenue']:,}, profit {s['profit']:,}",
              f"- profit / cost: low-price {pct(lr)} ({s['low_profit']:,} on {s['low_cost']:,}), "
              f"high-price {pct(hr)} ({s['high_profit']:,} on {s['high_cost']:,})",
              f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}",
              f"- {perishable_line(perishable_numbers(db, t0, t1, catalog, inv))}", "",
+             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["",
              "## Sales by category", ""] + \
             [f"- {k}: {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])] + \
             ["", "## Top 3 SKUs by profit", ""] + \
@@ -298,6 +353,7 @@ def daily(db, inv, catalog, log):
         f.write("\n".join(lines))
     db.execute("INSERT OR REPLACE INTO meta VALUES ('daily_done', ?)", (day.strftime("%Y%m%d"),))
     db.commit()
+    log(f"[report] daily {day:%Y-%m-%d}: {money_line(money)}")
     log(f"[report] daily {day:%Y-%m-%d}: sold {s['sales']}, profit {s['profit']:,} -> {os.path.basename(path)}; "
         f"high share {share:.0%}, max {cap} ({reason})")
 
