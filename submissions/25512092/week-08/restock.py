@@ -21,7 +21,7 @@ import forum_post  # noqa: E402
 import pricing  # noqa: E402
 import strategy  # noqa: E402
 import sales_report  # noqa: E402
-from market_db import connect, load_stats, price_of, record_cash, record_stock, refresh  # noqa: E402
+from market_db import ME, connect, load_stats, price_of, record_cash, record_stock, refresh  # noqa: E402
 from sales_report import HIGH_MAX, HIGH_MIN  # noqa: E402
 
 COST_SHARE = {"goods": 0.60, "food": 0.50}   # expected cost / list price, averaged over the grade draw
@@ -147,6 +147,14 @@ def main():
             target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
             tier, qty = "low", min(MAX_QTY, target - held.get(sku, 0))
         qty = min(qty, int(left[tier] // cost))
+        rot = ""
+        if sales_report.perishable(c):            # '부패주의': at most what my shop sold of it in the last 30 min
+            mine = my_sold_30m(sku)
+            rot = f", perishable: my sales 30m {mine}, planned {qty} -> {min(qty, mine)}"
+            if qty > mine:
+                log(f"[{tier}] {s['name'] or sku}: perishable, my sales 30m {mine}, planned {qty} -> "
+                    f"{'skip' if mine <= 0 else f'buy {mine}'}")
+            qty = min(qty, mine)
         if qty <= 0:
             continue
         left[tier] -= qty * cost
@@ -154,10 +162,20 @@ def main():
             high_room -= qty
         plan.append({"sku": sku, "qty": qty})
         log(f"[{tier}] {s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
-            f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''} -> buy {qty}")
+            f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''}{rot} -> buy {qty}")
         if len(plan) == 10:
             break
     print(json.dumps({"buy": plan}))
+
+
+def my_sold_30m(sku):
+    """Units of this SKU my shop sold in the last 30 minutes (settles, refreshed every 5 min)."""
+    db = connect()
+    try:
+        return db.execute("SELECT COUNT(*) FROM settles WHERE shop=? AND sku=? AND ts>=?",
+                          (ME, sku, time.time() - 1800)).fetchone()[0]
+    finally:
+        db.close()
 
 
 def busy_categories(catalog, top=5):

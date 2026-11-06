@@ -106,6 +106,41 @@ def extras(db, t0, t1, catalog):
     return out
 
 
+def perishable(c):
+    """Food whose category name says '부패주의' (fresh fruit and vegetables)."""
+    return c.get("kind") == "food" and "부패주의" in (c.get("category") or "")
+
+
+def perishable_numbers(db, t0, t1, catalog, inv=None):
+    """'부패주의' food in [t0, t1): units bought (supplied), sold by my shop, and wasted (expired unsold: shelf life
+    ran out in the period, no settle for the unit, not in the inventory now) with their cost."""
+    skus = {k for k, c in catalog.items() if perishable(c)}
+    held = {u["unit"] for u in (inv or {}).get("units", [])}
+    out = {"bought": 0, "sold": 0, "wasted": 0, "waste_cost": 0}
+    for sku, n in db.execute("SELECT sku, COUNT(*) FROM my_stock WHERE supplied_at>=? AND supplied_at<? GROUP BY sku",
+                             (t0, t1)):
+        out["bought"] += n if sku in skus else 0
+    for sku, n in db.execute("SELECT sku, COUNT(*) FROM settles WHERE shop=? AND ts>=? AND ts<? GROUP BY sku",
+                             (ME, t0, t1)):
+        out["sold"] += n if sku in skus else 0
+    now = time.time()
+    for unit, sku, cost, supplied in db.execute(
+            "SELECT m.unit, m.sku, m.cost, m.supplied_at FROM my_stock m WHERE NOT EXISTS "
+            "(SELECT 1 FROM settles s WHERE s.unit=m.unit)"):
+        if sku not in skus or unit in held or not supplied:
+            continue
+        exp = supplied + (catalog[sku].get("shelf_hours") or 0) * 3600
+        if t0 <= exp < t1 and exp <= now:
+            out["wasted"] += 1
+            out["waste_cost"] += cost or 0
+    return out
+
+
+def perishable_line(p):
+    return (f"perishable ('부패주의') food: bought {p['bought']}, sold {p['sold']}, wasted {p['wasted']} "
+            f"({p['waste_cost']:,} at cost)")
+
+
 def payment_counts():
     """payments.jsonl so far: (lines, unpaid, unpaid for shelf life). The file has no time stamps, so hourly
     reports store these counts and report the growth since the last report."""
@@ -143,6 +178,7 @@ def hourly(db, inv, catalog, log):
     cash = int(inv.get("balance", 0))
     x = extras(db, hour, hour + 3600, catalog)
     x["payments"] = payment_delta(db)
+    x["perishable"] = perishable_numbers(db, hour, hour + 3600, catalog, inv)
     db.execute("INSERT OR REPLACE INTO hourly VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                (hour, s["sales"], s["revenue"], s["profit"], s["low_cost"], s["low_profit"], s["high_cost"],
                 s["high_profit"], json.dumps(s["cats"], ensure_ascii=False), stock, cash,
@@ -161,6 +197,7 @@ def hourly(db, inv, catalog, log):
     pay = x["payments"]
     log(f"[report] {datetime.fromtimestamp(hour):%H}:00 buyer payments: {pay['lines']} checkouts, {pay['unpaid']} unpaid, "
         f"{pay['shelf']} of them for shelf life")
+    log(f"[report] {datetime.fromtimestamp(hour):%H}:00 {perishable_line(x['perishable'])}")
 
 
 def extras_md(db, t0, t1, catalog):
@@ -242,7 +279,8 @@ def daily(db, inv, catalog, log):
              f"- sales {s['sales']}, revenue {s['revenue']:,}, profit {s['profit']:,}",
              f"- profit / cost: low-price {pct(lr)} ({s['low_profit']:,} on {s['low_cost']:,}), "
              f"high-price {pct(hr)} ({s['high_profit']:,} on {s['high_cost']:,})",
-             f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}", "",
+             f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}",
+             f"- {perishable_line(perishable_numbers(db, t0, t1, catalog, inv))}", "",
              "## Sales by category", ""] + \
             [f"- {k}: {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])] + \
             ["", "## Top 3 SKUs by profit", ""] + \
