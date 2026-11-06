@@ -299,13 +299,16 @@ def daily(db, inv, catalog, log):
     money = day_money(db, t0, t1, s)
     hc = high_cancel_reasons(db, t0, t1, catalog)
     sofa = sofa_trial_text(sofa_trial_numbers(db, catalog, t1), now=t1).replace(chr(10), "; ")
+    import alerts as _al
+    swaps, off_min = _al.tunnel_swaps(t0, t1)
+    tunnel = f"터널 교체 {swaps}회, 오프라인 합계 {off_min}분 (kit re-registered within 2 min: no alert)"
     lines = [f"# Choo Shop daily report {day:%Y-%m-%d}", "",
              f"- sales {s['sales']}, revenue {s['revenue']:,}, profit {s['profit']:,}",
              f"- profit / cost: low-price {pct(lr)} ({s['low_profit']:,} on {s['low_cost']:,}), "
              f"high-price {pct(hr)} ({s['high_profit']:,} on {s['high_cost']:,})",
              f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}",
              f"- {perishable_line(perishable_numbers(db, t0, t1, catalog, inv))}", "",
-             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["", f"- {high_cancel_line(hc)}", f"- {sofa}", ""] +             cap_compare_md(cap_compare(db, t1)) + ["",
+             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["", f"- {high_cancel_line(hc)}", f"- {sofa}", f"- {tunnel}", ""] +             cap_compare_md(cap_compare(db, t1)) + ["",
              "## Sales by category", ""] + \
             [f"- {k}: {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])] + \
             ["", "## Top 3 SKUs by profit", ""] + \
@@ -342,6 +345,7 @@ def daily(db, inv, catalog, log):
             cap_compare_line(cap_compare(db, t1)) or "no STOCK_CAP change",
             high_cancel_line(hc),
             sofa,
+            tunnel,
             f"CEO {ceo}, policy v{_pol.version()}; buying split {share:.0%} / {cap} ({reason})",
             f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
     except Exception as e:

@@ -128,9 +128,17 @@ def watch(reports=None, log=print):
     for ln in lines[start:]:
         if "kit started" in ln:
             send("urgent", "kit_restart", f"keepalive restarted the kit: {ln[:160]}", log)
-        elif "not answering (2/" in ln or "not answering (3/" in ln:
+        elif "not answering (3/" in ln:
             send("urgent", "shop_offline", f"public shop card not answering: {ln[:160]}", log)
+        elif "not answering (2/" in ln:                # decision 11/06 (option C): wait 2 min for the kit's re-registration
+            t = _ka_ts(ln)
+            if t:
+                seen.setdefault("pending_2of3", []).append([t, ln[:160]])
     seen["keepalive_lines"] = len(lines)
+    try:
+        tunnel_check(seen, log)
+    except Exception as e:
+        log(f"[alert] tunnel check: {type(e).__name__}")
     try:
         cap_review(seen, log)
     except Exception as e:
@@ -152,6 +160,94 @@ def watch(reports=None, log=print):
             json.dump(seen, f)
     except OSError:
         pass
+
+
+SWAPS = os.path.join(HERE, "logs", "tunnel_swaps.jsonl")
+REREG_WAIT_S = 120          # a 2/3 miss with a kit re-registration within this: no alert, only the daily count
+SWAP_FAIL_S = 180           # a dead tunnel without a re-registration within this: urgent
+
+
+def _ka_ts(line):
+    """'11-06 17:09:02 [keepalive] ...' -> epoch (this year)."""
+    m = __import__("re").match(r"(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)", line)
+    if not m:
+        return None
+    y = time.localtime().tm_year
+    return time.mktime((y, int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)), 0, 0, -1))
+
+
+def kit_tunnel_events(now=None):
+    """(tunnel stopped, shop registered again) times from the tail of the newest kit console log (HH:MM:SS lines:
+    taken as today, or yesterday when that would be in the future)."""
+    import glob
+    import re
+    now = now or time.time()
+    files = sorted(glob.glob(os.path.join(HERE, "logs", "kit-console-*.txt")), key=os.path.getmtime)
+    if not files:
+        return [], []
+    with open(files[-1], "rb") as f:
+        f.seek(max(0, os.path.getsize(files[-1]) - 3_000_000))
+        tail = f.read().decode("utf-8", errors="replace").splitlines()
+    day0 = time.mktime(time.localtime(now)[:3] + (0, 0, 0, 0, 0, -1))
+    stops, regs = [], []
+    for ln in tail:
+        m = re.match(r"(\d\d):(\d\d):(\d\d) \[(tunnel|market)\] (.*)", ln)
+        if not m:
+            continue
+        t = day0 + int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+        if t > now + 60:
+            t -= 86400
+        if m.group(4) == "tunnel" and "stopped answering" in m.group(5):
+            stops.append(t)
+        elif m.group(4) == "market" and "registered again" in m.group(5):
+            regs.append(t)
+    return stops, regs
+
+
+def tunnel_check(seen, log=print, now=None):
+    """Kit tunnel swaps: each 'stopped answering' paired with the next 're-registered' -> logs/tunnel_swaps.jsonl
+    (offline = the gap). No re-registration within SWAP_FAIL_S -> urgent. keepalive 2/3 misses wait REREG_WAIT_S:
+    a re-registration within that (or up to 3 min before) clears them, otherwise urgent."""
+    now = now or time.time()
+    stops, regs = kit_tunnel_events(now)
+    done = set(seen.get("swaps_logged", []))
+    for s in stops:
+        if str(int(s)) in done:
+            continue
+        r = next((x for x in sorted(regs) if s <= x <= s + 600), None)
+        if r is not None:
+            with open(SWAPS, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"ts": round(s), "registered": round(r), "offline_s": round(r - s)}) + "\n")
+            done.add(str(int(s)))
+        elif now - s > SWAP_FAIL_S:
+            send("urgent", f"tunnel_fail:{int(s)}", f"tunnel stopped at {time.strftime('%H:%M:%S', time.localtime(s))} "
+                 f"and the shop was not registered again within {SWAP_FAIL_S // 60} min", log)
+            done.add(str(int(s)))
+    seen["swaps_logged"] = sorted(done)[-50:]
+    keep = []
+    for t, line in seen.get("pending_2of3", []):
+        if any(t - 180 <= r <= t + REREG_WAIT_S for r in regs):
+            continue                                   # the kit swapped the tunnel: daily count only
+        if now - t > REREG_WAIT_S:
+            send("urgent", "shop_offline", f"public shop card not answering and no re-registration in "
+                 f"{REREG_WAIT_S // 60} min: {line}", log)
+            continue
+        keep.append([t, line])
+    seen["pending_2of3"] = keep
+
+
+def tunnel_swaps(t0, t1):
+    """(swaps, offline minutes) in [t0, t1) from logs/tunnel_swaps.jsonl."""
+    n, s = 0, 0
+    try:
+        for ln in open(SWAPS, encoding="utf-8"):
+            e = json.loads(ln)
+            if t0 <= e["ts"] < t1:
+                n += 1
+                s += e["offline_s"]
+    except (OSError, ValueError):
+        pass
+    return n, round(s / 60, 1)
 
 
 def sofa_check(seen, log=print, now=None):
