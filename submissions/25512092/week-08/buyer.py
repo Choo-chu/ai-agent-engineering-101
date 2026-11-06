@@ -35,11 +35,20 @@ def log(*parts):
 
 # ---------- harness ----------
 def call_harness(prompt: str) -> str:
-    r = subprocess.run(HARNESS_CMD, input=prompt, capture_output=True, text=True,
-                       encoding="utf-8", cwd=WORKDIR, timeout=90)
+    from harness import LIMIT_RE, _failed               # failure log + urgent alert (at most every 10 min)
+    try:
+        r = subprocess.run(HARNESS_CMD, input=prompt, capture_output=True, text=True,
+                           encoding="utf-8", cwd=WORKDIR, timeout=90)
+    except subprocess.TimeoutExpired:
+        _failed("timeout", None, "", "no answer in 90 s")
+        raise
+    out, err = r.stdout or "", r.stderr or ""
     if r.returncode != 0:
-        raise RuntimeError(f"harness exit {r.returncode}: {r.stderr.strip()[:300]}")
-    return r.stdout.strip()
+        _failed("limit" if LIMIT_RE.search(out + err) else "error", r.returncode, out, err)
+        raise RuntimeError(f"harness exit {r.returncode}: {err.strip()[:300]}")
+    if LIMIT_RE.search(out) and not out.lstrip().startswith("{"):
+        _failed("limit (exit 0)", 0, out, err)
+    return out.strip()
 
 
 def parse_decision(raw: str):

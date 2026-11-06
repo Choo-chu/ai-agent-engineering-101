@@ -61,10 +61,11 @@ def telegram(text):
         return f"failed: {type(e).__name__}"             # never the exception text: it can carry the URL
 
 
-def send(level, key, text, log=print):
-    """level: urgent | daily | info. Returns the Telegram status (off / sent / ...) or 'repeat'."""
+def send(level, key, text, log=print, repeat_s=REPEAT_S):
+    """level: urgent | daily | info. Returns the Telegram status (off / sent / ...) or 'repeat'.
+    The same key goes out at most once per repeat_s (default 1 h)."""
     now = time.time()
-    if level != "daily" and now - _seen(key) < REPEAT_S:
+    if level != "daily" and now - _seen(key) < repeat_s:
         return "repeat"
     _sent[key] = now
     tg = telegram(f"[Choo Shop {level}] {text}")

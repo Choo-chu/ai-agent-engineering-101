@@ -20,12 +20,41 @@ CMD = os.environ.get("HARNESS_CMD", DEFAULT_CMD)
 _CWD = tempfile.mkdtemp(prefix="harness-")
 
 
+LIMIT_RE = re.compile(r"hit your (session|weekly|opus|sonnet) limit|usage limit|rate limit", re.I)
+FAIL_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "harness_failures.jsonl")
+
+
+def _failed(kind, code, out, err):
+    """Record a failed harness call (exit code and the first lines, to learn the exact limit wording) and send an
+    urgent alert at most every 10 min. Never raises."""
+    try:
+        import sys
+        import time
+        with open(FAIL_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": round(time.time(), 1), "who": os.path.basename(sys.argv[0]), "kind": kind,
+                                "exit": code, "stdout": (out or "")[:300], "stderr": (err or "")[:300]},
+                               ensure_ascii=False) + "\n")
+        import alerts
+        alerts.send("urgent", "harness_fail", f"harness ({os.path.basename(sys.argv[0])}) {kind}: exit {code}; "
+                    f"{((err or '') + ' ' + (out or '')).strip()[:200]}", log=lambda m: None, repeat_s=600)
+    except Exception:
+        pass
+
+
 def ask(prompt: str, timeout: int = 180) -> str:
-    out = subprocess.run(CMD, shell=True, input=prompt, capture_output=True, text=True,
-                         cwd=_CWD, timeout=timeout, env=dict(os.environ, MAX_THINKING_TOKENS="0"))
+    try:
+        out = subprocess.run(CMD, shell=True, input=prompt, capture_output=True, text=True,
+                             cwd=_CWD, timeout=timeout, env=dict(os.environ, MAX_THINKING_TOKENS="0"))
+    except subprocess.TimeoutExpired:
+        _failed("timeout", None, "", f"no answer in {timeout} s")
+        raise
+    so, se = out.stdout or "", out.stderr or ""         # None when the output could not be decoded
     if out.returncode != 0:
-        raise RuntimeError(f"harness exit {out.returncode}: {out.stderr.strip()[:200]}")
-    return out.stdout.strip()
+        _failed("limit" if LIMIT_RE.search(so + se) else "error", out.returncode, so, se)
+        raise RuntimeError(f"harness exit {out.returncode}: {se.strip()[:200]}")
+    if LIMIT_RE.search(so) and not so.lstrip().startswith("{"):
+        _failed("limit (exit 0)", 0, so, se)                 # the failure printed as the result
+    return so.strip()
 
 
 def ask_json(prompt: str) -> tuple[dict | None, str]:
