@@ -31,6 +31,7 @@ import decisions
 import strategy
 from market_db import connect, load_stats, price_of
 from pricing import floor
+from depts.sales import first_ask  # noqa: E402  (sales department)
 
 NAME = "Choo Shop"
 
@@ -80,17 +81,6 @@ def find_unit(text, taken=()):
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
     return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
-
-
-def first_ask(u, avg, reserve, rule, deal):
-    """normal: market average x the variant (1.00 / 1.05 / 1.10), at most the list price;
-    any markdown: the market average (the seller never asks more during a markdown); never below the floor."""
-    base = avg if avg is not None else u["list_price"] * 0.9
-    if rule == "normal" and deal["key"] == "shop_normal_ask":
-        ask = min(u["list_price"], base * float(deal["variant"]))
-    else:
-        ask = min(u["list_price"], base)
-    return max(reserve, int(ask))
 
 
 def record(task, deal, u, reserve, ask):

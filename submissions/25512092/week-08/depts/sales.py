@@ -1,0 +1,133 @@
+"""The shop's selling floor: one rule set per shop case (strategy.py decides the case).
+
+  normal      max(cost, market average), or the aging markdown when lower
+  cash_low    cost
+  overstock   cost (x the overstock floor variant), or the aging markdown when lower
+  endgame     the endgame floor (cost); no aging, since ALL ranks by book and an unsold unit keeps its cost
+  always      food clearance when lower                       (an expired unit is worth nothing)
+
+  aging       non-food on the shelf over AGING_AFTER_H: the average minus AGING_CUT of it every AGING_STEP_H,
+              never below AGING_MIN_COST x cost                (storage costs 1%/day)
+  clearance   food with under NEAR_EXPIRY_H of shelf life: the average minus CUT_PER_H of it every hour,
+              down to (1 - MAX_CUT) of it; may go below cost
+  endgame     from ENDGAME_H before the round ends (11/17 23:59): cost, minus ENDGAME_CUT of cost every
+              ENDGAME_STEP_H, down to ENDGAME_MIN of cost (1.00: the endgame floor is the cost itself)
+"""
+import json
+import os
+import time
+
+import policy
+from depts.logistics import held_cost, load_inventory  # noqa: F401  (pricing.held_cost etc.)
+from datetime import datetime
+
+NEAR_EXPIRY_H = 12      # food with less shelf life than this is "near expiry" (12 h left -> avg, 3 h left -> 10%)
+CUT_PER_H = 0.10
+MAX_CUT = 0.90
+AGING_AFTER_H = 24      # non-food older than this starts its markdown
+AGING_STEP_H = 6
+AGING_CUT = 0.10
+AGING_MIN_COST = 0.90   # aging never goes below 90% of cost
+from limits import ENDGAME_MIN, RESTOCK_STOP_H, ROUND_END  # noqa: E402,F401  hard limits (limits.py)
+ENDGAME_H = 48
+ENDGAME_STEP_H = 6
+ENDGAME_CUT = 0.10
+
+
+def clearance(u, avg, now=None):
+    """(floor, hours_left) for a unit near expiry, else (None, hours_left)."""
+    NEAR_EXPIRY_H, CUT_PER_H, MAX_CUT = policy.values("logistics", "near_expiry_h", "clearance_cut_per_h",
+                                                     "clearance_max_cut")
+    if not u.get("expires_at"):
+        return None, None
+    left = (u["expires_at"] - (now or time.time())) / 3600
+    if left >= NEAR_EXPIRY_H:
+        return None, left
+    base = avg if avg is not None else u["list_price"] * 0.7
+    cut = min(MAX_CUT, CUT_PER_H * int(NEAR_EXPIRY_H - left))
+    return int(base * (1 - cut)), left
+
+
+def aging(u, avg, now=None):
+    """(floor, step) for non-food on the shelf over AGING_AFTER_H, else (None, None). Step 0 = the average."""
+    AGING_AFTER_H, AGING_STEP_H, AGING_CUT, AGING_MIN_COST = policy.values(
+        "logistics", "aging_after_h", "aging_step_h", "aging_cut", "aging_min_cost")
+    if u.get("kind") == "food" or u.get("expires_at") or not u.get("supplied_at"):
+        return None, None
+    age_h = ((now or time.time()) - u["supplied_at"]) / 3600
+    if age_h < AGING_AFTER_H:
+        return None, None
+    step = int((age_h - AGING_AFTER_H) // AGING_STEP_H)
+    base = avg if avg is not None else u["list_price"] * 0.7
+    return max(int(u["cost"] * AGING_MIN_COST), int(base * (1 - AGING_CUT * step))), step
+
+
+def endgame_step(now=None):
+    """None before the endgame, else 0, 1, 2, ... (one step every ENDGAME_STEP_H)."""
+    t = (now or time.time()) - (ROUND_END - ENDGAME_H * 3600)
+    return None if t < 0 else int(t // (ENDGAME_STEP_H * 3600))
+
+
+def endgame(u, now=None):
+    step = endgame_step(now)
+    if step is None:
+        return None, None
+    return int(u["cost"] * max(ENDGAME_MIN, 1 - ENDGAME_CUT * step)), step
+
+
+def restock_stopped(now=None):
+    return (now or time.time()) >= ROUND_END - RESTOCK_STOP_H * 3600
+
+
+def floor(u, avg, case, now=None, overstock_mult=1.0):
+    """(floor, rule) for one unit in the given shop case: the lowest of the rules that case turns on."""
+    now = now or time.time()
+    if case == "endgame":
+        e, step = endgame(u, now)
+        cands = [(e, f"endgame step {step}")] if e is not None else [(u["cost"], "cost")]
+    elif case == "cash_low":
+        cands = [(u["cost"], "cash_low")]
+    elif case == "overstock":
+        cands = [(int(u["cost"] * overstock_mult), "overstock")]
+    else:
+        cands = [(max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")]
+    if case in ("normal", "overstock"):              # endgame: no aging below cost (ALL uses book)
+        a, step = aging(u, avg, now)
+        if a is not None:
+            cands.append((a, f"aging step {step}"))
+    c, _ = clearance(u, avg, now)
+    if c is not None:
+        cands.append((c, "clearance"))
+    return min(cands)
+
+
+WARRANTY_H = 48
+WARRANTY_MAX_BREAK = 0.05
+WARRANTY_MIN_N = 5          # the SKU needs this many market sales before its break rate counts
+
+
+def warranty_hours(u, case, stats):
+    """[16] 48 h for A-grade goods whose market break rate is known and at most 5%, in the normal case only."""
+    import policy
+    WARRANTY_H, WARRANTY_MAX_BREAK, WARRANTY_MIN_N = policy.values("sales", "warranty_h", "warranty_max_break",
+                                                                   "warranty_min_n")
+    if not policy.get("sales", "warranty_enabled"):
+        return 0
+    if case != "normal" or u.get("kind") == "food" or u.get("grade") != "A":
+        return 0
+    if (stats.get("sku_n") or {}).get(u["sku"], 0) < WARRANTY_MIN_N:
+        return 0
+    if (stats.get("sku_break") or {}).get(u["sku"], 0) > WARRANTY_MAX_BREAK:
+        return 0
+    return WARRANTY_H
+
+
+def first_ask(u, avg, reserve, rule, deal):
+    """normal: market average x the variant (1.00 / 1.05 / 1.10), at most the list price;
+    any markdown: the market average (the seller never asks more during a markdown); never below the floor."""
+    base = avg if avg is not None else u["list_price"] * 0.9
+    if rule == "normal" and deal["key"] == "shop_normal_ask":
+        ask = min(u["list_price"], base * float(deal["variant"]))
+    else:
+        ask = min(u["list_price"], base)
+    return max(reserve, int(ask))
