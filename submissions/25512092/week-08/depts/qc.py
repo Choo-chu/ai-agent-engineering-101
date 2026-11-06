@@ -303,7 +303,7 @@ def daily(db, inv, catalog, log):
              f"high-price {pct(hr)} ({s['high_profit']:,} on {s['high_cost']:,})",
              f"- stock at cost {stock:,}, cash {int(inv.get('balance', 0)):,}",
              f"- {perishable_line(perishable_numbers(db, t0, t1, catalog, inv))}", "",
-             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + ["",
+             "## Cash, stock, storage, profit", ""] + money_md(money, catalog) + [""] +             cap_compare_md(cap_compare(db, t1)) + ["",
              "## Sales by category", ""] + \
             [f"- {k}: {v}" for k, v in sorted(s["cats"].items(), key=lambda kv: -kv[1])] + \
             ["", "## Top 3 SKUs by profit", ""] + \
@@ -337,6 +337,7 @@ def daily(db, inv, catalog, log):
             f"cash {money.get('cash1', 0):,}, stock at cost {money.get('stock1', 0):,}, book change "
             f"{money.get('book_change', 0):+,}, storage ~{money.get('storage', 0):,}",
             f"STOCK_CAP runs {money['cap_runs']}, budget held back {money['cap_budget_cut']:,}",
+            cap_compare_line(cap_compare(db, t1)) or "no STOCK_CAP change",
             f"CEO {ceo}, policy v{_pol.version()}; buying split {share:.0%} / {cap} ({reason})",
             f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
     except Exception as e:
@@ -353,3 +354,60 @@ def tick(inv, catalog, log=print):
         daily(db, inv, catalog, log)
     finally:
         db.close()
+
+
+def cap_change():
+    """(epoch, new cap) of the latest STOCK_CAP change, or None."""
+    from limits import STOCK_CAP_CHANGES
+    return max(STOCK_CAP_CHANGES) if STOCK_CAP_CHANGES else None
+
+
+def money_window(db, t0, t1):
+    """Buying, sales, storage and Book over [t0, t1) from my_stock, settles and the 5-min cash table."""
+    bought = db.execute("SELECT COUNT(*), COALESCE(SUM(cost), 0) FROM my_stock WHERE supplied_at>=? AND supplied_at<?",
+                        (t0, t1)).fetchone()
+    sold = db.execute("SELECT COUNT(*), COALESCE(SUM(amount), 0) FROM settles WHERE shop=? AND ts>=? AND ts<?",
+                      (ME, t0, t1)).fetchone()
+    rows = db.execute("SELECT ts, balance, stock_cost, storage_per_day FROM cash WHERE ts>=? AND ts<? ORDER BY ts",
+                      (t0, t1)).fetchall()
+    out = {"hours": round((t1 - t0) / 3600, 1), "bought_units": bought[0], "bought_cost": bought[1],
+           "sales": sold[0], "revenue": sold[1], "storage": None, "book_change": None, "stock_start": None,
+           "stock_end": None}
+    if len(rows) >= 2:
+        out["storage"] = round(sum(r[3] or 0 for r in rows) / len(rows) * (rows[-1][0] - rows[0][0]) / 86400)
+        out["book_change"] = (rows[-1][1] + rows[-1][2]) - (rows[0][1] + rows[0][2])
+        out["stock_start"], out["stock_end"] = rows[0][2], rows[-1][2]
+    return out
+
+
+def cap_compare(db, now, max_h=72):
+    """The latest STOCK_CAP change: the same number of hours before and after it (up to max_h, and no more than
+    have passed since the change)."""
+    c = cap_change()
+    if not c or now <= c[0]:
+        return None
+    d = min(now - c[0], max_h * 3600)
+    return {"at": c[0], "cap": c[1], "before": money_window(db, c[0] - d, c[0]),
+            "after": money_window(db, c[0], c[0] + d)}
+
+
+def cap_compare_md(cc):
+    if not cc:
+        return []
+    fmt = lambda v: "-" if v is None else f"{v:,}" if isinstance(v, int) else str(v)
+    keys = [("bought_cost", "매입액 (원가)"), ("bought_units", "매입 수량"), ("sales", "판매 수"), ("revenue", "revenue"),
+            ("storage", "보관비"), ("book_change", "Book 변화")]
+    lines = [f"## STOCK_CAP -> {cc['cap']:,} ({datetime.fromtimestamp(cc['at']):%m-%d %H:%M}): "
+             f"{cc['after']['hours']} h before vs after", "", "| | before | after |", "|---|---|---|"]
+    lines += [f"| {label} | {fmt(cc['before'][k])} | {fmt(cc['after'][k])} |" for k, label in keys]
+    return lines + [""]
+
+
+def cap_compare_line(cc):
+    if not cc:
+        return ""
+    b, a = cc["before"], cc["after"]
+    f = lambda v: "-" if v is None else f"{v:,}"
+    return (f"cap {cc['cap'] // 10**6}M, {a['hours']} h before/after: bought {f(b['bought_cost'])}/{f(a['bought_cost'])}, "
+            f"sold {b['sales']}/{a['sales']}, revenue {f(b['revenue'])}/{f(a['revenue'])}, storage "
+            f"{f(b['storage'])}/{f(a['storage'])}, book {f(b['book_change'])}/{f(a['book_change'])}")

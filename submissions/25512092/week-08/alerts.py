@@ -82,6 +82,34 @@ KEEPALIVE_LOG = os.path.join(HERE, "logs", "keepalive.log")
 SEEN = os.path.join(HERE, "logs", "alerts_seen.json")
 
 
+def cap_review(seen, log=print, now=None):
+    """24 h after a STOCK_CAP change, once: sales in the 24 h after vs the 24 h before, and stock at cost at the
+    change vs 24 h later. Sales not up while stock grew -> urgent alert."""
+    import sales_report
+    from market_db import connect
+    now = now or time.time()
+    c = sales_report.cap_change()
+    if not c or now < c[0] + 86400 or seen.get("cap_review") == c[0]:
+        return None
+    db = connect()
+    try:
+        cc = sales_report.cap_compare(db, c[0] + 86400, max_h=24)
+    finally:
+        db.close()
+    seen["cap_review"] = c[0]
+    b, a = cc["before"], cc["after"]
+    grew = a["stock_end"] is not None and a["stock_start"] is not None and a["stock_end"] > a["stock_start"]
+    text = (f"STOCK_CAP {c[1]:,}, 24 h after vs before: sold {b['sales']} -> {a['sales']}, revenue {b['revenue']:,} -> "
+            f"{a['revenue']:,}; stock at cost {a['stock_start']} -> {a['stock_end']}")
+    import decisions
+    if a["sales"] <= b["sales"] and grew:
+        decisions.record("qc", "cap_review", "STOCK_CAP", c[1], "sales not up, stock grew: " + text)
+        return send("urgent", f"cap_review:{c[0]}", "sales did not rise but stock grew after the cap change. " + text, log)
+    decisions.record("qc", "cap_review", "STOCK_CAP", c[1], "ok: " + text)
+    log(f"[alert] cap review ok: {text}")
+    return "ok"
+
+
 def watch(reports=None, log=print):
     """Called by restock.py every minute: urgent issues in the department reports, and new keepalive.log lines
     (kit restarted, public card not answering twice or more in a row)."""
@@ -102,6 +130,10 @@ def watch(reports=None, log=print):
         elif "not answering (2/" in ln or "not answering (3/" in ln:
             send("urgent", "shop_offline", f"public shop card not answering: {ln[:160]}", log)
     seen["keepalive_lines"] = len(lines)
+    try:
+        cap_review(seen, log)
+    except Exception as e:
+        log(f"[alert] cap review: {type(e).__name__}")
     for dept, r in (reports or {}).items():
         for i in r.get("issues", []):
             if i.get("level") == "urgent":

@@ -8,8 +8,11 @@ from datetime import datetime
 # money and stock
 CASH_RESERVE = 1_500_000      # restock spends only cash above this; under it the shop case is cash_low
 CASH_WARN = 1_000_000         # under this: warning in the log and an urgent alert
-STOCK_CAP = 4_000_000         # stock at cost at or over this: overstock, no restock (11/06: was 2.5M)
-STOCK_EXIT = 3_520_000        # overstock ends only under this (hysteresis)
+STOCK_CAP = 5_000_000         # stock at cost at or over this: overstock, no restock (11/06 15:54: was 4.0M; before: 2.5M)
+STOCK_EXIT = 4_400_000        # overstock ends only under this (hysteresis; 88% of the cap, was 3.52M)
+# every change of STOCK_CAP: (epoch seconds, new cap). Comparisons that span a change (the CEO guard, the
+# daily before/after section, the 24 h review alert) read it so a cap change is not taken for a policy effect.
+STOCK_CAP_CHANGES = [(1793948058, 5_000_000)]   # 11/06 15:54 KST, 4.0M -> 5.0M
 
 # round timing (local time, KST)
 ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()
@@ -49,7 +52,7 @@ POLICY_RANGES = {
     "buyer.first_offer": (0.4, 0.9),
 }
 
-# dislikes (Patch 3.4, from 11/06 12:00): per hour the first 3 new dislike stances on buyers are free, the k-th
+# dislikes (Patch 3.4, from 11/06 12:00; free-only confirmed 11/06): per hour the first 3 new dislike stances on buyers are free, the k-th
 # costs 20,000 x (k - 3) from shop cash (it lowers Book). Our code casts no votes today; if it ever does, it may
 # only use the free ones: at most DISLIKE_FREE_PER_HOUR an hour and only while inventory.json's next fee is <= this.
 DISLIKE_FREE_PER_HOUR = 3

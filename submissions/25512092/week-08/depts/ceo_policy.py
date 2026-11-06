@@ -159,6 +159,14 @@ def guard(st, now, log):
     if st.get("mode") != "live" or not L or now - L < GUARD_MIN_H * 3600 or now - st.get("last_guard", 0) < GUARD_EVERY_S:
         return None
     st["last_guard"] = now
+    from limits import STOCK_CAP_CHANGES
+    crossed = [t for t, _ in STOCK_CAP_CHANGES if L - 86400 < t < now]
+    if crossed:                                    # the base hours (a day before) would include a STOCK_CAP change
+        why = (f"base window {datetime.fromtimestamp(L - 86400):%m-%d %H:%M}-{datetime.fromtimestamp(now - 86400):%H:%M}"
+               f" spans the STOCK_CAP change at {datetime.fromtimestamp(max(crossed)):%m-%d %H:%M}: no comparison")
+        decisions.record("ceo", "guard_check", "live vs a day before", None, why)
+        log(f"[ceo] guard skipped: {why}")
+        return None
     db = connect()
     try:
         cur = dept_reports.window(db, L, now, _catalog())
