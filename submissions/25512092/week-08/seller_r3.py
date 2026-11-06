@@ -28,6 +28,8 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from harness import CMD, ask_json
 from forum_post import promo
 import decisions
+from depts import sofa
+WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
 from market_db import connect, load_stats, price_of
 from pricing import floor
@@ -218,7 +220,15 @@ class Seller(AgentExecutor):
             decisions.record("sales", "first_ask", u["sku"], ask, f"unit {u['unit']}, cost {u['cost']}, avg {avg}, "
                              f"case {deal['case']}, rule {rule}, floor {reserve}, variant {deal['key']} {deal['variant']}"
                              + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""))
+            deal["first_ask"] = ask
             move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
+        elif rule == "sofa":                            # sofa haggling by code (depts/sofa.py D), no harness call
+            nxt = sofa.next_counter(deal, reserve)
+            if deal["offer"] is not None and deal["offer"] >= max(reserve, nxt):
+                move, raw = {"action": "accept"}, f"(sofa code: offer {deal['offer']} >= next counter {nxt})"
+            else:
+                move, raw = {"action": "counter", "price": nxt}, f"(sofa code: counter {nxt}, floor {reserve})"
+            print(f"[sofa] {u['sku']} offer {deal['offer']}, last ask {deal['ask']} -> {raw}", flush=True)
         elif code_accept_on() and deal["offer"] is not None and deal["ask"] \
                 and deal["offer"] >= CODE_ACCEPT * deal["ask"] and deal["offer"] >= reserve:
             move, raw = {"action": "accept"}, f"(code: offer {deal['offer']} >= {CODE_ACCEPT:.0%} of ask {deal['ask']})"
@@ -258,7 +268,7 @@ class Seller(AgentExecutor):
         price = (move or {}).get("price")
         if not isinstance(price, (int, float)):
             price = deal["ask"] or u["list_price"]      # unparsed answer: repeat the last ask
-        if rule != "normal" and avg is not None:        # any markdown: never ask above the market average
+        if rule not in ("normal", "sofa") and avg is not None:   # any markdown: never ask above the market average
             price = min(price, max(reserve, int(avg)))
         if price < reserve:                             # the harness may forget the cost; the code does not
             print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
@@ -269,7 +279,7 @@ class Seller(AgentExecutor):
             facts = f" SKU {u['sku']}, grade {u['grade']}"
             if u.get("expires_at"):
                 facts += f", {max(0, (u['expires_at'] - time.time()) / 3600):.1f} h shelf life left"
-            facts += (", forty-eight hour warranty from our balance" if deal["warranty"] else ", no warranty")
+            facts += (f", {WORDS.get(deal['warranty'], format(deal['warranty'], 'g'))} hour warranty from our balance" if deal["warranty"] else ", no warranty")
             facts += "; the market certificate of this unit is in the data part."
             reply = f"{u['name']}: {promo()}{facts} Asking {deal['ask']}. Send your offer as a number."
         else:

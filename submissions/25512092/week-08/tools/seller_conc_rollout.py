@@ -118,15 +118,36 @@ def main():
     json.dump({"ts": t}, open(APPLIED, "w"))
     alerts.send("urgent" if not back else "info", "conc_applied",
                 f"{'A + ' if conc else ''}코드 수락 적용 {datetime.fromtimestamp(t):%H:%M}: seller 재시작 " + (f"정상 ({back})" if back else "후 확인 안 됨, 점검 필요"), log)
+    report(t, conc)
+
+
+def report(t, conc):
+    """11/07 09:00: before / after the 22:00 restart, plus the sofa rules' results (decision 11/07 01:30)."""
     until(T("2026-11-07 09:00"))
     before, after = metrics(t - 6 * 3600, t), metrics(t, time.time())
-    alerts.send("daily", "conc_report", f"{'A(동시 처리) + ' if conc else ''}코드 수락 전후 비교 (시간대가 달라 참고용)\n"
-                f"전 {before['hours']}h: 호출 {before['calls_per_h']}/h, timed out {before['timed_out_per_h']}/h, "
-                f"협상 {before['negotiations_per_h']}/h, 협상당 이익 {before['profit_per_negotiation']}\n"
-                f"후 {after['hours']}h: 호출 {after['calls_per_h']}/h, timed out {after['timed_out_per_h']}/h, "
-                f"협상 {after['negotiations_per_h']}/h, 협상당 이익 {after['profit_per_negotiation']}", log)
+    text = (f"{'A(동시 처리) + ' if conc else ''}코드 수락 전후 비교 (시간대가 달라 참고용)\n"
+            f"전 {before['hours']}h: 호출 {before['calls_per_h']}/h, timed out {before['timed_out_per_h']}/h, "
+            f"협상 {before['negotiations_per_h']}/h, 협상당 이익 {before['profit_per_negotiation']}\n"
+            f"후 {after['hours']}h: 호출 {after['calls_per_h']}/h, timed out {after['timed_out_per_h']}/h, "
+            f"협상 {after['negotiations_per_h']}/h, 협상당 이익 {after['profit_per_negotiation']}")
+    try:
+        from depts import sofa
+        r = sofa.rules()
+        if r.get("since"):
+            since, span = r["since"], time.time() - r["since"]
+            text += (f"\n\n소파 새 규칙 ({datetime.fromtimestamp(since):%m-%d %H:%M}~, {span / 3600:.0f}h): "
+                     + alerts.sofa_text(alerts.sofa_numbers(since))
+                     + f"\n소파 이전 같은 길이: " + alerts.sofa_text(alerts.sofa_numbers(since - span, since))
+                     + ("" if r.get("warranty") else f"\n보증 해제됨: {r.get('warranty_off_reason')}"))
+    except Exception as e:
+        text += f"\n소파 결과 계산 실패: {type(e).__name__}"
+    alerts.send("daily", "conc_report", text, log)
     log("report sent; done")
 
 
 if __name__ == "__main__":
-    main()
+    if "--report-only" in sys.argv:            # restarted after 22:00 (11/07 01:30): only the 09:00 report is left
+        log("rollout restarted: report only")
+        report(json.load(open(APPLIED))["ts"], bool(json.load(open(FLAG)).get("enabled")))
+    else:
+        main()

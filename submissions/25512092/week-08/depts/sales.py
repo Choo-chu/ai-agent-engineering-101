@@ -82,6 +82,12 @@ def restock_stopped(now=None):
 def floor(u, avg, case, now=None, overstock_mult=1.0):
     """(floor, rule) for one unit in the given shop case: the lowest of the rules that case turns on."""
     now = now or time.time()
+    if case != "endgame":                            # sofas: their own floor (depts/sofa.py B), all cases but endgame
+        from depts import sofa
+        if sofa.applies(u):
+            r = sofa.floor(u, now)
+            if r:
+                return r
     if case == "endgame":
         e, step = endgame(u, now)
         cands = [(e, f"endgame step {step}")] if e is not None else [(u["cost"], "cost")]
@@ -111,6 +117,9 @@ def warranty_hours(u, case, stats):
     import policy
     WARRANTY_H, WARRANTY_MAX_BREAK, WARRANTY_MIN_N = policy.values("sales", "warranty_h", "warranty_max_break",
                                                                    "warranty_min_n")
+    from depts import sofa
+    if case != "endgame" and sofa.applies(u):        # sofas: 72 h while sofa_rules.json says warranty (C)
+        return sofa.WARRANTY_H if sofa.warranty_on() else 0
     if not policy.get("sales", "warranty_enabled"):
         return 0
     if case != "normal" or u.get("kind") == "food" or u.get("grade") != "A":
@@ -125,6 +134,9 @@ def warranty_hours(u, case, stats):
 def first_ask(u, avg, reserve, rule, deal):
     """normal: market average x the variant (1.00 / 1.05 / 1.10), at most the list price;
     any markdown: the market average (the seller never asks more during a markdown); never below the floor."""
+    if rule == "sofa":                               # sofas: the market median (depts/sofa.py A)
+        from depts import sofa
+        return sofa.first_ask(u, reserve)
     base = avg if avg is not None else u["list_price"] * 0.9
     if rule == "normal" and deal["key"] == "shop_normal_ask":
         ask = min(u["list_price"], base * float(deal["variant"]))

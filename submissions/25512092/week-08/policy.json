@@ -10,7 +10,7 @@
   "perishable_trial_market_30m": 3,
   "perishable_trial_qty": 2,
   "sofa_trial_start": 1793951508,
-  "sofa_trial_end": 1794037908
+  "sofa_trial_end": 1794124308.0
  },
  "sales": {
   "warranty_enabled": true,
@@ -40,8 +40,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 2,
- "ts": 1793951508,
+ "version": 3,
+ "ts": 1793982279,
  "by": "person",
- "reason": "sofa trial (person's decision 11/06): one sofa/chair/stool unit per restock window, est. cost <= 1.0M, 11-06 16:51 - 11-07 16:51"
+ "reason": "sofa trial extended 24 h to 11-08 16:51 (person's decision 11/07 01:30, with sofa rules A-E); unsold cap 10 kept"
 }

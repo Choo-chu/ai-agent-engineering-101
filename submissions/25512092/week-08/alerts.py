@@ -152,6 +152,10 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] sofa check: {type(e).__name__}")
     try:
+        sofa_warranty_check(seen, log)
+    except Exception as e:
+        log(f"[alert] sofa warranty check: {type(e).__name__}")
+    try:
         seller_check(seen, log)
     except Exception as e:
         log(f"[alert] seller check: {type(e).__name__}")
@@ -299,6 +303,60 @@ def sofa_check(seen, log=print, now=None):
                 db.close()
             seen[key] = now
             send("daily", key, ("Sofa trial final report" + chr(10) if final else "Sofa trial 12 h report" + chr(10)) + text, log)
+    return None
+
+
+SOFA_REFUND_MAX = 3      # decision 11/07: 3 sofa warranty refunds, or refunds > sofa profit -> warranty off
+
+
+def sofa_numbers(since, now=None):
+    """Sofa results since the rules went on: negotiations, receipts, sales, profit, warranty refunds (n, amount)."""
+    from depts import sofa
+    from market_db import ME, connect
+    now = now or time.time()
+    db = connect()
+    try:
+        deals = db.execute("SELECT sku, outcome FROM shop_deals WHERE ts>=? AND ts<?", (since, now)).fetchall()
+        deals = [d for d in deals if sofa.is_sofa(d[0])]
+        sales = db.execute("SELECT s.sku, s.amount, m.cost FROM settles s LEFT JOIN my_stock m ON m.unit=s.unit "
+                           "WHERE s.shop=? AND s.ts>=? AND s.ts<?", (ME, since, now)).fetchall()
+        sales = [x for x in sales if sofa.is_sofa(x[0])]
+        refunds = db.execute("""SELECT b.sku, (SELECT s.amount FROM settles s WHERE s.shop=? AND s.sku=b.sku
+                                AND s.buyer=b.buyer AND s.ts<=b.ts ORDER BY s.ts DESC LIMIT 1)
+                                FROM broken b WHERE b.shop=? AND b.refunded=1 AND b.ts>=? AND b.ts<?""",
+                             (ME, ME, since, now)).fetchall()
+        refunds = [r for r in refunds if sofa.is_sofa(r[0])]
+    finally:
+        db.close()
+    n = len([d for d in deals if d[1] != "open"])
+    rec = len([d for d in deals if d[1] == "receipt"])
+    return {"negotiations": n, "receipts": rec, "rate": rec / n if n else None, "sold": len(sales),
+            "revenue": sum(x[1] or 0 for x in sales), "profit": sum((x[1] or 0) - (x[2] or 0) for x in sales),
+            "refunds": len(refunds), "refund_amount": sum(r[1] or 0 for r in refunds)}
+
+
+def sofa_text(o):
+    rate = f"{o['rate']:.0%}" if o["rate"] is not None else "-"
+    return (f"소파: 협상 {o['negotiations']}, 성사 {o['receipts']} ({rate}), 판매 {o['sold']} (매출 {o['revenue']:,}, "
+            f"이익 {o['profit']:,}), 보증 환불 {o['refunds']}건 {o['refund_amount']:,}")
+
+
+def sofa_warranty_check(seen, log=print, now=None):
+    """C safety: sofa warranty refunds >= SOFA_REFUND_MAX, or refund amount > profit on sofa sales (both since the
+    rules went on) -> warranty off in sofa_rules.json (the seller reads it per negotiation) + urgent alert. Once."""
+    import json as _j
+    from depts import sofa
+    r = sofa.rules()
+    if not (r.get("enabled") and r.get("warranty") and r.get("since")):
+        return None
+    o = sofa_numbers(r["since"], now)
+    if o["refunds"] >= SOFA_REFUND_MAX or (o["refunds"] and o["refund_amount"] > o["profit"]):
+        r.update(warranty=False, warranty_off_at=round(time.time()),
+                 warranty_off_reason=f"{o['refunds']} refunds, {o['refund_amount']:,} vs sofa profit {o['profit']:,}")
+        with open(sofa.RULES, "w", encoding="utf-8") as f:
+            _j.dump(r, f, ensure_ascii=False)
+        send("urgent", f"sofa_warranty_off:{int(r['since'])}", "소파 보증 자동 해제 (환불 누적 3건 또는 환불액 > 소파 이익). "
+             + sofa_text(o) + ". 가격/코드 흥정 규칙은 유지", log)
     return None
 
 

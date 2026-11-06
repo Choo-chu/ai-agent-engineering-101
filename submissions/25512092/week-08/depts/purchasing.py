@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 
 import decisions
+from depts import sofa as sofa_rules
 import policy
 import pricing
 import sales_report
@@ -80,6 +81,8 @@ def make_plan(inv, units, catalog, budget, log):
             continue
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
         if cost > HIGH_MAX or avg < cost * (1 + MIN_MARGIN):
+            continue
+        if sofa_rules.on() and sofa_rules.is_sofa(sku) and not sofa_rules.buy_ok(sku, cost)[0]:   # sofa buying rule E
             continue
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             if (c.get("category") or "").split(">")[-1] not in hot_cats or s["sold_30m"] < 1 or held.get(sku):
@@ -172,10 +175,13 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
         cost = c["list_price"] * COST_SHARE["goods"] * surge.get(sku, 1.0)
         if cost > SOFA_MAX_COST or avg < cost * (1 + min_margin):
             continue
+        if sofa_rules.on() and not sofa_rules.buy_ok(sku, cost)[0]:   # E: >= 30 market sales/48 h, >= 2/h, cost <= 500k
+            continue
         if best is None or s["sold_30m"] > best[2]:
             best = (sku, cost, s["sold_30m"], avg, s.get("name") or c.get("name"))
     if best is None:
-        log("[sofa trial] skip: no sofa SKU fits (cost <= 1.0M, margin, selling, not held)")
+        log("[sofa trial] skip: no sofa SKU fits (cost <= 1.0M, margin, selling, not held; rule E: >= 30 sales/48 h, "
+            ">= 2/h, cost <= 500k)")
         return None
     sku, cost, sold, avg, name = best
     if held_cost + cost > STOCK_CAP or cash - cost < CASH_RESERVE:
