@@ -1,0 +1,30 @@
+{
+ "metrics": {
+  "cash": 2632628,
+  "stock_cost": 8902727,
+  "units": 283,
+  "storage_per_day": 89027,
+  "near_expiry_12h": 24,
+  "goods_over_48h": 0,
+  "high_over_24h": 0,
+  "perishable_24h": {
+   "bought": 164,
+   "sold": 155,
+   "wasted": 0,
+   "waste_cost": 0
+  }
+ },
+ "disposal_candidates": [],
+ "issues": [
+  {
+   "level": "info",
+   "text": "stock at cost 8,902,727 within 5% of STOCK_CAP",
+   "refs": []
+  }
+ ],
+ "dept": "logistics",
+ "ts": 1793976950,
+ "policy_version": 2,
+ "window_h": 6,
+ "requests": []
+}

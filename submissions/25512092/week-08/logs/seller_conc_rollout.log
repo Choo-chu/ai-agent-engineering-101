@@ -1,0 +1,8 @@
+11-06 18:09:48 rollout started
+11-06 18:17:13 rollout started
+11-06 19:01:01 [alert] info conc_util18: seller 사용률 18시 63% (A 적용 조건: 18·19시 모두 70% 이상) (telegram sent)
+11-06 20:01:00 18h 0.6319444444444444, 19h 0.7019444444444445
+11-06 20:01:01 [alert] urgent conc_hold: seller 사용률 18시 63%, 19시 70%: 70% 밑이 있어 A(동시 처리) 적용 보류 (적용하려면 확인 필요). 22:00 재시작은 코드 수락(98%)만 켜고 진행 (telegram sent)
+11-06 20:01:01 concurrency held: under 70%; code accept only
+11-06 22:00:01 flag on, seller restarted (killed 26852)
+11-06 22:02:02 [alert] info conc_applied: 코드 수락 적용 22:00: seller 재시작 정상 (22:00:49 [seller] [seller] 13 units with a receipt in the last 25 min held back) (telegram sent)

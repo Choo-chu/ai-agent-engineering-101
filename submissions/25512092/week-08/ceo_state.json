@@ -3,10 +3,12 @@
  "shadow_since": 1793946964.9468915,
  "live_since": null,
  "auto_live_at": 1794034800.0,
- "runs": 1,
+ "runs": 17,
  "errors": 0,
- "last_run": 1793947029.1063719,
+ "last_run": 1793976868.0910444,
  "last_guard": 0,
- "key_ts": {},
+ "key_ts": {
+  "purchasing.spend_share": 1793958280.0170667
+ },
  "split_day": "20261106"
 }
