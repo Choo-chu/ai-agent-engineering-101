@@ -82,10 +82,14 @@ def connect():
         db.execute("ALTER TABLE settles ADD COLUMN unit TEXT")       # links my sales to my_stock (cost)
     if "warranty_hours" not in cols:
         db.execute("ALTER TABLE settles ADD COLUMN warranty_hours REAL")
+    db.execute("CREATE INDEX IF NOT EXISTS settles_unit ON settles (unit)")     # perishable / unpaid lookups
     if "extra" not in [r[1] for r in db.execute("PRAGMA table_info(hourly)")]:
         db.execute("ALTER TABLE hourly ADD COLUMN extra TEXT")
     if "mo_variant" not in [r[1] for r in db.execute("PRAGMA table_info(buyer_deals)")]:
         db.execute("ALTER TABLE buyer_deals ADD COLUMN mo_variant TEXT")    # the min-offers variant
+    db.execute("CREATE TABLE IF NOT EXISTS my_results (seq INTEGER PRIMARY KEY, ts REAL, buyer TEXT, ord TEXT, "
+               "stars INTEGER, review TEXT, has_receipt INTEGER)")          # reviews of my shop (ledger 'result')
+    db.execute("CREATE TABLE IF NOT EXISTS board_hist (ts REAL PRIMARY KEY, shop TEXT, buyer TEXT)")  # board rows
     if "reason" not in [r[1] for r in db.execute("PRAGMA table_info(cases)")]:
         db.execute("ALTER TABLE cases ADD COLUMN reason TEXT")
     return db
@@ -149,7 +153,16 @@ def refresh(force=False, log=print):
         except Exception:
             names = {}
     added = 0
+    mine = {u for (u,) in db.execute("SELECT DISTINCT shop_url FROM settles WHERE shop=?", (ME,))} | \
+        {u for u, n in names.items() if n == ME}
     for e in entries:
+        if e.get("kind") == "result":
+            d = e["data"]
+            if (d.get("shop") or "").rstrip("/") in mine or (d.get("receipt") or {}).get("shop") == SHOP_DISPLAY:
+                db.execute("INSERT OR IGNORE INTO my_results VALUES (?,?,?,?,?,?,?)",
+                           (e["seq"], e["ts"], d.get("buyer"), d.get("order"), d.get("stars"),
+                            (d.get("review") or "")[:300], int(bool(d.get("receipt")))))
+            continue
         if e.get("kind") == "broken":
             d = e["data"]
             url = (d.get("shop") or "").rstrip("/")
@@ -172,6 +185,7 @@ def refresh(force=False, log=print):
         db.execute("INSERT OR REPLACE INTO meta VALUES ('last_seq', ?)", (str(entries[-1]["seq"]),))
     backfill_units(db)
     match_broken(db)
+    board_snapshot(db, now, log)
 
     # snapshot: per SKU sold in the last 30 minutes, plus every SKU I hold or bought before
     stats = {"ts": now, "skus": {}, "hot": [], "my_buys": {}}
@@ -205,6 +219,29 @@ def refresh(force=False, log=print):
     log(f"[market_db] +{added} settles, {len(stats['skus'])} SKUs priced, hot: "
         + ", ".join(f"{stats['skus'][k]['name'] or k}({stats['skus'][k]['sold_30m']})" for k in stats["hot"][:3]))
     return True
+
+
+SHOP_DISPLAY = "Choo Shop"
+BOARD_EVERY_S = 1800
+
+
+def board_snapshot(db, now, log=print):
+    """Every 30 min: my shop's and my buyer's board rows (stars, deals, book, profit, surplus, all) -> board_hist."""
+    if now - float(meta(db, "board_ts", 0)) < BOARD_EVERY_S:
+        return
+    db.execute("INSERT OR REPLACE INTO meta VALUES ('board_ts', ?)", (str(now),))
+    try:
+        j = httpx.get(f"{MARKET}/api/board", params={"round": 3}, timeout=30).json()
+    except Exception as e:
+        log(f"[market_db] board unavailable: {e}")
+        return
+    keep = lambda x: {k: v for k, v in (x or {}).items() if k not in ("owner", "card")}
+    shop = next((x for x in j.get("shops", []) if x.get("name") == ME), None)
+    buyer = next((x for x in j.get("buyers", []) if x.get("name") == ME), None)
+    rank = lambda rows, x: 1 + sum(1 for r in rows if (r.get("all") or 0) > (x or {}).get("all", 0)) if x else None
+    s, b = keep(shop), keep(buyer)
+    s["rank"], b["rank"] = rank(j.get("shops", []), shop), rank(j.get("buyers", []), buyer)
+    db.execute("INSERT OR REPLACE INTO board_hist VALUES (?,?,?)", (now, json.dumps(s), json.dumps(b)))
 
 
 WANT = re.compile(r"구합니다|구해요|찾습니다|찾아요|삽니다|wanted|looking for|want to buy|need", re.I)
