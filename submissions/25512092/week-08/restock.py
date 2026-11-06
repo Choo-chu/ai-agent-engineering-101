@@ -20,6 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import decisions  # noqa: E402
 import dept_reports  # noqa: E402
+from depts import ceo_policy  # noqa: E402
 import policy  # noqa: E402
 import forum_post  # noqa: E402
 import pricing  # noqa: E402
@@ -80,6 +81,10 @@ def main():
         dept_reports.tick(inv, catalog, log=log)        # reports/dept/*.json every 5 min (read-only)
     except Exception as e:
         log(f"dept reports failed: {e}")
+    try:
+        ceo_policy.tick(inv, catalog, log=log)          # CEO: policy proposals (shadow) or policy.json (live)
+    except Exception as e:
+        log(f"ceo failed: {e}")
 
     case = strategy.shop_case(inv)
     r = inv.get("restock") or {}

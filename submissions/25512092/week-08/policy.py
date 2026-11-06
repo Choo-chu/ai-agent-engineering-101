@@ -111,6 +111,20 @@ def write(sections, reason, by="ceo"):
     return new
 
 
+def reset(reason, by="ceo_guard"):
+    """Back to DEFAULTS (version 1's values), dropping every key the CEO added; the version number still grows."""
+    cur = load()
+    new = {k: dict(v) for k, v in DEFAULTS.items()}
+    new.update(version=(cur.get("version") or 0) + 1, ts=round(time.time()), by=by, reason=reason)
+    tmp = PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(new, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, PATH)
+    with open(HISTORY, "a", encoding="utf-8") as f:
+        f.write(json.dumps(new, ensure_ascii=False) + "\n")
+    return new
+
+
 def init():
     """policy.json version 1 = DEFAULTS (the values in use before it)."""
     if not os.path.exists(PATH):
