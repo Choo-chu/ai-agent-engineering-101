@@ -114,10 +114,29 @@ def finish(task, outcome, price=None):
         print(f"[record] {e}", flush=True)
 
 
+def recent_receipts(hold_s=900, negotiation_s=600):
+    """Units my seller sent a receipt for lately, from shop_deals (outcome 'receipt'; ts is when the negotiation
+    began, so the receipt went out within negotiation_s after it: counted as now, capped at ts + negotiation_s)."""
+    try:
+        db = connect()
+        rows = db.execute("SELECT unit, ts FROM shop_deals WHERE outcome='receipt' AND unit IS NOT NULL AND ts>=?",
+                          (time.time() - hold_s - negotiation_s,)).fetchall()
+        db.close()
+    except Exception as e:
+        print(f"[record] restoring receipts failed: {e}", flush=True)
+        return {}
+    now = time.time()
+    sold = {unit: min(now, ts + negotiation_s) for unit, ts in rows}
+    print(f"[seller] {len(sold)} units with a receipt in the last {(hold_s + negotiation_s) // 60} min held back",
+          flush=True)
+    return sold
+
+
 class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}  # task id -> {"unit", "ask", "offer", "lines"}
-        self.sold = {}  # unit -> when its receipt went out: inventory.json can lag, so do not offer it again
+        self.sold = recent_receipts()   # unit -> when its receipt went out: inventory.json can lag, so do not
+                                        # offer it again; restored from shop_deals so a restart keeps the hold
 
     async def execute(self, context, event_queue):
         task = context.current_task
