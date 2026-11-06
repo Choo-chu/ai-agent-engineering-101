@@ -169,6 +169,21 @@ def anchor(L, now):
     return a, None
 
 
+def trial_units_if_stopped(db, now):
+    """Units bought in the sofa trial, when the trial has ended (stopped: end passed, not extended); () while it
+    runs (kept or expanded: the trial's sales are part of both windows and stay in)."""
+    t0, t1 = policy.get("purchasing", "sofa_trial_start"), policy.get("purchasing", "sofa_trial_end")
+    if not t0 or now < t1:
+        return ()
+    cat = _catalog()
+    sofas = [k for k, c in cat.items() if (c.get("category") or "").split(">")[-1] == "소파/의자/스툴"]
+    if not sofas:
+        return ()
+    rows = db.execute(f"SELECT unit FROM my_stock WHERE supplied_at>=? AND supplied_at<? AND sku IN "
+                      f"({','.join('?' * len(sofas))})", (t0, t1, *sofas)).fetchall()
+    return tuple(r[0] for r in rows)
+
+
 def guard(st, now, log):
     """Live window vs the same hours a day before; revert to shadow when one measure is clearly worse."""
     L = st.get("live_since")
@@ -182,10 +197,13 @@ def guard(st, now, log):
         return None
     db = connect()
     try:
-        cur = dept_reports.window(db, A, now, _catalog())
-        base = dept_reports.window(db, A - 86400, now - 86400, _catalog())
+        ex = trial_units_if_stopped(db, now)
+        cur = dept_reports.window(db, A, now, _catalog(), ex)
+        base = dept_reports.window(db, A - 86400, now - 86400, _catalog(), ex)
     finally:
         db.close()
+    if ex:
+        log(f"[ceo] guard: sofa trial stopped, its {len(ex)} units' sales left out of both windows")
     bad = []
     if base["sales"] >= 20 and cur["sales"] < 0.7 * base["sales"]:
         bad.append(f"sales {cur['sales']} vs {base['sales']}")

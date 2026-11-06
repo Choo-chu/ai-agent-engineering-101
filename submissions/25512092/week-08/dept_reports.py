@@ -37,11 +37,15 @@ def _decisions(since):
     return out
 
 
-def window(db, t0, t1, catalog=None):
-    """Shop and buyer numbers for [t0, t1): the CEO's inputs and the step-7 comparison (ceo_guard)."""
+def window(db, t0, t1, catalog=None, exclude_units=()):
+    """Shop and buyer numbers for [t0, t1): the CEO's inputs and the step-7 comparison (ceo_guard).
+    exclude_units: my units whose sales are left out of sales / revenue / profit (the guard drops a stopped sofa
+    trial's units from both windows)."""
+    ex = list(exclude_units)
     sales = db.execute("SELECT COUNT(*), COALESCE(SUM(s.amount), 0), COALESCE(SUM(s.amount - m.cost), 0) "
-                       "FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.ts>=? AND s.ts<?",
-                       (ME, t0, t1)).fetchone()
+                       "FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.ts>=? AND s.ts<?"
+                       + (f" AND s.unit NOT IN ({','.join('?' * len(ex))})" if ex else ""),
+                       (ME, t0, t1, *ex)).fetchone()
     stars = db.execute("SELECT COUNT(stars), AVG(stars), SUM(stars=1) FROM my_results WHERE ts>=? AND ts<?",
                        (t0, t1)).fetchone()
     acct = db.execute("SELECT COUNT(*), AVG(m) FROM (SELECT AVG(stars) AS m FROM my_results WHERE ts>=? AND ts<? "
