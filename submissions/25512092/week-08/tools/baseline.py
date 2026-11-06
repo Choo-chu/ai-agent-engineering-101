@@ -64,8 +64,8 @@ def run(name, label):
     out["decide"] = strategy.decide(inv, T, state)
 
     cash = inv.get("balance", 0)
-    real = min((cash - restock.CUSHION) * restock.SPEND_SHARE, restock.MAX_STOCK_COST - pricing.held_cost(inv))
-    free = (cash - restock.CUSHION) * restock.SPEND_SHARE
+    real = min((cash - restock.CUSHION) * restock.spend_share(), restock.MAX_STOCK_COST - pricing.held_cost(inv))
+    free = (cash - restock.CUSHION) * restock.spend_share()
     out["buy"] = {}
     for tag, b in (("real", real), ("free", free), ("1M", 1_000_000)):
         lines = []

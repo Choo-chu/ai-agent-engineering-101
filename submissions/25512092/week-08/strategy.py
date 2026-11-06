@@ -136,6 +136,11 @@ def tick(inv, log=print):
 
 def warranty_hours(u, case, stats):
     """[16] 48 h for A-grade goods whose market break rate is known and at most 5%, in the normal case only."""
+    import policy
+    WARRANTY_H, WARRANTY_MAX_BREAK, WARRANTY_MIN_N = policy.values("sales", "warranty_h", "warranty_max_break",
+                                                                   "warranty_min_n")
+    if not policy.get("sales", "warranty_enabled"):
+        return 0
     if case != "normal" or u.get("kind") == "food" or u.get("grade") != "A":
         return 0
     if (stats.get("sku_n") or {}).get(u["sku"], 0) < WARRANTY_MIN_N:

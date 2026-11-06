@@ -16,6 +16,8 @@
 import json
 import os
 import time
+
+import policy
 from datetime import datetime
 
 NEAR_EXPIRY_H = 12      # food with less shelf life than this is "near expiry" (12 h left -> avg, 3 h left -> 10%)
@@ -46,6 +48,8 @@ def load_inventory(state_dir=None):
 
 def clearance(u, avg, now=None):
     """(floor, hours_left) for a unit near expiry, else (None, hours_left)."""
+    NEAR_EXPIRY_H, CUT_PER_H, MAX_CUT = policy.values("logistics", "near_expiry_h", "clearance_cut_per_h",
+                                                     "clearance_max_cut")
     if not u.get("expires_at"):
         return None, None
     left = (u["expires_at"] - (now or time.time())) / 3600
@@ -58,6 +62,8 @@ def clearance(u, avg, now=None):
 
 def aging(u, avg, now=None):
     """(floor, step) for non-food on the shelf over AGING_AFTER_H, else (None, None). Step 0 = the average."""
+    AGING_AFTER_H, AGING_STEP_H, AGING_CUT, AGING_MIN_COST = policy.values(
+        "logistics", "aging_after_h", "aging_step_h", "aging_cut", "aging_min_cost")
     if u.get("kind") == "food" or u.get("expires_at") or not u.get("supplied_at"):
         return None, None
     age_h = ((now or time.time()) - u["supplied_at"]) / 3600

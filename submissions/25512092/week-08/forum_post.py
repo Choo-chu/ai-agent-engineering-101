@@ -229,6 +229,8 @@ def purchase_record(db, catalog, st):
 
 
 def buyer_turn(kind, db, catalog, st):
+    if kind not in ("purchase", "report", "callout"):
+        return None, None
     if kind == "purchase":
         return purchase_record(db, catalog, st), None
     if kind == "report":
@@ -335,6 +337,8 @@ def _pop(st, role, render):
 
 
 def run(state_dir, inv, catalog, log=print):
+    import policy
+    POST_EVERY_S, BUYER_TURNS = policy.values("cs", "post_every_s", "buyer_turns")
     path, st = _state(state_dir)
     now = time.time()
     db = sqlite3.connect(DB_PATH, timeout=30)

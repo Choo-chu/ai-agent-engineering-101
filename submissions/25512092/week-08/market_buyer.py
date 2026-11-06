@@ -130,7 +130,7 @@ def choose(shops, memory, item, scores):
     if not allowed:
         return [], "no shops in the list"
     b = allowed[0]["shop_score"]
-    return allowed[:TOP_K], (f"{allowed[0]['name']}: shop score {b['score']:.2f} (cheap {b['cheap']:.2f}, "
+    return allowed[:__import__("policy").get("buyer", "top_k", TOP_K)], (f"{allowed[0]['name']}: shop score {b['score']:.2f} (cheap {b['cheap']:.2f}, "
                              f"honest {b['honest']:.2f}, success {b['success']:.2f})")
 
 
@@ -139,7 +139,7 @@ def min_offers_for(score, name):
     if tries >= GUARD_FAIL_MIN and guard / tries > GUARD_FAIL_SHARE:
         log(f"[haggle] {name}: {guard}/{tries} of my tries failed under the {MIN_OFFERS}-offer rule -> 1 offer here")
         return 1
-    return MIN_OFFERS
+    return __import__("policy").get("buyer", "min_offers", MIN_OFFERS)
 
 
 # ---------- negotiating (week-06 loop) ----------
@@ -436,7 +436,7 @@ def main():
     log(f"[choose] {ordered[0]['url']}: {why}; buyer case {case}")
 
     chosen, res, sku, lp = ordered[0], None, None, None
-    variant_key, variant, first_offer = None, None, FIRST_OFFER
+    variant_key, variant, first_offer = None, None, __import__("policy").get("buyer", "first_offer", FIRST_OFFER)
     if case == "normal":                          # stage 2: the opening offer variant, by weight
         variant_key = "buyer_normal_first"
         variant, w = strategy.pick(variant_key)

@@ -18,6 +18,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import decisions  # noqa: E402
+import policy  # noqa: E402
 import forum_post  # noqa: E402
 import pricing  # noqa: E402
 import strategy  # noqa: E402
@@ -104,7 +105,7 @@ def main():
         return
 
     held_cost = pricing.held_cost(inv)
-    budget = min((inv.get("balance", 0) - CUSHION) * SPEND_SHARE, MAX_STOCK_COST - held_cost)
+    budget = min((inv.get("balance", 0) - CUSHION) * spend_share(), MAX_STOCK_COST - held_cost)
     if budget <= 0:
         log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")
         decisions.record("purchasing", "no_restock", case, 0, f"budget {int(budget):,}: cash "
@@ -126,6 +127,10 @@ def main():
     print(json.dumps({"buy": plan}))
 
 
+def spend_share():
+    return policy.get("purchasing", "spend_share", SPEND_SHARE)
+
+
 def safe(fn, *a):
     """Logging helpers must never cost the run its buy line."""
     try:
@@ -142,8 +147,15 @@ def make_plan(inv, units, catalog, budget, log):
             held[u["sku"]] = held.get(u["sku"], 0) + 1
             held_high += u.get("cost", 0) > HIGH_MIN
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
+    (MIN_MARGIN, MY_SHARE, WANTED_QTY, MIN_SOLD_30M, FOOD_MIN_SHELF_H, MAX_BREAK, TRIAL_MARKET_30M,
+     TRIAL_QTY) = policy.values("purchasing", "min_margin", "my_share", "wanted_qty", "min_sold_30m",
+                                "food_min_shelf_h", "max_break", "perishable_trial_market_30m", "perishable_trial_qty")
     stats = load_stats()
-    pol = sales_report.policy()
+    pol = sales_report.policy()                   # the daily low/high split, until the CEO's policy sets it
+    for k in ("high_share", "high_max"):
+        v = (policy.load().get("purchasing") or {}).get(k)
+        if v is not None:
+            pol[k] = policy.get("purchasing", k)
     left = {"high": budget * pol["high_share"], "low": budget * (1 - pol["high_share"])}
     high_room = max(0, pol["high_max"] - held_high)
     hot_cats = busy_categories(catalog)
@@ -221,7 +233,7 @@ def cap_record(inv, units, catalog, budget, plan, case):
     """Log only, buying is not changed: when STOCK_CAP blocked or cut this run, the budget and the buy lines
     without the cap (same rules, quiet), into the log ([cap]) and market.db cap_runs (for the daily report)."""
     cash, stock = int(inv.get("balance", 0)), int(pricing.held_cost(inv))
-    free = (cash - CUSHION) * SPEND_SHARE                   # the budget without the cap
+    free = (cash - CUSHION) * spend_share()                 # the budget without the cap
     if free <= 0 or free <= budget + 1:
         return                                              # the cap did not bind: cash did, or nothing
     try:
