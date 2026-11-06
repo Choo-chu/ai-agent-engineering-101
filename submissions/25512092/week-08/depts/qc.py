@@ -342,6 +342,7 @@ def daily(db, inv, catalog, log):
             f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
     except Exception as e:
         log(f"[report] daily message: {type(e).__name__}")
+    auto_commit(day, log)                             # logs and reports of the day -> origin week-08
     log(f"[report] daily {day:%Y-%m-%d}: sold {s['sales']}, profit {s['profit']:,} -> {os.path.basename(path)}; "
         f"high share {share:.0%}, max {cap} ({reason})")
 
@@ -411,3 +412,46 @@ def cap_compare_line(cc):
     return (f"cap {cc['cap'] // 10**6}M, {a['hours']} h before/after: bought {f(b['bought_cost'])}/{f(a['bought_cost'])}, "
             f"sold {b['sales']}/{a['sales']}, revenue {f(b['revenue'])}/{f(a['revenue'])}, storage "
             f"{f(b['storage'])}/{f(a['storage'])}, book {f(b['book_change'])}/{f(a['book_change'])}")
+
+
+# --- after the daily summary: commit and push the day's logs and reports (decision 11/06)
+AUTO_PATHS = ["logs", "reports", "memory.jsonl", "ceo_state.json", "policy.json"]   # relative to week-08/
+SENSITIVE = (".pem", ".key", ".env", "market.db", "market_stats.json", "/cache/")
+
+
+def auto_commit(day, log=print, dry=False):
+    """git add only AUTO_PATHS, refuse if anything staged looks sensitive, commit, push origin week-08.
+    Never raises; a failure is logged (and alerts.send urgent via restock's log)."""
+    import subprocess
+    run = lambda *a: subprocess.run(["git", *a], cwd=HERE, capture_output=True, text=True, timeout=120)
+    try:
+        if run("branch", "--show-current").stdout.strip() != "week-08":
+            log("[report] auto commit skipped: not on branch week-08")
+            return "skipped"
+        run("add", "--", *[p for p in AUTO_PATHS if os.path.exists(os.path.join(HERE, p))])
+        staged = run("diff", "--cached", "--name-only").stdout.split()
+        bad = [f for f in staged if any(s in f.replace("\\", "/") for s in SENSITIVE) or "/week-08/" not in f]
+        if bad or dry:
+            run("reset", "-q", "--", *[":/" + f for f in staged]) if staged else None
+            if bad:
+                log(f"[report] auto commit failed: sensitive or outside paths staged {bad[:5]}")
+                return "refused"
+            return staged
+        if not staged:
+            return "nothing"
+        msg = (f"week-08: logs and reports through {day:%m-%d} (automatic, after the daily summary)\n\n"
+               "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>")
+        c = run("commit", "-q", "-m", msg)
+        if c.returncode:
+            log(f"[report] auto commit failed: {c.stderr.strip()[:200]}")
+            return "commit failed"
+        p = run("push", "-q", "origin", "week-08")
+        if p.returncode:
+            log(f"[report] auto push failed: {p.stderr.strip()[:200]}")
+            return "push failed"
+        head = run("log", "--oneline", "-1").stdout.strip()
+        log(f"[report] auto commit + push: {head[:60]} ({len(staged)} files)")
+        return head
+    except Exception as e:
+        log(f"[report] auto commit failed: {type(e).__name__}")
+        return "error"

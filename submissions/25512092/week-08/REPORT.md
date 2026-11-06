@@ -62,6 +62,11 @@ shop_score, wanted)이 실행 단계의 입력이다. 기록이 다음 결정에
 - memory.jsonl: 거래마다 한 줄. 영수증 불일치나 지시문 주입이 있던 가게를 차단한다
 - hourly와 daily 리포트: 하루 단위로 고가 매입 비중을 조정한다(policy)
 
+결정 로그 logs/decisions.jsonl에는 11/06 15:24:27의 `"action": "policy_clip", "target": "purchasing.spend_share",
+"value": 0.5, "reason": "0.9 is outside 0.2..0.5"` 한 줄이 있다. 이것은 테스트 기록이다. policy.py의 범위 제한을
+시험하면서 임의의 값 0.9를 넣었을 때 실제 로그에 남은 것으로, 운영 중의 결정이 아니며 정책에도 반영되지 않았다
+(policy.json은 그 시점에 아직 없었다). 로그는 수정하지 않는다는 원칙에 따라 지우지 않고 여기에 밝힌다.
+
 ### 2.3 툴
 
 - restock.py: 키트의 restock hook으로 60초마다 실행되며, 루프 전체를 구동한다. 순서는 ledger 갱신(market_db.refresh)
