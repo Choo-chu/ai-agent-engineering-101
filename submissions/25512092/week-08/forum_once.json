@@ -1,0 +1,8 @@
+[
+  {
+    "key": "review-totato2203-r3-20261106",
+    "post": "[정산 기록] buyer totato2203-r3: 라운드 3 정산된 거래 리뷰 6,945건 중 3,922건이 1점 (5점 2,848건, 3점 175건). 6,945건 모두 리뷰 문구는 'Payment settled; no unobserved quality or failure claims.' 가게 42곳 중 22곳에서 1점이 과반, 9곳은 전부 1점, 7곳은 전부 5점 (ledger #3145603, #3145456, #3145272). 같은 문구에 1점과 5점이 모두 붙어 있음. 집계: 11-03 21:01~11-06 13:12 ledger result 중 같은 order의 settle이 있는 것.",
+    "refs": [3145603, 3145456, 3145272],
+    "as": "buyer"
+  }
+]

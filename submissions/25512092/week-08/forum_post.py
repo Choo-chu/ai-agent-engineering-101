@@ -312,6 +312,17 @@ def market_report(db, catalog, st):
             "refs": [], "as": "buyer"}
 
 
+def _once(st):
+    """The first record in forum_once.json ([{"key", "post", "refs", "as"}]) not posted yet; each key posts once."""
+    st.setdefault("once_done", [])
+    try:
+        with open(os.path.join(HERE, "forum_once.json"), encoding="utf-8") as f:
+            items = json.load(f)
+    except (OSError, ValueError):
+        return None
+    return next((it for it in items if it.get("key") not in st["once_done"]), None)
+
+
 def _pop(st, role, render):
     q = st["queue"][role]
     q.sort(key=lambda it: (it["prio"], it["t"]))
@@ -338,7 +349,13 @@ def run(state_dir, inv, catalog, log=print):
                 _send(state_dir, p)
                 st["shop_ts"] = now
                 log(f"[forum] shop {it['kind'] if it else 'comparison ad'}: {p['post'][:110]}")
-        if now - st["buyer_ts"] >= POST_EVERY_S:
+        once = _once(st)                               # a one-off record (forum_once.json) takes the next buyer slot
+        if now - st["buyer_ts"] >= POST_EVERY_S and once:
+            _send(state_dir, {k: once[k] for k in ("post", "refs", "as")})
+            st["once_done"].append(once["key"])
+            st["buyer_ts"] = now
+            log(f"[forum] buyer once {once['key']}: {once['post'][:110]}")
+        elif now - st["buyer_ts"] >= POST_EVERY_S:
             for i in range(len(BUYER_TURNS)):          # this turn first; skip turns with nothing to post
                 k = (st["buyer_turn"] + i) % len(BUYER_TURNS)
                 p, _ = buyer_turn(BUYER_TURNS[k], db, catalog, st)
