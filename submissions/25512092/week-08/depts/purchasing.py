@@ -136,6 +136,7 @@ def make_plan(inv, units, catalog, budget, log):
 SOFA_CAT = "소파/의자/스툴"
 SOFA_MAX_COST = 1_000_000
 WINDOW_S = 1200
+SOFA_UNSOLD_MAX = 10                               # trial sofas held (bought since the trial start) -> no more buys
 
 
 def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
@@ -149,6 +150,10 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     if not (t0 and t0 <= now < t1):
         return None
     leaf = lambda k: ((catalog.get(k) or {}).get("category") or "").split(">")[-1]
+    unsold = [u for u in units if leaf(u["sku"]) == SOFA_CAT and (u.get("supplied_at") or 0) >= t0]
+    if len(unsold) >= SOFA_UNSOLD_MAX:              # person's decision 11/07: stop adding while trial sofas pile up
+        log(f"[sofa trial] skip: {len(unsold)} trial sofas unsold (>= {SOFA_UNSOLD_MAX}), no more buying")
+        return None
     recent = [u for u in units if leaf(u["sku"]) == SOFA_CAT and now - (u.get("supplied_at") or 0) < WINDOW_S]
     if recent:
         log(f"[sofa trial] skip: bought one this window ({recent[0]['name'][:30]})")
