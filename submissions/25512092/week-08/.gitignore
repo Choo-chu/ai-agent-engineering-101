@@ -6,3 +6,4 @@ market_stats.json.tmp
 market.db-*
 *.key
 .env*
+reports/cache/

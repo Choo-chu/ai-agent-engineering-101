@@ -34,7 +34,8 @@ CUSHION = strategy.CASH_RESERVE    # 1.5M: restock spends only (cash - CUSHION);
 FOOD_MIN_SHELF_H = 24  # food must last at least this long on the shelf
 MAX_BREAK = 0.15       # skip goods that break this often after a sale
 WANTED_QTY = 3         # units of a SKU buyers asked for on the forum, even when it is not selling fast yet
-MAX_STOCK_COST = strategy.STOCK_CAP   # 4.0M: at or over it the case is overstock (11/05: the shop was offline
+TRIAL_MARKET_30M, TRIAL_QTY = 3, 2   # '부패주의' with none held and none of my sales: trial buy when the market sold >= 3
+MAX_STOCK_COST = strategy.STOCK_CAP  # 4.0M: at or over it the case is overstock (11/05: the shop was offline
                                       # 7 h while restock kept buying, and 4.1M of the 5M start sat on the shelf)
 # unit cost <= HIGH_MIN is low price; HIGH_MIN..HIGH_MAX is high price, bought only in busy categories, with
 # its share of the budget and its unit cap from sales_report.policy() (30% and 2 at the start, adjusted daily)
@@ -149,12 +150,15 @@ def main():
         qty = min(qty, int(left[tier] // cost))
         rot = ""
         if sales_report.perishable(c):            # '부패주의': at most what my shop sold of it in the last 30 min
-            mine = my_sold_30m(sku)
-            rot = f", perishable: my sales 30m {mine}, planned {qty} -> {min(qty, mine)}"
-            if qty > mine:
-                log(f"[{tier}] {s['name'] or sku}: perishable, my sales 30m {mine}, planned {qty} -> "
-                    f"{'skip' if mine <= 0 else f'buy {mine}'}")
-            qty = min(qty, mine)
+            mine, planned = my_sold_30m(sku), qty
+            if mine == 0 and held.get(sku, 0) == 0 and s["sold_30m"] >= TRIAL_MARKET_30M:
+                rule, qty = "trial", min(TRIAL_QTY, int(left[tier] // cost))   # none held, the market sells it
+            else:
+                rule, qty = "my sales", min(qty, mine)
+            rot = (f", perishable rule '{rule}' (my sales 30m {mine}, held {held.get(sku, 0)}, "
+                   f"market 30m {s['sold_30m']}, planned {planned} -> {max(qty, 0)})")
+            if qty <= 0:
+                log(f"[{tier}] {s['name'] or sku}: est. cost {int(cost)}{rot} -> skip")
         if qty <= 0:
             continue
         left[tier] -= qty * cost
