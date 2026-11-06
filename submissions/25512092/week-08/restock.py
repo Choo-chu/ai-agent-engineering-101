@@ -116,6 +116,20 @@ def main():
 
     held_cost = pricing.held_cost(inv)
     budget = min((inv.get("balance", 0) - CUSHION) * spend_share(), MAX_STOCK_COST - held_cost)
+    try:                                             # bundle 2 (15): the first plan of a window spends all cash
+        from depts.purchasing import c_rules         # above the reserve (restock_c.json, from 11/07 10:00)
+        C, wpath = c_rules(), os.path.join(HERE, "logs", "restock_c_window.json")
+        win = r.get("opens_at")
+        if C.get("max_first_run") and win:
+            last = json.load(open(wpath)).get("opens_at") if os.path.exists(wpath) else None
+            if last != win:
+                full = min(inv.get("balance", 0) - CUSHION, MAX_STOCK_COST - held_cost)
+                log(f"[window] first plan of the window opening {time.strftime('%H:%M', time.localtime(win))}: "
+                    f"budget {int(budget):,} -> {int(full):,} (all cash above the reserve, within STOCK_CAP)")
+                budget = max(budget, full)
+                json.dump({"opens_at": win, "ts": now, "budget": int(budget)}, open(wpath, "w"))
+    except Exception as e:
+        log(f"[window] full first run failed, normal budget: {type(e).__name__}: {e}")
     if budget <= 0:
         log(f"cash {inv.get('balance', 0):,} leaves nothing above the {CUSHION:,} reserve: no restock")
         decisions.record("purchasing", "no_restock", case, 0, f"budget {int(budget):,}: cash "

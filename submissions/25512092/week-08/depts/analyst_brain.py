@@ -211,6 +211,11 @@ def collect(log_=log):
     for k in ("cap_runs", "cap_budget_held"):            # 6 h cap numbers can span a cap change: by_key has them
         ((snap["dept"].get("purchasing") or {}).get("metrics") or {}).pop(k, None)
     snap["by_key"] = by_key(now)
+    try:                                         # bundle 2 D17 (11/07): the top 10 shops of the last daily report
+        from depts import insights
+        snap["top_shops"] = insights.latest_top_shops()
+    except Exception as e:
+        snap["top_shops_error"] = type(e).__name__
     pol = policy.load()
     snap["policy"] = {k: pol.get(k) for k in ("version", "purchasing", "sales", "logistics", "cs", "buyer")}
     snap["limits"] = {"STOCK_CAP": limits.STOCK_CAP, "STOCK_EXIT": limits.STOCK_EXIT,

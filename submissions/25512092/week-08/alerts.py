@@ -160,6 +160,10 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] volume guard: {type(e).__name__}")
     try:
+        endgame_request(seen, log)
+    except Exception as e:
+        log(f"[alert] endgame request: {type(e).__name__}")
+    try:
         buyer_mo_guard(log)
     except Exception as e:
         log(f"[alert] buyer min-offers guard: {type(e).__name__}")
@@ -426,6 +430,35 @@ def volume_guard(log=print, now=None):
         send("info", f"volume_check:{int(since)}", f"박리다매 6시간 점검 통과\n후 6h: {shop_text(after)}\n"
              f"전 6h: {shop_text(before)}\n하루 전 같은 시간: {shop_text(yday)}", log)
     return bad
+
+
+ENDGAME_ASK_AT = __import__("datetime").datetime(2026, 11, 14, 9, 0).timestamp()   # 11/14 09:00 KST (person's decision 11/07 ~02:00, bundle 2 E18)
+
+
+def endgame_request(seen, log=print, now=None):
+    """Once at 11/14 09:00: ask the person for the endgame decisions, with the numbers they need."""
+    now = now or time.time()
+    if now < ENDGAME_ASK_AT or seen.get("endgame_request"):
+        return None
+    seen["endgame_request"] = now
+    import limits
+    try:
+        inv = json.load(open(os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8"))
+        units = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+        food = [u for u in units if u.get("kind") == "food"]
+        stock = sum(u.get("cost", 0) for u in units)
+        nums = (f"재고 원가 {stock:,} ({len(units)}개), 그중 식품 {sum(u.get('cost', 0) for u in food):,} ({len(food)}개), "
+                f"현금 {int(inv.get('balance', 0)):,}")
+    except Exception as e:
+        nums = f"재고 계산 실패 ({type(e).__name__})"
+    left_h = (limits.ROUND_END - now) / 3600
+    send("urgent", "endgame_request", "막바지 전략 결정 요청 (11/14 09:00 예약 알림)\n"
+         f"라운드 종료까지 {left_h:.0f}시간, 매입 중단은 종료 {limits.RESTOCK_STOP_H}시간 전, 막바지 할인은 종료 48시간 전부터\n"
+         f"{nums}\n결정할 것: 1) 식품 매입 축소 (언제부터, 얼마나) 2) 재고 원가 인정 규칙 반영 (막바지 하한, ENDGAME_MIN) "
+         "3) 구조 고정 + architecture.tex/pdf, REPORT.md 마감", log)
+    import decisions
+    decisions.record("ceo", "endgame_request", "telegram", None, "11/14 09:00 scheduled request for the endgame decisions")
+    return None
 
 
 MO_SHIFT = os.path.join(HERE, "logs", "buyer_mo_shift.json")

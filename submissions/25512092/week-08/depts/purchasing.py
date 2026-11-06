@@ -2,6 +2,7 @@
 (limits.py: STOCK_CAP, CASH_RESERVE, MAX_QTY, MAX_LINES). restock.py (the kit's restock hook) calls make_plan()."""
 import json
 import math
+import os
 import time
 from datetime import datetime
 
@@ -37,6 +38,27 @@ def spend_share():
     return policy.get("purchasing", "spend_share", SPEND_SHARE)
 
 
+C_RULES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "restock_c.json")
+
+
+def c_rules():
+    """Bundle 2 restock rules (person's decision 11/07 ~02:00, on from 11/07 10:00 if the volume-pricing guard
+    passed; written by tools/bundle2.py). {} when off. Read every run, no restart:
+      breadth_cats  categories where the market sells a lot and my share is low: SKUs I do not hold first,
+                    1-2 units each, at most BREADTH_MAX held per SKU in these categories
+      surge_min     SKUs whose supply surge factor is >= this go to the end of the buy order
+      max_first_run the first plan of each restock window spends all cash above the reserve (restock.py)"""
+    try:
+        with open(os.environ.get("RESTOCK_C_PATH") or C_RULES, encoding="utf-8") as f:   # env: tests only
+            r = json.load(f)
+        return r if r.get("enabled") else {}
+    except (OSError, ValueError):
+        return {}
+
+
+BREADTH_MAX = 2
+
+
 def make_plan(inv, units, catalog, budget, log):
     """The buy lines for this budget (unchanged rules; moved out of main so cap_record can run it without the cap)."""
     held, held_high = {}, 0
@@ -67,6 +89,20 @@ def make_plan(inv, units, catalog, budget, log):
     rest = sorted(set(stats["skus"]) - set(hot), key=lambda k: -stats["skus"][k]["sold_30m"])
     plan, line_of = [], {}                       # line_of: sku -> (index in plan, the list it came from)
     order = [(k, "hot") for k in hot] + [(k, "wanted") for k in sorted(wanted - set(hot))] + [(k, "rest") for k in rest]
+    C = c_rules()
+    leaf_of = lambda k: ((catalog.get(k) or {}).get("category") or "").split(">")[-1]
+    breadth = set(C.get("breadth_cats") or [])
+    if breadth:                                  # bundle 2 (13): SKUs I do not hold in the low-share categories first
+        new = sorted((k for k in stats["skus"] if leaf_of(k) in breadth and not held.get(k)
+                      and stats["skus"][k].get("sold_30m", 0) >= 1), key=lambda k: -stats["skus"][k]["sold_30m"])
+        first = set(new)
+        order = [(k, "breadth") for k in new] + [o for o in order if o[0] not in first]
+        log(f"[breadth] {len(new)} SKUs I do not hold in {sorted(breadth)} go first, at most {BREADTH_MAX} per SKU")
+    if C.get("surge_min"):                       # bundle 2 (15): surging SKUs last
+        late = [o for o in order if surge.get(o[0], 1.0) >= C["surge_min"]]
+        if late:
+            order = [o for o in order if surge.get(o[0], 1.0) < C["surge_min"]] + late
+            log(f"[surge] {len(late)} SKUs with surge >= {C['surge_min']} moved to the end")
     for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}
@@ -85,15 +121,20 @@ def make_plan(inv, units, catalog, budget, log):
         if sofa_rules.on() and sofa_rules.is_sofa(sku) and kind != "food" and cost >= sofa_rules.MIN_COST \
                 and not sofa_rules.buy_ok(sku, cost)[0]:   # sofa buying rule E
             continue
+        wide = leaf_of(sku) in breadth
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
-            if (c.get("category") or "").split(">")[-1] not in hot_cats or s["sold_30m"] < 1 or held.get(sku):
+            if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku):
                 continue
             tier, qty = "high", min(1, high_room)
+        elif src == "breadth":                    # bundle 2 (13): a SKU I do not hold, 1-2 units
+            tier, qty = "low", 1 if s["sold_30m"] < MIN_SOLD_30M else BREADTH_MAX
         else:                                     # low price: as before, hot or wanted on the forum
             if sku not in hot and not forum or (s["sold_30m"] < MIN_SOLD_30M and not forum):
                 continue
             target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
             tier, qty = "low", min(MAX_QTY, target - held.get(sku, 0))
+        if wide and tier == "low":                # bundle 2 (13): spread, at most BREADTH_MAX held per SKU
+            qty = min(qty, BREADTH_MAX - held.get(sku, 0))
         qty = min(qty, int(left[tier] // cost))
         rot = ""
         if sales_report.perishable(c):            # '부패주의': at most what my shop sold of it in the last 30 min

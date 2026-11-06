@@ -302,6 +302,13 @@ def daily(db, inv, catalog, log):
     import alerts as _al
     swaps, off_min = _al.tunnel_swaps(t0, t1)
     tunnel = f"터널 교체 {swaps}회, 오프라인 합계 {off_min}분 (kit re-registered within 2 min: no alert)"
+    ones, tops_md = None, []
+    try:                                              # bundle 2 D (11/07): 1-star causes, top 10 shops
+        from depts import insights
+        ones = insights.one_star(db, t0, t1)
+        tops_md = insights.top_shops_md(insights.top_shops(db, t0, t1, catalog, day))
+    except Exception as e:
+        log(f"[report] insights failed: {type(e).__name__}: {e}")
     lines = [f"# Choo Shop daily report {day:%Y-%m-%d}", "",
              f"- sales {s['sales']}, revenue {s['revenue']:,}, profit {s['profit']:,}",
              f"- profit / cost: low-price {pct(lr)} ({s['low_profit']:,} on {s['low_cost']:,}), "
@@ -319,7 +326,8 @@ def daily(db, inv, catalog, log):
             ["", "## Broken / refunds", ""] + \
             ([f"- ledger #{b[0]} {b[1]}: broke {b[2]:.1f} h after sale, refunded {bool(b[3])}" for b in broken] or ["- none"]) + \
             ["", "## Buying split", "", f"- high-price share {pol['high_share']:.0%} -> {share:.0%}, "
-             f"high-price units held at most {pol['high_max']} -> {cap} ({reason})", ""] + extras_md(db, t0, t1, catalog)
+             f"high-price units held at most {pol['high_max']} -> {cap} ({reason})", ""] + extras_md(db, t0, t1, catalog) +             (["", "## 1-star results by cause", "", f"- {insights.one_star_line(ones)}"]
+             + [f"  - {k}: {ex}" for k, v in ones["examples"].items() for ex in v] if ones else []) + tops_md
     os.makedirs(REPORTS, exist_ok=True)
     path = os.path.join(REPORTS, f"daily_{day:%Y%m%d}.md")
     with open(path, "w", encoding="utf-8") as f:
@@ -346,6 +354,7 @@ def daily(db, inv, catalog, log):
             high_cancel_line(hc),
             sofa,
             tunnel,
+            insights.one_star_line(ones) if ones else "1-star summary failed",
             f"CEO {ceo}, policy v{_pol.version()}; buying split {share:.0%} / {cap} ({reason})",
             f"urgent alerts that day: {n_alerts}; report: reports/{os.path.basename(path)}"]), log)
     except Exception as e:
