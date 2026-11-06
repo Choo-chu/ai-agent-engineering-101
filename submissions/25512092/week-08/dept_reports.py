@@ -44,20 +44,26 @@ def window(db, t0, t1, catalog=None):
                        (ME, t0, t1)).fetchone()
     stars = db.execute("SELECT COUNT(stars), AVG(stars), SUM(stars=1) FROM my_results WHERE ts>=? AND ts<?",
                        (t0, t1)).fetchone()
+    acct = db.execute("SELECT COUNT(*), AVG(m) FROM (SELECT AVG(stars) AS m FROM my_results WHERE ts>=? AND ts<? "
+                      "AND stars IS NOT NULL GROUP BY buyer)", (t0, t1)).fetchone()   # Patch 3.4: one mean per account
     deals = db.execute("SELECT COUNT(*), SUM(outcome='receipt'), SUM(outcome='cancelled') FROM shop_deals "
                        "WHERE ts>=? AND ts<?", (t0, t1)).fetchone()
     b = db.execute("SELECT COUNT(*), SUM(outcome='deal') FROM buyer_deals WHERE ts>=? AND ts<? AND outcome!='skip'",
                    (t0, t1)).fetchone()
-    surplus = 0                                       # list price - paid, as sales_report.extras
+    surplus, shares = 0, []                           # list price - paid; share of list price kept (Saved)
     for sku, amount in db.execute("SELECT sku, amount FROM settles WHERE buyer=? AND ts>=? AND ts<?", (ME, t0, t1)):
         lp = ((catalog or {}).get(sku) or {}).get("list_price")
         surplus += (lp - amount) if lp else 0
+        if lp:
+            shares.append((lp - amount) / lp)
     paid = db.execute("SELECT COUNT(*) FROM settles WHERE buyer=? AND ts>=? AND ts<?", (ME, t0, t1)).fetchone()[0]
     return {"hours": round((t1 - t0) / 3600, 2), "sales": sales[0], "revenue": sales[1], "profit": sales[2],
-            "reviews": stars[0], "stars": round(stars[1], 2) if stars[1] is not None else None,
+            "reviews": stars[0], "stars": round(acct[1], 2) if acct[1] is not None else None, "review_accounts": acct[0],
+            "stars_per_review": round(stars[1], 2) if stars[1] is not None else None,
             "one_star": stars[2] or 0, "negotiations": deals[0], "receipts": deals[1] or 0,
             "cancelled": deals[2] or 0, "buyer_tries": b[0], "buyer_deals": b[1] or 0, "buyer_paid": paid,
-            "buyer_surplus": surplus}
+            "buyer_surplus": surplus, "buyer_saved_sum": round(sum(shares), 3),
+            "buyer_saved_avg": round(sum(shares) / len(shares), 4) if shares else None}
 
 
 def build(inv, catalog, now=None):
@@ -129,7 +135,8 @@ def build(inv, catalog, now=None):
         posts = [d for d in dec if d["dept"] == "cs" and d["action"] == "post"]
         guards = [d for d in dec if d["dept"] == "cs" and d["action"] == "guard"]
         share1 = w["one_star"] / w["reviews"] if w["reviews"] else 0
-        reports["cs"] = {"metrics": {"reviews": w["reviews"], "stars": w["stars"], "one_star": w["one_star"],
+        reports["cs"] = {"metrics": {"reviews": w["reviews"], "stars": w["stars"], "review_accounts": w["review_accounts"],
+                                     "stars_per_review": w["stars_per_review"], "one_star": w["one_star"],
                                      "cancelled": w["cancelled"], "posts": len(posts), "guards": len(guards)},
                          "issues": [] if share1 < 0.3 else
                          [{"level": "urgent" if share1 >= 0.5 and w["reviews"] >= 20 else "warn",
@@ -154,7 +161,8 @@ def build(inv, catalog, now=None):
 
         # buyer (separate business; the CEO's buyer section)
         reports["buyer"] = {"metrics": {"tries": w["buyer_tries"], "deals": w["buyer_deals"], "paid": w["buyer_paid"],
-                                        "surplus": w["buyer_surplus"]}, "issues": []}
+                                        "surplus": w["buyer_surplus"], "saved_sum": w["buyer_saved_sum"],
+                                        "saved_avg": w["buyer_saved_avg"]}, "issues": []}
 
         if cash < CASH_WARN:
             reports["logistics"]["issues"].append({"level": "urgent", "text": f"cash {cash:,} < {CASH_WARN:,}",

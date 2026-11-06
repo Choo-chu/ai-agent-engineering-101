@@ -14,8 +14,9 @@ Keys the CEO may set (step 7 opens only these):
 A key changes at most once every KEY_HOLD_S (the daily rule once a day). Hard limits are not policy keys.
 
 Guard (live only, hourly after GUARD_MIN_H): the live window against the same hours a day earlier. Shop profit
-or sales down 30% or more, average stars down 0.4 or more, or the buyer's surplus and paid deals both down 30% or
-more (each with enough data) -> policy.reset() (back to the version-1 values), mode shadow, urgent alert.
+or sales down 30% or more, stars (one mean per reviewing account, Patch 3.4) down 0.4 or more, or the buyer's
+Saved (Patch 3.4) down: sum of shares kept down 30% or more, or share kept per deal down 5 %p or more (each with
+enough data) -> policy.reset() (back to the version-1 values), mode shadow, urgent alert.
 """
 import json
 import os
@@ -169,14 +170,17 @@ def guard(st, now, log):
         bad.append(f"sales {cur['sales']} vs {base['sales']}")
     if base["sales"] >= 20 and base["profit"] > 0 and cur["profit"] < 0.7 * base["profit"]:
         bad.append(f"profit {cur['profit']:,} vs {base['profit']:,}")
-    if cur["reviews"] >= 30 and base["reviews"] >= 30 and cur["stars"] is not None and base["stars"] is not None \
-            and cur["stars"] < base["stars"] - 0.4:
-        bad.append(f"stars {cur['stars']} vs {base['stars']}")
-    if base["buyer_paid"] >= 10 and base["buyer_surplus"] > 0 and cur["buyer_paid"] < 0.7 * base["buyer_paid"] \
-            and cur["buyer_surplus"] < 0.7 * base["buyer_surplus"]:
-        bad.append(f"buyer paid {cur['buyer_paid']} vs {base['buyer_paid']}, surplus {cur['buyer_surplus']:,} vs "
-                   f"{base['buyer_surplus']:,}")
-    summary = {k: [cur[k], base[k]] for k in ("sales", "profit", "stars", "reviews", "buyer_paid", "buyer_surplus")}
+    if cur["review_accounts"] >= 8 and base["review_accounts"] >= 8 and cur["stars"] is not None \
+            and base["stars"] is not None and cur["stars"] < base["stars"] - 0.4:
+        bad.append(f"stars (one mean per account) {cur['stars']} vs {base['stars']}")
+    if base["buyer_paid"] >= 10 and base["buyer_saved_sum"] > 0 and cur["buyer_saved_sum"] < 0.7 * base["buyer_saved_sum"]:
+        bad.append(f"buyer saved (sum of shares kept) {cur['buyer_saved_sum']} vs {base['buyer_saved_sum']}, "
+                   f"paid {cur['buyer_paid']} vs {base['buyer_paid']}")
+    elif base["buyer_paid"] >= 10 and cur["buyer_paid"] >= 10 and cur["buyer_saved_avg"] is not None \
+            and cur["buyer_saved_avg"] < base["buyer_saved_avg"] - 0.05:
+        bad.append(f"buyer saved per deal {cur['buyer_saved_avg']} vs {base['buyer_saved_avg']}")
+    summary = {k: [cur[k], base[k]] for k in ("sales", "profit", "stars", "review_accounts", "buyer_paid",
+                                               "buyer_saved_sum", "buyer_saved_avg")}
     decisions.record("ceo", "guard_check", "live vs a day before", summary, "; ".join(bad) or "no measure clearly worse")
     log(f"[ceo] guard: live {cur['hours']} h vs same hours a day before: {summary}" + (f" -> WORSE: {bad}" if bad else ""))
     if bad:

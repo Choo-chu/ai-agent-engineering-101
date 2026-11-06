@@ -48,3 +48,9 @@ POLICY_RANGES = {
     "buyer.min_offers": (1, 5),
     "buyer.first_offer": (0.4, 0.9),
 }
+
+# dislikes (Patch 3.4, from 11/06 12:00): per hour the first 3 new dislike stances on buyers are free, the k-th
+# costs 20,000 x (k - 3) from shop cash (it lowers Book). Our code casts no votes today; if it ever does, it may
+# only use the free ones: at most DISLIKE_FREE_PER_HOUR an hour and only while inventory.json's next fee is <= this.
+DISLIKE_FREE_PER_HOUR = 3
+DISLIKE_MAX_FEE = 0

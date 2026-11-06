@@ -70,7 +70,36 @@ def _state(state_dir):
     return path, st
 
 
+def _dislike_allowed(state_dir):
+    """limits.py: only free dislikes. False when DISLIKE_FREE_PER_HOUR were sent in the last hour or the next one
+    would cost more than DISLIKE_MAX_FEE (inventory.json next_dislike_fee)."""
+    from limits import DISLIKE_FREE_PER_HOUR, DISLIKE_MAX_FEE
+    try:
+        inv = json.load(open(os.path.join(state_dir, "inventory.json"), encoding="utf-8"))
+        if (inv.get("next_dislike_fee") or 0) > DISLIKE_MAX_FEE:
+            return False
+    except (OSError, ValueError):
+        return False
+    return len(_dislikes(state_dir)) < DISLIKE_FREE_PER_HOUR
+
+
+def _dislikes(state_dir):
+    """Times of my dislikes in the last hour (own file: forum_state.json is rewritten at the end of run())."""
+    try:
+        return [t for t in json.load(open(os.path.join(state_dir, "dislikes.json"))) if time.time() - t < 3600]
+    except (OSError, ValueError):
+        return []
+
+
 def _send(state_dir, post):
+    if isinstance(post.get("value"), (int, float)) and post.get("vote") is not None and post["value"] < 0:
+        if not _dislike_allowed(state_dir):           # hard limit: never a paid dislike
+            __import__("decisions").record("cs", "dislike_refused", post.get("vote"), post["value"],
+                                           "limits.DISLIKE_FREE_PER_HOUR / DISLIKE_MAX_FEE", limit_hit="DISLIKE")
+            return
+        times = _dislikes(state_dir) + [time.time()]  # read before the file is opened for writing
+        with open(os.path.join(state_dir, "dislikes.json"), "w") as f:
+            json.dump(times, f)
     for _ in range(5):                       # the kit may hold the file for a moment while it sends
         try:
             with open(os.path.join(state_dir, "outbox.jsonl"), "a", encoding="utf-8") as f:

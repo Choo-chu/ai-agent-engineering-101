@@ -45,8 +45,11 @@ def pick(key):
 
 
 def performance(db, key, now=None):
-    """{variant: (negotiations, metric)}; metric = profit (shop) or surplus (buyer) summed over all negotiations
-    of the variant / their number, i.e. per-deal profit x success rate."""
+    """{variant: (negotiations, metric)}.
+    shop:  profit summed over all negotiations of the variant / their number (per-deal profit x success rate)
+    buyer: Saved (Patch 3.4: Buyer ALL scores saved = sum of (list - paid) / list over deals / (deals + 100)),
+           on the same number of negotiations for every variant (the latest M, M = the smallest count): with
+           unequal samples the +100 would favour the variant that already has the most weight."""
     now = now or time.time()
     out = {v: [0, 0.0] for v in VARIANTS[key]}
     if key.startswith("shop"):
@@ -58,17 +61,23 @@ def performance(db, key, now=None):
             if v in out:
                 out[v][0] += 1
                 out[v][1] += (amount - cost) if amount is not None else 0
-    else:
-        col = BUYER_COLUMN[key]
-        rows = db.execute(
-            f"SELECT d.{col}, d.list_price, (SELECT s.amount FROM settles s WHERE s.buyer=? AND s.sku=d.sku "
-            f"AND s.ts BETWEEN d.ts - 60 AND d.ts + 900 ORDER BY s.ts LIMIT 1) FROM buyer_deals d "
-            f"WHERE d.{col} IS NOT NULL AND d.buyer_case='normal' AND d.outcome != 'skip'", (ME_NAME,)).fetchall()
-        for v, lp, amount in rows:
-            if v in out:
-                out[v][0] += 1
-                out[v][1] += (lp - amount) if amount is not None and lp else 0
-    return {v: (n, round(total / n, 1) if n else None) for v, (n, total) in out.items()}
+        return {v: (n, round(total / n, 1) if n else None) for v, (n, total) in out.items()}
+    col = BUYER_COLUMN[key]
+    rows = db.execute(
+        f"SELECT d.{col}, d.list_price, (SELECT s.amount FROM settles s WHERE s.buyer=? AND s.sku=d.sku "
+        f"AND s.ts BETWEEN d.ts - 60 AND d.ts + 900 ORDER BY s.ts LIMIT 1) FROM buyer_deals d "
+        f"WHERE d.{col} IS NOT NULL AND d.buyer_case='normal' AND d.outcome != 'skip' ORDER BY d.ts DESC",
+        (ME_NAME,)).fetchall()
+    by = {v: [] for v in VARIANTS[key]}
+    for v, lp, amount in rows:
+        if v in by:
+            by[v].append((lp, amount))
+    m = min((len(x) for x in by.values()), default=0)
+    res = {}
+    for v, x in by.items():
+        shares = [(lp - a) / lp for lp, a in x[:m] if a is not None and lp]
+        res[v] = (len(x), round(sum(shares) / (len(shares) + 100), 4) if m else None)
+    return res
 
 
 def adjust(log=print, force=False):
