@@ -163,6 +163,12 @@ def watch(reports=None, log=print):
         endgame_request(seen, log)
     except Exception as e:
         log(f"[alert] endgame request: {type(e).__name__}")
+    try:                                            # buyer tactic experiment: stop rule + 24 h interim (11/07)
+        from depts import buyer_tactic
+        buyer_tactic.guard(send, log)
+        buyer_tactic.interim(send, log)
+    except Exception as e:
+        log(f"[alert] buyer tactic: {type(e).__name__}: {e}")
     try:
         buyer_mo_guard(log)
     except Exception as e:

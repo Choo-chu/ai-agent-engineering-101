@@ -92,6 +92,11 @@ def main():
         ceo_policy.tick(inv, catalog, log=log)          # CEO: policy proposals (shadow) or policy.json (live)
     except Exception as e:
         log(f"ceo failed: {e}")
+    try:                                                # forum archive + 15-min situation table (11/07)
+        from depts import forum_watch
+        forum_watch.tick(alerts.send, log)
+    except Exception as e:
+        log(f"forum watch failed: {type(e).__name__}: {e}")
     try:
         alerts.watch(dept_reports.load(), log=log)     # urgent issues, kit restarts -> file, console, Telegram
     except Exception as e:

@@ -230,10 +230,10 @@ def get_receipt(task):
 
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
-              force_first=False, kind=None, need_hours=None):
+              force_first=False, kind=None, need_hours=None, tactic_line=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
-           "guard_last": False, "ended": ""}
+           "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
     client = A2AClient(url)
     skills = [s.get("name") for s in client.card.get("skills", [])]
     log(f"card: {client.card.get('name')} skills={skills} jsonrpc={client.url}")
@@ -288,6 +288,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                                    n_offers=n_offers, min_offers=min_offers, market=market,
                                    first_pct=round(100 * first_offer))
         d = ask_harness(prompt)
+        res["harness_calls"] += 1
         res["guard_last"] = False
         if force_first and n_offers == 0 and ask is not None:
             # stage 2: the opening offer is the variant's share of the ask, made by the code
@@ -315,6 +316,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             problem = f"{'accepting' if d['action'] == 'accept' else 'offering'} {offer} is above your budget {budget}."
             log(f"GUARD {problem} -> asking the harness again")
             d2 = ask_harness(prompt + f"\n\nYour previous answer was not allowed: {problem} Answer again.")
+            res["harness_calls"] += 1
             if d2 and d2["action"] == "walk":
                 log("WALK (harness, after guard)")
                 client.cancel(tid)
@@ -334,7 +336,11 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
         n_offers += 1
         history.append(f"you: {offer}")
         log(f"-> {d['action']} {offer}")
-        task = client.send(str(offer), tid)
+        msg = str(offer)
+        if tactic_line and not res["tactic_used"] and d["action"] == "offer":   # buyer_tactic: once, after the number
+            msg, res["tactic_used"] = f"{offer}. {tactic_line}", True
+            log(f"[tactic] sent with the offer: {tactic_line}")
+        task = client.send(msg, tid)
 
     log("turn limit: walking away")
     res["ended"] = "turn_limit"
@@ -446,6 +452,9 @@ def main():
         log(f"[variant] buyer_min_offers -> {mo_variant} (weights {w2})")
     else:
         mo_variant = None
+    from depts import buyer_tactic
+    tactic, tw = buyer_tactic.pick()                  # 11/07 experiment: plain / appeal / facts, one per order
+    log(f"[variant] buyer_tactic -> {tactic} (weights {tw})")
     tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
     for i, c in enumerate(tries):
         chosen = c
@@ -468,10 +477,21 @@ def main():
                       + (f"You paid {mine['avg_paid']} on average for it before ({mine['n']} times). " if mine else "")
                       + "Pay less than the market average.")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
+        t_line = None
+        try:
+            if tactic == "facts":
+                t_line = buyer_tactic.line("facts", c["name"], cap=cap, avg=avg if offers else None,
+                                           low=buyer_tactic.other_shop_low(sku, c["name"]) if offers else None)
+            elif tactic == "appeal":
+                t_line = buyer_tactic.line("appeal", c["name"])
+        except Exception as e:
+            log(f"[tactic] line failed: {type(e).__name__}")
+        t_neg = time.time()
         try:
             res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer,
                             force_first=variant_key is not None, kind=order.get("kind"),
-                            need_hours=order.get("use_within_hours"))
+                            need_hours=order.get("use_within_hours"), tactic_line=t_line)
+            res["secs"] = round(time.time() - t_neg, 1)
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
                 continue
@@ -505,11 +525,11 @@ def main():
         log(f"[accept] goods with a {wh} h warranty: any grade")
     if accept:
         out["accept"] = accept
-    record_deal(chosen, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant)
+    record_deal(chosen, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant, tactic)
     print(json.dumps(out, ensure_ascii=False), flush=True)  # last line: the kit reads this
 
 
-def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant=None):
+def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant=None, tactic=None):
     """[15] / stage 2: one row per negotiation in market.db (buyer_deals)."""
     if res["deal"]:
         outcome, reason = "deal", flag
@@ -526,11 +546,16 @@ def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, w
                                    f"{variant}, min offers {min_offers}, offers {res.get('offers', 0)}, {reason}")
     try:
         db = connect()
+        have = {r[1] for r in db.execute("PRAGMA table_info(buyer_deals)")}
+        for col, typ in (("tactic", "TEXT"), ("tactic_used", "INTEGER"), ("secs", "REAL"), ("harness_calls", "INTEGER")):
+            if col not in have:
+                db.execute(f"ALTER TABLE buyer_deals ADD COLUMN {col} {typ}")
         db.execute("INSERT INTO buyer_deals (ts, shop, shop_url, sku, list_price, buyer_case, variant_key, variant, "
-                   "min_offers, offers, outcome, reason, price, warranty_hours, mo_variant) "
-                   "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                   "min_offers, offers, outcome, reason, price, warranty_hours, mo_variant, tactic, tactic_used, secs, "
+                   "harness_calls) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                    (time.time(), c["name"], c["url"], sku, lp, case, variant_key, variant, min_offers,
-                    res.get("offers", 0), outcome, reason, price, wh, mo_variant))
+                    res.get("offers", 0), outcome, reason, price, wh, mo_variant, tactic,
+                    int(bool(res.get("tactic_used"))), res.get("secs"), res.get("harness_calls")))
         db.commit()
         db.close()
     except Exception as e:

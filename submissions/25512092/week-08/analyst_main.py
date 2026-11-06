@@ -30,6 +30,10 @@ def main():
             analyst.housekeeping()
             analyst_brain.tick()                   # collect 15 min / analyse 60 min, from 11/07 20:00
             analyst_apply.check_approvals()        # step 4: 3 h before/after each approval, CEO revert follow-up
+            if time.localtime().tm_hour == 0 and time.localtime().tm_min >= 15:   # 11/07: yesterday's forum flow
+                import alerts
+                from depts import forum_watch
+                forum_watch.flow(log=analyst.log, send=alerts.send)          # once a day (forum_meta flow:<day>)
         except Exception as e:
             analyst.log(f"loop error: {type(e).__name__}")
             time.sleep(30)
