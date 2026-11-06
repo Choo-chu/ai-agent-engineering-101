@@ -5,7 +5,8 @@
 
 Loop: Telegram getUpdates (25 s long poll) for the approve / reject / later buttons, then housekeeping
 (expire unanswered proposals, re-ask "later" ones). Steps 2-4 add data collection, the hourly analysis and the
-appliers. Log: logs/analyst.log.
+appliers. Step 2: analyst_brain.tick() collects every 15 min and analyses every
+60 min from 11/07 20:00 (record only until 11/08 07:00). Log: logs/analyst.log.
 """
 import os
 import sys
@@ -14,7 +15,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 os.chdir(HERE)
-from depts import analyst  # noqa: E402
+from depts import analyst, analyst_brain  # noqa: E402
 
 
 def main():
@@ -25,6 +26,7 @@ def main():
         try:
             analyst.poll(timeout=25)
             analyst.housekeeping()
+            analyst_brain.tick()                   # collect 15 min / analyse 60 min, from 11/07 20:00
         except Exception as e:
             analyst.log(f"loop error: {type(e).__name__}")
             time.sleep(30)
