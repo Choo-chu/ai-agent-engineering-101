@@ -97,6 +97,7 @@ def send_proposal(kind, key, value, reason, evidence="", expire_s=EXPIRE_S):
 
 HANDLERS = {}        # kind -> function(proposal row dict) -> result text; steps 3-4 register appliers here
 REVERT = None        # function(proposal row dict) -> result text (depts/analyst_apply.revert)
+REAPPLY = None       # function(proposal row dict) -> result text (depts/analyst_apply.reapply)
 UNDO_BUTTON = lambda pid: {"inline_keyboard": [[{"text": "되돌리기", "callback_data": f"revert:{pid}"}]]}
 
 
@@ -137,6 +138,16 @@ def handle_callback(cq):
         _call("answerCallbackQuery", callback_query_id=cq["id"], text="없는 제안")
         return "unknown"
     p = dict(row)
+    if action == "reapply":                        # 다시 적용 after an automatic revert (check or CEO guard)
+        if p["status"] != "auto_reverted" or REAPPLY is None:
+            _call("answerCallbackQuery", callback_query_id=cq["id"], text="다시 적용할 수 없음")
+            return "no reapply"
+        try:
+            _finish(p, "approved", "다시 적용: " + REAPPLY(p), cq["id"])
+        except Exception as e:
+            _call("answerCallbackQuery", callback_query_id=cq["id"], text="다시 적용 실패")
+            alerts.send("urgent", f"analyst_reapply:{p['id']}", f"#{p['id']} 다시 적용 실패: {type(e).__name__}: {str(e)[:120]}")
+        return "reapply"
     if action == "revert":                         # the 되돌리기 button on an applied approval
         if p["status"] != "approved" or REVERT is None:
             _call("answerCallbackQuery", callback_query_id=cq["id"], text="되돌릴 수 없음")

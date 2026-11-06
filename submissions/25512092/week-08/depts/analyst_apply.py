@@ -231,3 +231,126 @@ def register():
     analyst.HANDLERS["policy"] = handle_policy
     analyst.HANDLERS["limit"] = handle_limit
     analyst.REVERT = revert
+    analyst.REAPPLY = reapply
+
+
+# ---------------------------------------------------------------- step 4: checks after an approval
+CHECK_H = 3                  # person's decision 11/06: 3 h before vs 3 h after an applied approval
+CHECK_EVERY_S = 300
+REAPPLY_BUTTON = lambda pid: {"inline_keyboard": [[{"text": "다시 적용", "callback_data": f"reapply:{pid}"}]]}
+
+
+def _cols(d):
+    cols = [r[1] for r in d.execute("PRAGMA table_info(proposals)")]
+    for c, t in (("undo", "TEXT"), ("checked", "INTEGER")):
+        if c not in cols:
+            d.execute(f"ALTER TABLE proposals ADD COLUMN {c} {t}")
+
+
+def _approved(d):
+    d.row_factory = __import__("sqlite3").Row
+    return [dict(r) for r in d.execute("SELECT * FROM proposals WHERE status='approved' AND kind IN ('policy','limit')")]
+
+
+def _auto_revert(p, why):
+    """Revert an approval on its own (check or CEO guard), mark it, and offer 다시 적용."""
+    try:
+        text = revert(p)
+    except Exception as e:
+        alerts.send("urgent", f"analyst_autorevert:{p['id']}", f"승인 #{p['id']} 자동 되돌리기 실패: {type(e).__name__}: {str(e)[:120]}")
+        return
+    d = analyst.db()
+    try:
+        d.execute("UPDATE proposals SET status='auto_reverted', result=? WHERE id=?", (f"{why} | {text}"[:500], p["id"]))
+        d.commit()
+    finally:
+        d.close()
+    decisions.record("analyst", "auto_reverted", p["key"], json.loads(p["value"]), f"#{p['id']}: {why}")
+    analyst._call("sendMessage", chat_id=analyst.chat_id(), reply_markup=REAPPLY_BUTTON(p["id"]),
+                  text=(f"승인 #{p['id']} 되돌려짐: {p['key']} -> {json.loads(p['value'])}\n이유: {why}\n{text}")[:4000])
+    analyst.log(f"proposal #{p['id']} auto-reverted: {why}")
+
+
+def reapply(p):
+    """The 다시 적용 button: apply the approved value again (limits through the b0 check again)."""
+    res = (apply_limit(p["key"], json.loads(p["value"]), p["id"], why="re-applied by the person")
+           if p["kind"] == "limit" else apply_policy(p["key"], json.loads(p["value"]), p["id"]))
+    d = analyst.db()
+    try:
+        _cols(d)
+        d.execute("UPDATE proposals SET status='approved', decided_ts=?, checked=0, undo=? WHERE id=?",
+                  (time.time(), json.dumps(res["undo"]), p["id"]))
+        d.commit()
+    finally:
+        d.close()
+    decisions.record("analyst", "reapplied", p["key"], json.loads(p["value"]), f"#{p['id']}")
+    return res["text"]
+
+
+def check_approvals(now=None):
+    """Every CHECK_EVERY_S, in the analyst process (it may run b0 and git, which the restock hook must not wait for):
+    1. the CEO guard reverted (logs/ceo_revert.json is new): revert every applied approval, offer 다시 적용
+    2. each approval CHECK_H after it was applied: the CHECK_H before vs after (dept_reports.window, sofa trial
+       units left out once the trial stopped); clearly worse (ceo_policy.worse) -> revert it, offer 다시 적용."""
+    import dept_reports
+    from depts import ceo_policy
+    now = now or time.time()
+    if now - float(analyst_meta("approvals_ts", 0)) < CHECK_EVERY_S:
+        return
+    analyst_set("approvals_ts", now)
+    d = analyst.db()
+    try:
+        _cols(d)
+        d.commit()
+        live = _approved(d)
+    finally:
+        d.close()
+    try:
+        flag = json.load(open(os.path.join(HERE, "logs", "ceo_revert.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        flag = None
+    if flag and flag["ts"] > float(analyst_meta("ceo_revert_seen", 0)):
+        analyst_set("ceo_revert_seen", flag["ts"])
+        for p in live:
+            if (p["decided_ts"] or 0) <= flag["ts"]:
+                _auto_revert(p, f"CEO 가드 되돌리기 ({'; '.join(flag['why'])[:150]})")
+        return
+    cat = ceo_policy._catalog()
+    for p in live:
+        t = p["decided_ts"] or 0
+        if p.get("checked") or now < t + CHECK_H * 3600:
+            continue
+        d = analyst.db()
+        try:
+            ex = ceo_policy.trial_units_if_stopped(d, now)
+            before = dept_reports.window(d, t - CHECK_H * 3600, t, cat, ex)
+            after = dept_reports.window(d, t, t + CHECK_H * 3600, cat, ex)
+            d.execute("UPDATE proposals SET checked=1 WHERE id=?", (p["id"],))
+            d.commit()
+        finally:
+            d.close()
+        bad = ceo_policy.worse(after, before, min_sales=10, min_accounts=5, min_paid=5)
+        summary = {k: [after[k], before[k]] for k in ("sales", "profit", "stars", "buyer_paid", "buyer_saved_sum")}
+        decisions.record("analyst", "approval_check", p["key"], summary, f"#{p['id']}: " + ("; ".join(bad) or "not worse"))
+        if bad:
+            _auto_revert(p, f"반영 전후 {CHECK_H}시간 비교에서 나빠짐: {'; '.join(bad)}")
+        else:
+            analyst.log(f"proposal #{p['id']} check ok (3 h after vs before): {summary}")
+
+
+def analyst_meta(k, default=None):
+    d = analyst.db()
+    try:
+        r = d.execute("SELECT v FROM analyst_meta WHERE k=?", (k,)).fetchone()
+        return r[0] if r else default
+    finally:
+        d.close()
+
+
+def analyst_set(k, v):
+    d = analyst.db()
+    try:
+        d.execute("INSERT OR REPLACE INTO analyst_meta VALUES (?,?)", (k, str(v)))
+        d.commit()
+    finally:
+        d.close()

@@ -29,6 +29,7 @@ def main():
             analyst.poll(timeout=25)
             analyst.housekeeping()
             analyst_brain.tick()                   # collect 15 min / analyse 60 min, from 11/07 20:00
+            analyst_apply.check_approvals()        # step 4: 3 h before/after each approval, CEO revert follow-up
         except Exception as e:
             analyst.log(f"loop error: {type(e).__name__}")
             time.sleep(30)

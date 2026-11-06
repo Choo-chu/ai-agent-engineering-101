@@ -159,8 +159,11 @@ def anchor(L, now):
     hours (the same hours a day earlier) are all after the change: (start, None), or (None, reason) while the
     window is still shorter than GUARD_MIN_H."""
     from limits import STOCK_CAP_CHANGES
+    mine = analyst_change_times()
     a = L
     for t, _ in STOCK_CAP_CHANGES:
+        if any(abs(t - m) < 900 for m in mine):
+            continue                               # an analyst approval: checked 3 h before vs after instead
         if L - 86400 < t < now:
             a = max(a, t + 86400)
     if now - a < GUARD_MIN_H * 3600:
@@ -184,6 +187,39 @@ def trial_units_if_stopped(db, now):
     return tuple(r[0] for r in rows)
 
 
+def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10):
+    """Measures clearly worse in cur than in base (dept_reports.window dicts); [] if none."""
+    bad = []
+    if base["sales"] >= min_sales and cur["sales"] < 0.7 * base["sales"]:
+        bad.append(f"sales {cur['sales']} vs {base['sales']}")
+    if base["sales"] >= min_sales and base["profit"] > 0 and cur["profit"] < 0.7 * base["profit"]:
+        bad.append(f"profit {cur['profit']:,} vs {base['profit']:,}")
+    if cur["review_accounts"] >= min_accounts and base["review_accounts"] >= min_accounts and cur["stars"] is not None \
+            and base["stars"] is not None and cur["stars"] < base["stars"] - 0.4:
+        bad.append(f"stars (one mean per account) {cur['stars']} vs {base['stars']}")
+    if base["buyer_paid"] >= min_paid and base["buyer_saved_sum"] > 0 and cur["buyer_saved_sum"] < 0.7 * base["buyer_saved_sum"]:
+        bad.append(f"buyer saved (sum of shares kept) {cur['buyer_saved_sum']} vs {base['buyer_saved_sum']}, "
+                   f"paid {cur['buyer_paid']} vs {base['buyer_paid']}")
+    elif base["buyer_paid"] >= min_paid and cur["buyer_paid"] >= min_paid and cur["buyer_saved_avg"] is not None \
+            and cur["buyer_saved_avg"] < base["buyer_saved_avg"] - 0.05:
+        bad.append(f"buyer saved per deal {cur['buyer_saved_avg']} vs {base['buyer_saved_avg']}")
+    return bad
+
+
+def analyst_change_times():
+    """Times of limit changes made by approved analyst proposals: the analyst checks those itself (3 h before
+    vs after), so the live guard does not pause 24 h for them (person's decision 11/06)."""
+    try:
+        db = connect()
+        try:
+            return [r[0] for r in db.execute("SELECT decided_ts FROM proposals WHERE kind='limit' AND decided_ts IS NOT "
+                                             "NULL AND status IN ('approved','reverted')")]
+        finally:
+            db.close()
+    except Exception:
+        return []
+
+
 def guard(st, now, log):
     """Live window vs the same hours a day before; revert to shadow when one measure is clearly worse."""
     L = st.get("live_since")
@@ -204,26 +240,15 @@ def guard(st, now, log):
         db.close()
     if ex:
         log(f"[ceo] guard: sofa trial stopped, its {len(ex)} units' sales left out of both windows")
-    bad = []
-    if base["sales"] >= 20 and cur["sales"] < 0.7 * base["sales"]:
-        bad.append(f"sales {cur['sales']} vs {base['sales']}")
-    if base["sales"] >= 20 and base["profit"] > 0 and cur["profit"] < 0.7 * base["profit"]:
-        bad.append(f"profit {cur['profit']:,} vs {base['profit']:,}")
-    if cur["review_accounts"] >= 8 and base["review_accounts"] >= 8 and cur["stars"] is not None \
-            and base["stars"] is not None and cur["stars"] < base["stars"] - 0.4:
-        bad.append(f"stars (one mean per account) {cur['stars']} vs {base['stars']}")
-    if base["buyer_paid"] >= 10 and base["buyer_saved_sum"] > 0 and cur["buyer_saved_sum"] < 0.7 * base["buyer_saved_sum"]:
-        bad.append(f"buyer saved (sum of shares kept) {cur['buyer_saved_sum']} vs {base['buyer_saved_sum']}, "
-                   f"paid {cur['buyer_paid']} vs {base['buyer_paid']}")
-    elif base["buyer_paid"] >= 10 and cur["buyer_paid"] >= 10 and cur["buyer_saved_avg"] is not None \
-            and cur["buyer_saved_avg"] < base["buyer_saved_avg"] - 0.05:
-        bad.append(f"buyer saved per deal {cur['buyer_saved_avg']} vs {base['buyer_saved_avg']}")
+    bad = worse(cur, base)
     summary = {k: [cur[k], base[k]] for k in ("sales", "profit", "stars", "review_accounts", "buyer_paid",
                                                "buyer_saved_sum", "buyer_saved_avg")}
     decisions.record("ceo", "guard_check", "live vs a day before", summary, "; ".join(bad) or "no measure clearly worse")
     log(f"[ceo] guard: live {cur['hours']} h vs same hours a day before: {summary}" + (f" -> WORSE: {bad}" if bad else ""))
     if bad:
         policy.reset(f"ceo guard: {'; '.join(bad)}")
+        with open(os.path.join(HERE, "logs", "ceo_revert.json"), "w", encoding="utf-8") as f:
+            json.dump({"ts": now, "why": bad}, f)      # the analyst process reverts approved limits and asks again
         st.update(mode="shadow", live_since=None, shadow_since=now, auto_live_at=None,
                   reverts=st.get("reverts", []) + [{"ts": now, "why": bad}])
         decisions.record("ceo", "revert", "mode", "shadow", "; ".join(bad))
