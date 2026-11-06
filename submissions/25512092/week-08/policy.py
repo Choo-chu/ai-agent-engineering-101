@@ -34,7 +34,7 @@ DEFAULTS = {
 # keys the policy may add that have no default: until the CEO sets them, the department keeps its old source
 OPTIONAL = {"purchasing": {"high_share", "high_max"}}
 # keys set by the person, not the CEO: reset() keeps their current values
-USER_KEYS = {"purchasing": {"sofa_trial_start", "sofa_trial_end"}}
+USER_KEYS = {"purchasing": {"sofa_trial_start", "sofa_trial_end"}, "cs": {"buyer_turns"}}
 
 _cache = {"mtime": None, "data": None, "clipped": set()}
 

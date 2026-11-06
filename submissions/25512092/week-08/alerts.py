@@ -156,6 +156,14 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] sofa warranty check: {type(e).__name__}")
     try:
+        volume_guard(log)
+    except Exception as e:
+        log(f"[alert] volume guard: {type(e).__name__}")
+    try:
+        buyer_mo_guard(log)
+    except Exception as e:
+        log(f"[alert] buyer min-offers guard: {type(e).__name__}")
+    try:
         seller_check(seen, log)
     except Exception as e:
         log(f"[alert] seller check: {type(e).__name__}")
@@ -360,6 +368,103 @@ def sofa_warranty_check(seen, log=print, now=None):
     return None
 
 
+def shop_numbers(t0, t1):
+    """My shop in [t0, t1): sales, revenue, profit, closed negotiations, profit per negotiation, cancel rate."""
+    from market_db import ME, connect
+    db = connect()
+    try:
+        s = db.execute("SELECT COUNT(*), COALESCE(SUM(s.amount),0), COALESCE(SUM(s.amount-m.cost),0) FROM settles s "
+                       "JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.ts>=? AND s.ts<?", (ME, t0, t1)).fetchone()
+        d = db.execute("SELECT COUNT(*), COALESCE(SUM(outcome='cancelled'),0) FROM shop_deals WHERE outcome!='open' "
+                       "AND ts>=? AND ts<?", (t0, t1)).fetchone()
+    finally:
+        db.close()
+    return {"sales": s[0], "revenue": s[1], "profit": s[2], "negotiations": d[0],
+            "profit_per_negotiation": round(s[2] / d[0]) if d[0] else None,
+            "cancel_rate": d[1] / d[0] if d[0] else None}
+
+
+def shop_text(o):
+    cr = f"{o['cancel_rate']:.0%}" if o["cancel_rate"] is not None else "-"
+    return (f"판매 {o['sales']}, 매출 {o['revenue']:,}, 이익 {o['profit']:,}, 협상 {o['negotiations']}, "
+            f"협상당 이익 {o['profit_per_negotiation']}, 취소율 {cr}")
+
+
+VOLUME_CHECK_H = 6
+VOLUME_MAX_DROP = 0.30
+
+
+def volume_guard(log=print, now=None):
+    """Volume pricing safety (decision 11/07 ~02:00): once, VOLUME_CHECK_H after 'since', profit of the 6 h after
+    vs the 6 h before; down by VOLUME_MAX_DROP or more -> volume_rules.json enabled false (the price rules go back,
+    sofa rules untouched) + urgent alert. Same hours one day earlier go in the message for context."""
+    from depts import volume
+    r = volume.rules()
+    now = now or time.time()
+    since = r.get("since")
+    if not (r.get("enabled") and since) or r.get("checked_at") or now < since + VOLUME_CHECK_H * 3600:
+        return None
+    span = VOLUME_CHECK_H * 3600
+    after, before = shop_numbers(since, since + span), shop_numbers(since - span, since)
+    yday = shop_numbers(since - 86400, since - 86400 + span)
+    bad = before["profit"] > 0 and after["profit"] < (1 - VOLUME_MAX_DROP) * before["profit"]
+    r.update(checked_at=round(now), check_after=after["profit"], check_before=before["profit"], check_bad=bad)
+    import decisions
+    if bad:
+        r["enabled"] = False
+        r["reverted_at"] = round(now)
+        volume.save(r)
+        decisions.record("sales", "volume_revert", "volume_rules", after["profit"],
+                         f"profit 6 h after {after['profit']:,} < 70% of 6 h before {before['profit']:,}; "
+                         f"price rules back to the old ones (sofa rules kept)")
+        send("urgent", f"volume_revert:{int(since)}", "박리다매 가격 규칙 자동 원복 (적용 후 6시간 이익이 직전 6시간 대비 30% 이상 감소)\n"
+             f"후 6h: {shop_text(after)}\n전 6h: {shop_text(before)}\n하루 전 같은 시간: {shop_text(yday)}", log)
+    else:
+        volume.save(r)
+        decisions.record("sales", "volume_check", "volume_rules", after["profit"],
+                         f"6 h check passed: after {after['profit']:,}, before {before['profit']:,}")
+        send("info", f"volume_check:{int(since)}", f"박리다매 6시간 점검 통과\n후 6h: {shop_text(after)}\n"
+             f"전 6h: {shop_text(before)}\n하루 전 같은 시간: {shop_text(yday)}", log)
+    return bad
+
+
+MO_SHIFT = os.path.join(HERE, "logs", "buyer_mo_shift.json")
+
+
+def buyer_mo_guard(log=print):
+    """Buyer min-offers shift (decision 11/07 ~02:00: weight 1 -> 0.9): when the buyer's Saved rank (board_hist,
+    every 30 min) is worse than at the shift in 2 snapshots in a row -> weights back to 0.8 / 0.2 + alert. Once."""
+    import json as _j
+    try:
+        st = _j.load(open(MO_SHIFT))
+    except (OSError, ValueError):
+        return None
+    if st.get("done"):
+        return None
+    from market_db import connect
+    db = connect()
+    try:
+        rows = db.execute("SELECT ts, buyer FROM board_hist WHERE ts>? ORDER BY ts DESC LIMIT 2",
+                          (st["since"],)).fetchall()
+        ranks = [(_j.loads(b) or {}).get("saved_rank") for _, b in rows]
+        if len(ranks) == 2 and all(x is not None and x > st["base_rank"] for x in ranks):
+            now = time.time()
+            for v, w in (("1", 0.8), ("3", 0.2)):
+                db.execute("INSERT INTO variant_weights VALUES (?,?,?,?,?,?,?)",
+                           (now, "buyer_min_offers", v, w, None, 0, "revert: Saved rank fell after the 0.9 shift"))
+            db.commit()
+            st.update(done=True, reverted_at=round(now), ranks=ranks)
+            _j.dump(st, open(MO_SHIFT, "w"))
+            import decisions
+            decisions.record("buyer", "min_offers_revert", "buyer_min_offers", {"1": 0.8, "3": 0.2},
+                             f"Saved rank {ranks} worse than {st['base_rank']} at the shift, 2 snapshots in a row")
+            send("urgent", "mo_revert", f"buyer 최소 제안 1회 비중 0.9 -> 0.8 원복: Saved 순위 {st['base_rank']}위 -> "
+                 f"{ranks[-1]}, {ranks[0]}위", log)
+    finally:
+        db.close()
+    return None
+
+
 UTIL_ALERT = 0.70        # seller busy share in the last full hour (decision 11/06: tell the person above 70%)
 
 
@@ -408,6 +513,23 @@ def seller_check(seen, log=print):
     import decisions
     decisions.record("qc", "seller_util", time.strftime("%m-%d %H:00", time.localtime(u["hour"])), round(u["busy"], 3),
                      f"{u['calls']} harness calls x {u['call_s']} s")
+    try:                                            # decision 11/07 ~02:00: after volume pricing went on, one hour
+        from depts import volume                    # over UTIL_ALERT turns concurrency on (flag read per call)
+        since = volume.rules().get("since")
+        flag_path = os.path.join(HERE, "seller_concurrency.json")
+        flag = json.load(open(flag_path)) if os.path.exists(flag_path) else {}
+        if since and u["hour"] >= since // 3600 * 3600 and u["busy"] > UTIL_ALERT and not flag.get("enabled"):
+            flag.update(enabled=True, limit=flag.get("limit", 3), auto_on=round(time.time()),
+                        auto_reason=f"{time.strftime('%H:00', time.localtime(u['hour']))} busy {u['busy']:.0%}")
+            json.dump(flag, open(flag_path, "w"))
+            decisions.record("sales", "concurrency_on", "seller_concurrency", flag["limit"],
+                             f"auto: seller busy {u['busy']:.0%} in {time.strftime('%m-%d %H:00', time.localtime(u['hour']))} "
+                             f"> {UTIL_ALERT:.0%} after volume pricing; up to {flag['limit']} harness calls at once")
+            send("urgent", f"conc_auto:{int(u['hour'])}", f"seller 사용률 {u['busy']:.0%} "
+                 f"({time.strftime('%H:00', time.localtime(u['hour']))}) > 70%: 동시 처리(최대 {flag['limit']}개) 자동 켬, "
+                 "재시작 없음", log)
+    except Exception as e:
+        log(f"[alert] concurrency auto-on: {type(e).__name__}: {e}")
     if u["busy"] > UTIL_ALERT:
         return send("urgent", f"seller_util:{int(u['hour'])}",
                     f"seller busy {u['busy']:.0%} of {time.strftime('%H:00', time.localtime(u['hour']))} "

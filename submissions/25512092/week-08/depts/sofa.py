@@ -64,8 +64,12 @@ def is_sofa(sku):
     return _cat["leaf"].get(sku) == SOFA_CAT
 
 
+MIN_COST = 50_000         # person's decision 11/07 ~02:00: sofa rules only for non-food units costing >= 50,000
+
+
 def applies(u):
-    return bool(u and u.get("sku") and on() and is_sofa(u["sku"]))
+    return bool(u and u.get("sku") and on() and is_sofa(u["sku"]) and u.get("kind") != "food"
+                and (u.get("cost") or 0) >= MIN_COST)
 
 
 def market(sku, now=None):

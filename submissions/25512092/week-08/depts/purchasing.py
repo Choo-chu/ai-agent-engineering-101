@@ -82,7 +82,8 @@ def make_plan(inv, units, catalog, budget, log):
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
         if cost > HIGH_MAX or avg < cost * (1 + MIN_MARGIN):
             continue
-        if sofa_rules.on() and sofa_rules.is_sofa(sku) and not sofa_rules.buy_ok(sku, cost)[0]:   # sofa buying rule E
+        if sofa_rules.on() and sofa_rules.is_sofa(sku) and kind != "food" and cost >= sofa_rules.MIN_COST \
+                and not sofa_rules.buy_ok(sku, cost)[0]:   # sofa buying rule E
             continue
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             if (c.get("category") or "").split(">")[-1] not in hot_cats or s["sold_30m"] < 1 or held.get(sku):
@@ -153,7 +154,8 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     if not (t0 and t0 <= now < t1):
         return None
     leaf = lambda k: ((catalog.get(k) or {}).get("category") or "").split(">")[-1]
-    unsold = [u for u in units if leaf(u["sku"]) == SOFA_CAT and (u.get("supplied_at") or 0) >= t0]
+    unsold = [u for u in units if leaf(u["sku"]) == SOFA_CAT and (u.get("supplied_at") or 0) >= t0
+              and u.get("kind") != "food" and (u.get("cost") or 0) >= sofa_rules.MIN_COST]
     if len(unsold) >= SOFA_UNSOLD_MAX:              # person's decision 11/07: stop adding while trial sofas pile up
         log(f"[sofa trial] skip: {len(unsold)} trial sofas unsold (>= {SOFA_UNSOLD_MAX}), no more buying")
         return None
@@ -167,7 +169,8 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     best = None
     for sku, s in stats["skus"].items():
         c = catalog.get(sku) or {}
-        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1:
+        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 \
+                or c.get("kind") == "food" or c["list_price"] * COST_SHARE["goods"] < sofa_rules.MIN_COST:
             continue
         avg, n = price_of(sku, stats)
         if avg is None or stats.get("sku_break", {}).get(sku, 0) > max_break:

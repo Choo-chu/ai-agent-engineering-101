@@ -141,6 +141,17 @@ def report(t, conc):
                      + ("" if r.get("warranty") else f"\n보증 해제됨: {r.get('warranty_off_reason')}"))
     except Exception as e:
         text += f"\n소파 결과 계산 실패: {type(e).__name__}"
+    try:
+        from depts import volume
+        r = volume.rules()
+        if r.get("since"):
+            since, span = r["since"], time.time() - r["since"]
+            text += (f"\n\n박리다매 ({datetime.fromtimestamp(since):%m-%d %H:%M}~, {span / 3600:.1f}h"
+                     + ("" if r.get("enabled") else ", 원복됨") + ")\n후: " + alerts.shop_text(alerts.shop_numbers(since, time.time()))
+                     + "\n전 같은 길이: " + alerts.shop_text(alerts.shop_numbers(since - span, since))
+                     + "\n하루 전 같은 시간: " + alerts.shop_text(alerts.shop_numbers(since - 86400, time.time() - 86400)))
+    except Exception as e:
+        text += f"\n박리다매 결과 계산 실패: {type(e).__name__}"
     alerts.send("daily", "conc_report", text, log)
     log("report sent; done")
 

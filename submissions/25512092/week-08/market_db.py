@@ -241,6 +241,8 @@ def board_snapshot(db, now, log=print):
     rank = lambda rows, x: 1 + sum(1 for r in rows if (r.get("all") or 0) > (x or {}).get("all", 0)) if x else None
     s, b = keep(shop), keep(buyer)
     s["rank"], b["rank"] = rank(j.get("shops", []), shop), rank(j.get("buyers", []), buyer)
+    if buyer:                                      # the buyer's place by Saved alone (buyer min-offers guard, 11/07)
+        b["saved_rank"] = 1 + sum(1 for r in j.get("buyers", []) if (r.get("saved") or 0) > (buyer.get("saved") or 0))
     db.execute("INSERT OR REPLACE INTO board_hist VALUES (?,?,?)", (now, json.dumps(s), json.dumps(b)))
 
 

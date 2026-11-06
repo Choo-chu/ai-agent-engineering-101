@@ -97,6 +97,19 @@ def record(task, deal, u, reserve, ask):
         print(f"[record] {e}", flush=True)
 
 
+def msg_log(task, who, text, sku=None):
+    """Every message of a negotiation with its task id (decision 11/07 ~02:00: measure 'left after the first ask').
+    Buyer text is stored as data only, never shown to a harness from here. market.db shop_msgs."""
+    try:
+        db = connect()
+        db.execute("CREATE TABLE IF NOT EXISTS shop_msgs (task TEXT, ts REAL, who TEXT, sku TEXT, text TEXT)")
+        db.execute("INSERT INTO shop_msgs VALUES (?,?,?,?,?)", (task, time.time(), who, sku, (text or "")[:500]))
+        db.commit()
+        db.close()
+    except Exception as e:
+        print(f"[msg_log] {e}", flush=True)
+
+
 def finish(task, outcome, price=None):
     try:
         db = connect()
@@ -209,6 +222,7 @@ class Seller(AgentExecutor):
             deal["offer"] = int(m.group()) if m else deal["offer"]
 
         u = deal["unit"]
+        msg_log(task.id, "buyer", text, u["sku"])
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
         reserve, rule = floor(u, avg, deal["case"], overstock_mult=deal["mult"])   # pricing.py, the case's rules
         if len(deal["lines"]) == 1:
@@ -255,6 +269,7 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             finish(task.id, "receipt", price)
+            msg_log(task.id, "shop", f"accept {price}", u["sku"])
             decisions.record("cs", "receipt", u["sku"], price, f"unit {u['unit']}, floor {reserve}, offer accepted")
             if u["unit"]:
                 self.sold[u["unit"]] = time.time()
@@ -263,12 +278,15 @@ class Seller(AgentExecutor):
         if action == "reject":
             await up.reject(say("No deal."))
             finish(task.id, "rejected")
+            msg_log(task.id, "shop", "reject", u["sku"])
             del self.open[task.id]
             return
         price = (move or {}).get("price")
         if not isinstance(price, (int, float)):
             price = deal["ask"] or u["list_price"]      # unparsed answer: repeat the last ask
-        if rule not in ("normal", "sofa") and avg is not None:   # any markdown: never ask above the market average
+        if rule == "volume" and deal.get("first_ask"):  # volume pricing: never counter above the first ask
+            price = min(price, deal["first_ask"])
+        elif rule not in ("normal", "sofa") and avg is not None:   # any markdown: never ask above the market average
             price = min(price, max(reserve, int(avg)))
         if price < reserve:                             # the harness may forget the cost; the code does not
             print(f"[guard] ask {price} below floor {reserve} -> {reserve}", flush=True)
@@ -285,6 +303,7 @@ class Seller(AgentExecutor):
         else:
             reply = f"Counteroffer: {deal['ask']}."
         deal["lines"].append(f"you: {reply}")
+        msg_log(task.id, "shop", f"ask {deal['ask']}" + (" (first)" if first else ""), u["sku"])
         if first and u.get("cert"):                     # [C] the certificate goes with the first reply too
             await up.requires_input(up.new_agent_message(parts=[new_text_part(reply),
                                                                 new_data_part({"unit": u["unit"], "cert": u["cert"]})]))
@@ -295,6 +314,7 @@ class Seller(AgentExecutor):
         task = context.current_task
         if self.open.pop(task.id, None) is not None:
             finish(task.id, "cancelled")
+            msg_log(task.id, "cancel", "")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 

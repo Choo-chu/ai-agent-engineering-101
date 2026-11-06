@@ -31,7 +31,9 @@
   "post_every_s": 300,
   "buyer_turns": [
    "purchase",
+   "purchase",
    "report",
+   "purchase",
    "callout"
   ]
  },
@@ -40,8 +42,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 3,
- "ts": 1793982279,
+ "version": 4,
+ "ts": 1793983650,
  "by": "person",
- "reason": "sofa trial extended 24 h to 11-08 16:51 (person's decision 11/07 01:30, with sofa rules A-E); unsold cap 10 kept"
+ "reason": "person's decision 11/07 ~02:00 (bundle 1): buyer posts mostly purchase records (3 of 5 turns)"
 }

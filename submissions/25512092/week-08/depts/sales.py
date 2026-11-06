@@ -88,7 +88,13 @@ def floor(u, avg, case, now=None, overstock_mult=1.0):
             r = sofa.floor(u, now)
             if r:
                 return r
-    if case == "endgame":
+    vol = None
+    if case != "endgame":                            # every category: volume pricing (depts/volume.py), when on
+        from depts import volume
+        vol = volume.floor(u, now)
+    if vol:
+        cands = [vol]
+    elif case == "endgame":
         e, step = endgame(u, now)
         cands = [(e, f"endgame step {step}")] if e is not None else [(u["cost"], "cost")]
     elif case == "cash_low":
@@ -137,6 +143,9 @@ def first_ask(u, avg, reserve, rule, deal):
     if rule == "sofa":                               # sofas: the market median (depts/sofa.py A)
         from depts import sofa
         return sofa.first_ask(u, reserve)
+    if rule == "volume":                             # every category: the market median (depts/volume.py)
+        from depts import volume
+        return volume.first_ask(u, reserve)
     base = avg if avg is not None else u["list_price"] * 0.9
     if rule == "normal" and deal["key"] == "shop_normal_ask":
         ask = min(u["list_price"], base * float(deal["variant"]))
