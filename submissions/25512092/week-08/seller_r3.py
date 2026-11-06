@@ -105,6 +105,38 @@ def finish(task, outcome, price=None):
         print(f"[record] {e}", flush=True)
 
 
+CONC_FROM = __import__("datetime").datetime(2026, 11, 6, 22, 0).timestamp()   # person's decision: from 22:00
+CONC_FLAG = Path(__file__).with_name("seller_concurrency.json")              # {"enabled": true, "limit": 3}
+_sem = {}
+
+
+def concurrency():
+    """How many harness calls may run at once: 0 = the old way (one at a time, blocking), unless it is past
+    CONC_FROM and seller_concurrency.json says enabled. Read on every call, so it can be switched off without a
+    restart (delete the file or set enabled false)."""
+    if time.time() < CONC_FROM:
+        return 0
+    try:
+        j = json.loads(CONC_FLAG.read_text(encoding="utf-8"))
+        return max(0, int(j.get("limit", 0))) if j.get("enabled") else 0
+    except (OSError, ValueError):
+        return 0
+
+
+async def harness_move(prompt):
+    """The harness's next move. With concurrency on, the call runs in a worker thread (the event loop keeps
+    serving other negotiations) and at most `limit` calls run at once (asyncio.Semaphore). Unit choice and the
+    15-min receipt hold do not change: they happen between awaits, on the loop."""
+    import asyncio
+    lim = concurrency()
+    if not lim:
+        return ask_json(prompt)
+    if _sem.get("limit") != lim:
+        _sem.update(limit=lim, sem=asyncio.Semaphore(lim))
+    async with _sem["sem"]:
+        return await asyncio.to_thread(ask_json, prompt)
+
+
 def recent_receipts(hold_s=900, negotiation_s=600):
     """Units my seller sent a receipt for lately, from shop_deals (outcome 'receipt'; ts is when the negotiation
     began, so the receipt went out within negotiation_s after it: counted as now, capped at ts + negotiation_s)."""
@@ -175,9 +207,9 @@ class Seller(AgentExecutor):
                              + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""))
             move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
         else:
-            move, raw = ask_json(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
-                                               market=int(avg) if avg is not None else "an unknown price",
-                                               transcript="\n".join(deal["lines"])))
+            move, raw = await harness_move(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
+                                                         market=int(avg) if avg is not None else "an unknown price",
+                                                         transcript="\n".join(deal["lines"])))
             print(f"[harness] {raw}", flush=True)
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
