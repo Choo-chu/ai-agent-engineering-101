@@ -1,0 +1,110 @@
+"""STOCK_CAP brake (person's decision 11/07 ~20:40). While STOCK_CAP is above the brake's low value (15M), every
+CHECK_S in the analyst process: if any of the three holds, STOCK_CAP goes back to 15M (limits.py, STOCK_EXIT 88%,
+commit + push, no b0 check: a lower cap may change the shop case on purpose) and one urgent Telegram goes out.
+  1. median supply -> sale time of my units sold in the last WINDOW_H is over MEDIAN_H (needs MIN_SALES sales)
+  2. unsold units held longer than OLD_H: cost over OLD_COST (scope "all": every held unit; "since": only units
+     supplied after the cap was raised)
+  3. cash (inventory balance, as the shop case reads it) under CASH_MIN
+Rules in cap_brake.json; the latest numbers in logs/cap_brake_state.json (read by the 3 h report). The brake fires
+once; raising the cap again is the person's decision.
+"""
+import json
+import os
+import statistics
+import time
+
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RULES = os.path.join(HERE, "cap_brake.json")
+STATE = os.path.join(HERE, "logs", "cap_brake_state.json")
+CHECK_S = 300
+ME = "choo-chu"
+_last = 0.0
+
+
+def rules():
+    try:
+        with open(RULES, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"enabled": False}
+
+
+def measure(r, now=None):
+    """The three numbers the brake looks at, with the reason for each trip."""
+    import sqlite3
+    now = now or time.time()
+    with open(os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8") as f:
+        inv = json.load(f)
+    held = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
+    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+    try:
+        ages = [x[0] for x in db.execute(
+            "SELECT s.ts - m.supplied_at FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.ts>=? "
+            "AND m.supplied_at IS NOT NULL", (ME, now - r["window_h"] * 3600))]
+    finally:
+        db.close()
+    since = r.get("since") or 0
+    old = [u for u in held if now - (u.get("supplied_at") or now) > r["old_h"] * 3600
+           and (r.get("old_scope", "all") == "all" or (u.get("supplied_at") or 0) >= since)]
+    m = {"ts": round(now), "sales": len(ages),
+         "median_h": round(statistics.median(ages) / 3600, 2) if ages else None,
+         "old_units": len(old), "old_cost": sum(u.get("cost", 0) for u in old),
+         "cash": inv.get("balance", 0), "stock": sum(u.get("cost", 0) for u in held)}
+    trips = []
+    if m["sales"] >= r.get("min_sales", 10) and m["median_h"] > r["median_h"]:
+        trips.append(f"입고→판매 중앙값 {m['median_h']:.1f}시간 > {r['median_h']}시간 (최근 {r['window_h']}시간 판매 "
+                     f"{m['sales']}개)")
+    if m["old_cost"] > r["old_cost"]:
+        trips.append(f"{r['old_h']}시간 넘게 안 팔린 재고 원가 {m['old_cost']:,} > {r['old_cost']:,} ({m['old_units']}개"
+                     + (", 상향 후 입고분만" if r.get("old_scope") == "since" else "") + ")")
+    if m["cash"] < r["cash_min"]:
+        trips.append(f"현금 {m['cash']:,} < {r['cash_min']:,}")
+    return m, trips
+
+
+def fire(r, m, trips, log=print):
+    """STOCK_CAP -> r['low'] (limits.py, commit + push), the raising proposal marked, one urgent Telegram."""
+    import alerts
+    import decisions
+    from depts import analyst, analyst_apply
+    now = time.time()
+    old = analyst_apply.current_limit("limits.STOCK_CAP")
+    paths = analyst_apply.edit_limit("limits.STOCK_CAP", r["low"], "brake", now)
+    head = analyst_apply.git_commit(list(paths), f"week-08 STOCK_CAP brake: {old:,} -> {r['low']:,} ({'; '.join(trips)})")
+    if r.get("pid"):
+        d = analyst.db()
+        try:
+            d.execute("UPDATE proposals SET status='auto_reverted', result=? WHERE id=? AND status='approved'",
+                      (f"brake: {'; '.join(trips)}"[:500], r["pid"]))
+            d.commit()
+        finally:
+            d.close()
+    r.update(enabled=False, fired=round(now), fired_why=trips)
+    with open(RULES, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False, indent=1)
+    decisions.record("purchasing", "cap_brake", "limits.STOCK_CAP", [old, r["low"]], "; ".join(trips) + f" | {m}")
+    alerts.send("urgent", f"cap_brake:{int(now)}",
+                f"STOCK_CAP 자동 브레이크: {old:,} -> {r['low']:,} (커밋 {head}).\n걸린 조건: " + "; ".join(trips)
+                + f"\n현재: 재고 원가 {m['stock']:,}, 현금 {m['cash']:,}, 최근 {r['window_h']}시간 판매 {m['sales']}개 "
+                f"(중앙값 {m['median_h']}시간), {r['old_h']}시간+ 재고 {m['old_units']}개 {m['old_cost']:,}.\n"
+                "다시 올리는 건 사람 결정.", log=log)
+    log(f"cap brake fired: {old:,} -> {r['low']:,}: {trips}")
+
+
+def tick(log=print, now=None):
+    global _last
+    now = now or time.time()
+    if now - _last < CHECK_S:
+        return
+    _last = now
+    r = rules()
+    if not r.get("enabled"):
+        return
+    from depts import analyst_apply
+    cap = analyst_apply.current_limit("limits.STOCK_CAP")       # reloads limits.py
+    m, trips = measure(r, now)
+    m.update(cap=cap, trips=trips)
+    with open(STATE, "w", encoding="utf-8") as f:
+        json.dump(m, f, ensure_ascii=False)
+    if cap > r["low"] and trips:
+        fire(r, m, trips, log=log)

@@ -1,0 +1,14 @@
+{
+ "enabled": false,
+ "median_h": 3,
+ "window_h": 6,
+ "min_sales": 10,
+ "old_h": 6,
+ "old_cost": 3000000,
+ "old_scope": "since",
+ "cash_min": 2000000,
+ "low": 15000000,
+ "since": null,
+ "pid": null,
+ "why": "person's decision 11/07 ~20:40; condition 2 counts only units supplied after the raise (person, 11/07 ~20:50)"
+}
