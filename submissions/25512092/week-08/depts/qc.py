@@ -22,7 +22,10 @@ REPORTS = os.path.join(HERE, "reports")
 HIGH_MIN = 100_000              # unit cost above this is "high price" ...
 HIGH_MAX = 1_000_000            # ... up to this (11/06: was 500,000; sofas cost ~0.6 x list)
 START_SHARE, START_MAX = 0.30, 2
-SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.50, 20   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
+SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.60, 30   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
+#                                                     11/07 ~16:05: SHARE_CAP 0.5 -> 0.6, MAX_CAP 20 -> 30 (share 0.6, units 28)
+STALE_SHARE = 0.20   # 11/07 ~16:05 (person's decision): the share is cut only when >= 20% of the high-price units held
+#                      are unsold > 24 h (was: any one of them)
 #                                                     10 -> 20 on 11/07 ~14:45 (units held 8 -> 18, person's decision)
 
 
@@ -282,12 +285,13 @@ def daily(db, inv, catalog, log):
 
     pol = policy(db)
     share, cap = pol["high_share"], pol["high_max"]
-    stale_high = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u.get("cost", 0) > HIGH_MIN
-                  and now - (u.get("supplied_at") or now) > 24 * 3600]
+    held_high = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u.get("cost", 0) > HIGH_MIN]
+    stale_high = [u for u in held_high if now - (u.get("supplied_at") or now) > 24 * 3600]
     high_refund = [b for b in broken if b[3] and (b[4] or 0) > HIGH_MIN]
-    if stale_high or high_refund:
+    if (held_high and len(stale_high) / len(held_high) >= STALE_SHARE) or high_refund:
         share = max(SHARE_MIN, round(share - SHARE_STEP, 2))
-        reason = f"{len(stale_high)} high-price units unsold > 24 h, {len(high_refund)} high-price refunds"
+        reason = (f"{len(stale_high)} of {len(held_high)} high-price units unsold > 24 h, "
+                  f"{len(high_refund)} high-price refunds")
     elif hr is not None and (lr is None or hr >= lr):
         share, cap = min(SHARE_CAP, round(share + SHARE_STEP, 2)), min(MAX_CAP, cap + 1)
         reason = f"high profit/cost {pct(hr)} >= low {pct(lr)}"

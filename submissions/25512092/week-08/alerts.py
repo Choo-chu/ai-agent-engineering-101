@@ -590,14 +590,18 @@ def expand_report(seen, log=print, now=None):
         inv = {}
     high = [u for u in inv.get("units", []) if u.get("grade") != "expired" and (u.get("cost") or 0) > HIGH_MIN]
     old = [u for u in high if now - (u.get("supplied_at") or now) > 6 * 3600]
+    s2 = j.get("since2")              # 11/07 ~16:05: STOCK_CAP 15M, high-price units 28, share 0.6 (after 17:47)
+    new = high_turnover(s2, now) if s2 and s2 < now else None
     import decisions
     o = {"after": after, "before": before, "unsold_high": len(high), "unsold_high_over_6h": len(old),
-         "unsold_high_cost": sum(u.get("cost", 0) for u in high)}
+         "unsold_high_cost": sum(u.get("cost", 0) for u in high), "since_new_settings": new}
     decisions.record("purchasing", "expand_report", "buy_expand", o, "6 h result")
     f = lambda w: (f"입고 {w['bought']}, 판매 {w['sold']}, 입고->판매 중앙 {w['median_h']} h / 평균 {w['mean_h']} h")
+    s2_line = (f"새 설정(STOCK_CAP 15M, 고가 28개, 비중 60%) {time.strftime('%H:%M', time.localtime(s2))} 이후: "
+               f"{f(new)}\n") if new else ""
     return send("daily", f"expand_report:{int(since)}",
                 "매입 확대(high_max 8->18, MY_SHARE 0.25->0.5) 6시간 결과\n"
-                f"고가 적용 후 6h: {f(after)}\n고가 적용 전 6h: {f(before)}\n"
+                f"고가 적용 후 6h: {f(after)}\n고가 적용 전 6h: {f(before)}\n" + s2_line +
                 f"미판매 고가 지금 {len(high)}개 (원가 {o['unsold_high_cost']:,}), 그중 6시간 넘은 것 {len(old)}개", log)
 
 

@@ -7,8 +7,9 @@ Runs from restock.py every RUN_EVERY_S. Mode (ceo_state.json):
 Keys the CEO may set (step 7 opens only these):
   purchasing.high_share / high_max   once a day, the buying-split rule that sales_report.daily used:
         high-price units unsold > 24 h or a high-price refund -> share -10 %p (min 20%)
-        else high-price profit/cost >= low-price profit/cost -> share +10 %p (max 50%), units held +1 (max 20;
-        10 -> 20 on 11/07 ~14:45 with units held 8 -> 18, person's decision)
+        else high-price profit/cost >= low-price profit/cost -> share +10 %p (max 60%), units held +1 (max 30;
+        10 -> 20 on 11/07 ~14:45 with units held 8 -> 18; 11/07 ~16:05: max 60% / 30 with share 0.6 / units 28;
+        the unsold rule counts only when >= qc.STALE_SHARE of the high-price units held are unsold > 24 h)
   purchasing.spend_share             stock within 10% of STOCK_CAP -> no change (the cap binds anyway);
         cash < 2.5M -> 0.3; 6 h profit > 0, stock < half the cap, cash > 3M -> 0.5; else 0.4
   purchasing.perishable_trial_qty    perishable units wasted in 24 h -> 1, else 2
@@ -108,8 +109,10 @@ def split_rule(inv, catalog, now):
                              (ME, ME, t0, t1, HIGH_MIN)).fetchone()[0]
     finally:
         db.close()
-    stale = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u.get("cost", 0) > HIGH_MIN
-             and now - (u.get("supplied_at") or now) > 24 * 3600]
+    from depts.qc import STALE_SHARE
+    held = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u.get("cost", 0) > HIGH_MIN]
+    stale = [u for u in held if now - (u.get("supplied_at") or now) > 24 * 3600]
+    stale = stale if held and len(stale) / len(held) >= STALE_SHARE else []
     lr = sales_report.rate(s["low_profit"], s["low_cost"])
     hr = sales_report.rate(s["high_profit"], s["high_cost"])
     cur = current_split(before=t1)
@@ -118,7 +121,7 @@ def split_rule(inv, catalog, now):
         return {"high_share": max(0.2, round(share - 0.1, 2)), "high_max": cap}, \
             f"{today - __import__('datetime').timedelta(days=1):%m-%d}: {len(stale)} high-price units unsold > 24 h, {refunds} high-price refunds"
     if hr is not None and (lr is None or hr >= lr):
-        return {"high_share": min(0.5, round(share + 0.1, 2)), "high_max": min(20, cap + 1)}, \
+        return {"high_share": min(0.6, round(share + 0.1, 2)), "high_max": min(30, cap + 1)}, \
             f"high profit/cost {sales_report.pct(hr)} >= low {sales_report.pct(lr)}"
     return None, f"no change (high {sales_report.pct(hr)}, low {sales_report.pct(lr)})"
 
