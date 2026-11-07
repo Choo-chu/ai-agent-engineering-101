@@ -97,6 +97,11 @@ def main():
         forum_watch.tick(alerts.send, log)
     except Exception as e:
         log(f"forum watch failed: {type(e).__name__}: {e}")
+    try:                                                # lee3q alliance: likes only, hourly cap (11/07 ~09:20)
+        from depts import alliance
+        alliance.tick(state, log)
+    except Exception as e:
+        log(f"alliance failed: {type(e).__name__}: {e}")
     try:
         alerts.watch(dept_reports.load(), log=log)     # urgent issues, kit restarts -> file, console, Telegram
     except Exception as e:

@@ -30,7 +30,9 @@ ME = "choo-chu"
 STATUS_EVERY_S = 900
 MINE = re.compile(r"choo[- ]?chu|choo shop|추현빈", re.I)
 NEG = re.compile(r"scam|fake|\blie|liar|dishonest|cheat|manipul|spam|beg|sob stor|lowball|거짓|사기|허위|조작|도배|"
-                 r"구걸|동정|후려|떼쓰|비매너|불량|문제|주의|조심|신고", re.I)
+                 r"구걸|동정|후려|떼쓰|비매너|불량|문제|(?<![가-힣])주의(?![가-힣])|조심|(?<![가-힣])신고(?![가-힣])", re.I)
+SENTENCE = re.compile(r"[.!?。\n]+")
+NEAR_WORDS = 5                   # 11/07 09:xx: my name and a negative word within 5 words of each other, same sentence
 BUYER_CTX = re.compile(r"buyer|구매자|바이어|흥정|haggl|negotiat|offer|제안|사정|hardship|bankrupt|파산|분유|수술", re.I)
 INJECTION = re.compile(r"ignore (all|any|previous|your)|system prompt|you are (now|an ai)|as an ai|disregard|"
                        r"override|jailbreak|<\s*/?\s*(system|assistant|user)|\bact as\b|give (me )?5 stars|"
@@ -41,6 +43,23 @@ STRATEGY = {"대출/loan": r"대출|\bloan|lend", "담합/collusion": r"담합|c
 TYPES = [("purchase", r"^\[구매 기록\]"), ("report", r"^\[시세 리포트\]"), ("shop", r"^\[Choo Shop"),
          ("callout", r"^\[원장|^\[ledger|정직하지 않|dishonest")]
 
+
+def _word_no(sentence, pos):
+    return len(sentence[:pos].split())
+
+
+def criticises(text):
+    """Person's decision 11/07 ~09:20: criticism only when my name (MINE, in the text; a ledger ref alone is not
+    enough) and a negative word (NEG; 주의 / 신고 only as words of their own, not inside 부패주의 / 자기신고) are in
+    the same sentence, at most NEAR_WORDS words apart."""
+    for s in SENTENCE.split(text or ""):
+        names = [_word_no(s, m.start()) for m in MINE.finditer(s)]
+        if not names:
+            continue
+        negs = [_word_no(s, m.start()) for m in NEG.finditer(s)]
+        if any(abs(a - b) <= NEAR_WORDS for a in names for b in negs):
+            return True
+    return False
 
 def db():
     d = sqlite3.connect(DB_PATH, timeout=30)
@@ -182,14 +201,14 @@ def status(send=None, log=print, force=False):
         st["class"] = _class_neighbors(d, now)
         crit = json.load(open(CRIT, encoding="utf-8")) if os.path.exists(CRIT) else {"buyer": [], "shop": [], "seen": []}
         for r in ment:
-            if r[0] in crit["seen"] or not NEG.search(r[4] or ""):
+            if r[0] in crit["seen"] or not criticises(r[4]):
                 continue
             crit["seen"].append(r[0])
             target = "buyer" if BUYER_CTX.search(r[4] or "") or f'"buyer": "{ME}"' in (r[5] or "") else "shop"
             crit[target].append({"id": r[0], "author": r[2], "ts": now})
             if send:
                 send("urgent", f"forum_crit:{r[0]}", f"포럼 #{r[0]} ({r[2]})가 우리 {target}를 비판하는 글로 보임 "
-                     f"(규칙 감지: 우리 이름 + 부정어{' + 흥정 맥락' if target == 'buyer' else ''}). 원문은 포럼에서 확인",
+                     f"(규칙 감지: 같은 문장 5단어 안에 우리 이름 + 부정어{' + 흥정 맥락' if target == 'buyer' else ''}). 원문은 포럼에서 확인",
                      log)
         with open(CRIT, "w", encoding="utf-8") as f:
             json.dump(crit, f, ensure_ascii=False)

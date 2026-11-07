@@ -344,7 +344,7 @@ def market_report(db, catalog, st):
 
 
 def _once(st):
-    """The first record in forum_once.json ([{"key", "post", "refs", "as"}]) not posted yet; each key posts once."""
+    """The first record in forum_once.json ([{"key", "post", "refs", "as", "thread"?}]) not posted yet; each key posts once."""
     st.setdefault("once_done", [])
     try:
         with open(os.path.join(HERE, "forum_once.json"), encoding="utf-8") as f:
@@ -387,7 +387,7 @@ def run(state_dir, inv, catalog, log=print):
                                                "> aging > comparison ad")
         once = _once(st)                               # a one-off record (forum_once.json) takes the next buyer slot
         if now - st["buyer_ts"] >= POST_EVERY_S and once:
-            _send(state_dir, {k: once[k] for k in ("post", "refs", "as")})
+            _send(state_dir, {k: once[k] for k in ("post", "refs", "as", "thread") if k in once})
             st["once_done"].append(once["key"])
             st["buyer_ts"] = now
             log(f"[forum] buyer once {once['key']}: {once['post'][:110]}")

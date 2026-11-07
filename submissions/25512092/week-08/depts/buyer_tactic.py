@@ -1,8 +1,8 @@
 """Buyer negotiation tactic experiment (person's decision 11/07): one tactic per order, by fixed weight
 (buyer_tactic.json, read per order; market_buyer.py runs once per order, so no restart is needed):
 
-  plain   60%  the old way
-  appeal  20%  once, with my first offer: a short hardship line asking for a bit more off. One fixed line per shop
+  plain   60%  the old way (70% from the appeal restart, 11/07 ~09:20)
+  appeal  20%  (10% from the restart) once, with my first offer: a short hardship line asking for a bit more off. One fixed line per shop
                (crc32 of the shop name). Never in reviews or forum posts (only negotiate() sends it).
   facts2  20%  (from 11/07 ~02:20) once, with my first offer, only when another shop's lowest price in the last
                24 h (ledger) is at least FACTS_GAP under the market average (market_stats): those two numbers, nothing
@@ -13,6 +13,8 @@ The offer number always comes first (sellers read the first number). Recorded pe
 (tactic, tactic_used, secs, harness_calls), next to variant / mo_variant, so every combination can be compared.
 Stop: alerts.watch -> guard(): the buyer's forum score on the board 0.01 or more under its value at the start, or a
 forum post criticising my buyer (depts/forum_watch.py) -> appeal off at once (its 20% goes to plain) + Telegram.
+The first stop (11/07 03:28) was a detector false alarm; appeal restarted at 10% with the stricter detector
+(forum_watch.criticises), counting only criticism after appeal_since and a forum score drop from the restart value.
 24 h after the start: interim results by tactic and by tactic x min-offers variant -> Telegram.
 """
 import json
@@ -104,7 +106,7 @@ def guard(send, log=print):
     crit = os.path.join(HERE, "logs", "forum_criticism.json")
     if not why and os.path.exists(crit):
         c = json.load(open(crit, encoding="utf-8"))
-        hits = [x for x in c.get("buyer", []) if x.get("ts", 0) >= r.get("since", 0)]
+        hits = [x for x in c.get("buyer", []) if x.get("ts", 0) >= r.get("appeal_since", r.get("since", 0))]
         if hits:
             why = f"forum post #{hits[-1]['id']} by {hits[-1]['author']} criticises my buyer"
     if why:
