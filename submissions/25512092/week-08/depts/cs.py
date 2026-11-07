@@ -38,6 +38,8 @@ POST_EVERY_S = 300
 WINDOW_S = 2 * 3600              # report and comparison ads use the last 2 hours
 MIN_N = 3                        # an average needs this many deals in the window
 CALLOUT_MIN_NEW = 2
+CALLOUT_AUTO = False             # 11/07 ~15:40 (option B): callouts go out only after the person approves a draft
+#                                  (depts/callout.py, Telegram); the automatic ledger-record callout is off
 CALLOUT_EVERY_S = 6 * 3600
 AD_REPEAT_S = 3600               # the same SKU is advertised at most once an hour
 WANT_FRESH_S = 2 * 3600          # answer '구합니다' posts of the last 2 hours only
@@ -175,7 +177,7 @@ def collect(st, inv, db, log):
     for seq, shop in rows:
         by_shop.setdefault(shop, []).append(seq)
     queued = {it["id"] for it in st["queue"]["buyer"] if it["kind"] == "callout"}
-    for shop, seqs in by_shop.items():
+    for shop, seqs in (by_shop.items() if CALLOUT_AUTO else ()):
         c = st["callout"].get(shop, {"seq": 0, "ts": 0})
         new = [s for s in seqs if s > c["seq"]]
         if len(new) >= CALLOUT_MIN_NEW and now - c["ts"] >= CALLOUT_EVERY_S and shop not in queued:
@@ -273,6 +275,8 @@ def buyer_turn(kind, db, catalog, st):
 
 
 def render_callout(it, db, st):
+    if not CALLOUT_AUTO:                         # already queued automatic callouts are dropped (option B)
+        return None
     shop = it["id"]
     c = st["callout"].get(shop, {"seq": 0, "ts": 0})
     seqs = [s for (s,) in db.execute("SELECT seq FROM settles WHERE claim_honest=0 AND COALESCE(shop, shop_url)=? "

@@ -18,6 +18,8 @@ os.chdir(HERE)
 from depts import analyst, analyst_apply, analyst_brain  # noqa: E402
 
 analyst_apply.register()                              # step 3: approvals apply, 되돌리기 undoes
+from depts import callout  # noqa: E402
+callout.register()                                    # 11/07: grade-claim callout drafts, 승인 -> buyer post
 
 
 def main():
@@ -30,6 +32,7 @@ def main():
             analyst.housekeeping()
             analyst_brain.tick()                   # collect 15 min / analyse 60 min, from 11/07 20:00
             analyst_apply.check_approvals()        # step 4: 3 h before/after each approval, CEO revert follow-up
+            callout.tick()                         # grade-claim callout drafts (one per shop per 24 h)
             if time.localtime().tm_hour == 0 and time.localtime().tm_min >= 15:   # 11/07: yesterday's forum flow
                 import alerts
                 from depts import forum_watch
