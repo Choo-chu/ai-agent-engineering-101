@@ -29,6 +29,7 @@ from harness import CMD, ask_json
 from forum_post import promo
 import decisions
 from depts import sofa
+from depts import receipt_exp  # 11/07: category receipt item, grade claim experiment
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
@@ -300,6 +301,9 @@ class Seller(AgentExecutor):
                                          "key": None, "variant": None, "mult": 1.0,
                                          "haggle": haggle_pick(), "calls": 0,      # 11/07: code vs harness arm
                                          "quoted": quoted, "subst_tier": tier}
+            deal["receipt_item"] = None if quoted else receipt_exp.category_item(text, unit, substitute.named_sku(text))
+            deal["claim_arm"] = receipt_exp.claim_arm(unit)
+            receipt_exp.log(connect, task.id, unit, deal["receipt_item"], deal["claim_arm"])
             if quoted:                                  # an offer in the choosing message counts (SKUs left out)
                 m = re.search(r"\d+", substitute.strip_skus(text))
                 deal["offer"] = int(m.group()) if m else None
@@ -360,9 +364,11 @@ class Seller(AgentExecutor):
             action, move = "counter", {"price": deal["ask"] or u["list_price"]}
         if action == "accept":
             price = deal["offer"]
-            receipt = {"shop": NAME, "item": u["sku"], "price": price, "task": task.id}
+            receipt = {"shop": NAME, "item": deal.get("receipt_item") or u["sku"], "price": price, "task": task.id}
             if u["unit"]:
                 receipt["unit"] = u["unit"]
+            if deal.get("claim_arm") == "claim" and u.get("grade") in ("A", "B", "C"):   # goods only (receipt_exp)
+                receipt["claim"] = u["grade"]
             if deal["warranty"]:                        # [16] not under sig_seller; the kit puts it in the checkout
                 receipt["warranty_hours"] = deal["warranty"]
             receipt = sign(receipt)

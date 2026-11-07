@@ -146,6 +146,9 @@ def numbers(since, until):
         span = until - since
         out["mismatch_reviews"] = db.execute(q, (since, until)).fetchone()[0]
         out["mismatch_reviews_before"] = db.execute(q, (since - span, since)).fetchone()[0]
+        q2 = ("SELECT COUNT(*) FROM my_results WHERE ts>=? AND ts<? AND stars<=2 AND review LIKE '%receipt names%'")
+        out["category_complaints"] = db.execute(q2, (since, until)).fetchone()[0]       # q00 style, 11/07 ~09:45
+        out["category_complaints_before"] = db.execute(q2, (since - span, since)).fetchone()[0]
     finally:
         db.close()
     return out

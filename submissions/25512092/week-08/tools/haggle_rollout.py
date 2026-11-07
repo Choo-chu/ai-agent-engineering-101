@@ -34,8 +34,17 @@ RS = ("person's decision 11/07 ~10:00: a named SKU I do not hold -> 'X is not in
 
 
 def subst_on():
+    """The 11/07 seller changes that go on with this restart: substitute offers, and (person's decision ~09:45) the
+    category receipt item + the grade claim experiment on 50% of non-food negotiations."""
+    now = round(time.time())
     with open(os.path.join(HERE, "substitute.json"), "w", encoding="utf-8") as f:
-        json.dump({"enabled": True, "since": round(time.time())}, f)
+        json.dump({"enabled": True, "since": now}, f)
+    with open(os.path.join(HERE, "receipt_rules.json"), "w", encoding="utf-8") as f:
+        json.dump({"category_item": True, "claim_share": 0.5, "since": now}, f)
+    decisions.record("sales", "receipt_rules_on", "receipt_rules", {"category_item": True, "claim_share": 0.5},
+                     "person's decision 11/07 ~09:45: category orders get the category name as receipt item (unit in "
+                     "the unit field); non-food negotiations: 50% put the real grade in the receipt claim; on with "
+                     "this seller restart")
 
 
 def log(m):

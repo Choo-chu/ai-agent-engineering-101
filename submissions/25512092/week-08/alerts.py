@@ -168,6 +168,10 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] haggle report: {type(e).__name__}")
     try:
+        claim_report(seen, log)
+    except Exception as e:
+        log(f"[alert] claim report: {type(e).__name__}: {e}")
+    try:
         subst_report(seen, log)
     except Exception as e:
         log(f"[alert] subst report: {type(e).__name__}: {e}")
@@ -538,7 +542,32 @@ def subst_report(seen, log=print, now=None):
                 f"대체 제안 6시간 결과: 대체 제안 {o['offers']}건\n"
                 + "\n".join(f"{k}순위: 제시 {v['offered']}, 수락 {v['chosen']}, 영수증 {v['receipt']}, 결제 {v['settled']}"
                              for k, v in t.items())
-                + f"\n영수증 불일치 리뷰: {o['mismatch_reviews']} (적용 전 6시간 {o['mismatch_reviews_before']})", log)
+                + f"\n영수증 불일치 리뷰: {o['mismatch_reviews']} (적용 전 6시간 {o['mismatch_reviews_before']})"
+                + f"\n카테고리 주문 'receipt names' 불만: {o['category_complaints']} (적용 전 6시간 "
+                  f"{o['category_complaints_before']})"
+                + "\n등급 명시 실험 중간: " + json.dumps(__import__("depts.receipt_exp", fromlist=["x"]).claim_numbers(
+                    since, since + 6 * 3600), ensure_ascii=False), log)
+
+
+def claim_report(seen, log=print, now=None):
+    """Once, 24 h after receipt_rules.json 'since': grade claim arms (non-food) by deal rate and stars."""
+    now = now or time.time()
+    try:
+        j = json.load(open(os.path.join(HERE, "receipt_rules.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    since = j.get("since")
+    if not (j.get("claim_share") and since) or now < since + 86400 or seen.get(f"claim_report:{int(since)}"):
+        return None
+    seen[f"claim_report:{int(since)}"] = now
+    from depts import receipt_exp
+    o = receipt_exp.claim_numbers(since, since + 86400)
+    import decisions
+    decisions.record("sales", "claim_report", "receipt_rules", o, "24 h result")
+    f = lambda a: (f"{a}: 협상 {o[a]['n']}, 성사율 {o[a]['deal_rate']}, 결제 {o[a]['settled']}, "
+                   f"별점 {o[a]['stars']} (n={o[a]['stars_n']})")
+    return send("daily", f"claim_report:{int(since)}", "비식품 등급 명시 실험 24시간 결과\n" + f("claim") + "\n"
+                + f("none") + f"\n카테고리 영수증 발행 협상: {o['category_receipts']}", log)
 
 
 MO_SHIFT = os.path.join(HERE, "logs", "buyer_mo_shift.json")
