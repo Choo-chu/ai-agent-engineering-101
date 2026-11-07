@@ -253,7 +253,14 @@ def _approved(d):
 
 
 def _auto_revert(p, why):
-    """Revert an approval on its own (check or CEO guard), mark it, and offer 다시 적용."""
+    """Revert an approval on its own (check or CEO guard), mark it, and offer 다시 적용 (11/07: as a policy change
+    message with [되돌리기] = 다시 적용 and [24시간 고정]; a pinned key is not reverted)."""
+    from depts import policy_notify
+    if policy_notify.pinned(p["key"]):
+        decisions.record("analyst", "pinned", p["key"], json.loads(p["value"]), f"#{p['id']}: {why}; pinned by the "
+                         "person for 24 h: not reverted")
+        analyst.log(f"proposal #{p['id']} not reverted: {p['key']} pinned")
+        return
     try:
         text = revert(p)
     except Exception as e:
@@ -266,8 +273,13 @@ def _auto_revert(p, why):
     finally:
         d.close()
     decisions.record("analyst", "auto_reverted", p["key"], json.loads(p["value"]), f"#{p['id']}: {why}")
-    analyst._call("sendMessage", chat_id=analyst.chat_id(), reply_markup=REAPPLY_BUTTON(p["id"]),
-                  text=(f"승인 #{p['id']} 되돌려짐: {p['key']} -> {json.loads(p['value'])}\n이유: {why}\n{text}")[:4000])
+    undo = json.loads(p.get("undo") or "{}")
+    policy_notify.notify("analyst", [{"key": p["key"], "old": json.loads(p["value"]), "new": undo.get(p["key"]),
+                                      "where": (f"limits.py > {p['key'].split('.', 1)[1]}" if p["key"].startswith("limits.")
+                                                else f"policy.json > {p['key']}")}],
+                         f"승인 #{p['id']} 반영 후 {CHECK_H}시간 점검: {why}", evidence=text[:300],
+                         version=("승인 값", "되돌린 값"), next_at="없음 ([되돌리기] = 다시 적용)",
+                         extra={"pid": p["id"]}, log=analyst.log)
     analyst.log(f"proposal #{p['id']} auto-reverted: {why}")
 
 

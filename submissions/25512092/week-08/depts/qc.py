@@ -322,7 +322,25 @@ def daily(db, inv, catalog, log):
         reason += (f"; held: share {share:.0%} -> {fl['high_share']:.0%}, units {cap} -> {fl['high_max']} "
                    f"(no lowering for 24 h after expansion 2)")
         share, cap = max(share, fl["high_share"]), max(cap, fl["high_max"])
+    from depts import policy_notify
+    if policy_notify.pinned("purchasing.high_share", now) and share != pol["high_share"]:
+        reason += f"; high_share pinned by the person: stays {pol['high_share']}"
+        share = pol["high_share"]
+    if policy_notify.pinned("purchasing.high_max", now) and cap != pol["high_max"]:
+        reason += f"; high_max pinned by the person: stays {pol['high_max']}"
+        cap = pol["high_max"]
     db.execute("INSERT INTO policy VALUES (?,?,?,?)", (now, share, cap, f"{day:%Y-%m-%d}: {reason}"))
+    try:
+        policy_notify.notify("qc", [{"key": "purchasing.high_share", "old": pol["high_share"], "new": share,
+                                     "where": "QC 정책 테이블 (market.db policy) > high_share"},
+                                    {"key": "purchasing.high_max", "old": pol["high_max"], "new": cap,
+                                     "where": "QC 정책 테이블 (market.db policy) > high_max"}],
+                             f"{day:%Y-%m-%d} 매입 분할 규칙: {reason}",
+                             evidence=f"고가 이익/원가 {pct(hr)}, 저가 {pct(lr)}, 고가 보유 {len(held_high)}개 중 24시간 "
+                                      f"미판매 {len(stale_high)}개, 고가 환불 {len(high_refund)}건",
+                             version=("QC 테이블 이전 행", "새 행"), next_at="내일 00:00", log=log)
+    except Exception as e:
+        log(f"[policy_notify] qc: {type(e).__name__}: {e}")
     __import__("decisions").record("ceo", "buying_split", "high_share/high_max", {"high_share": share, "high_max": cap},
                                    f"{day:%Y-%m-%d}: {reason}")
 

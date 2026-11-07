@@ -138,6 +138,9 @@ def handle_callback(cq):
         _call("answerCallbackQuery", callback_query_id=cq["id"], text="없는 제안")
         return "unknown"
     p = dict(row)
+    if action in ("undo", "pin") and p["kind"] == "policy_change":   # 11/07: automatic policy change messages
+        from depts import policy_notify
+        return policy_notify.on_button(action, p, cq["id"])
     if action == "reapply":                        # 다시 적용 after an automatic revert (check or CEO guard)
         if p["status"] != "auto_reverted" or REAPPLY is None:
             _call("answerCallbackQuery", callback_query_id=cq["id"], text="다시 적용할 수 없음")

@@ -293,9 +293,19 @@ def guard(st, now, log):
     log(f"[ceo] guard: live {cur['hours']} h vs same hours a day before: {summary}"
         + (f" -> WORSE: {bad}" if bad else "") + note)
     if bad:
+        from depts import policy_notify
         pre = st.get("pre_live") or {}
-        back = {k.split(".", 1)[1]: pre.get(k, DEFAULTS_CEO[k]) for k in LIVE_KEYS}
-        policy.revert_keys("purchasing", back, f"ceo guard: {'; '.join(bad)} (CEO keys only)")
+        back = {k.split(".", 1)[1]: pre.get(k, DEFAULTS_CEO[k]) for k in LIVE_KEYS
+                if not policy_notify.pinned(k, now)}            # a pinned key stays (person's 24 h pin)
+        raw = policy.load().get("purchasing") or {}
+        v0 = policy.version()
+        new_v = policy.revert_keys("purchasing", back, f"ceo guard: {'; '.join(bad)} (CEO keys only)")["version"]
+        policy_notify.notify("guard", [{"key": f"purchasing.{k}", "old": raw.get(k), "new": v,
+                                        "where": f"policy.json > purchasing.{k}"} for k, v in back.items()],
+                             "CEO 가드: 라이브 구간이 하루 전 같은 시간보다 나빠짐 -> CEO 키를 7단계 시작 값으로, CEO는 shadow",
+                             evidence="; ".join(bad) + note + f" (live {cur['hours']} h: " +
+                             ", ".join(f"{k} {summary[k][0]} vs {summary[k][1]}" for k in ("sales", "profit", "stars")) + ")",
+                             version=(f"v{v0}", f"v{new_v}"), next_at="없음 (CEO shadow, 다시 live는 사람 결정)", log=log)
         st.update(mode="shadow", live_since=None, shadow_since=now, auto_live_at=None,
                   reverts=st.get("reverts", []) + [{"ts": now, "why": bad, "keys": back}])
         decisions.record("ceo", "revert", "mode", {"mode": "shadow", "keys": back}, "; ".join(bad) + note)
@@ -342,14 +352,31 @@ def tick(inv, catalog, log=print):
             return
         reason = "; ".join(f"{s}.{k} -> {v} ({why})" for s, k, v, why in props)
         if st["mode"] == "live":
+            from depts import policy_notify
+            for s, k, v, why in [x for x in props if policy_notify.pinned(f"{x[0]}.{x[1]}", now)]:
+                decisions.record("ceo", "pinned", f"{s}.{k}", v, f"pinned by the person for 24 h: not changed ({why})")
+            props = [x for x in props if not policy_notify.pinned(f"{x[0]}.{x[1]}", now)]
+            if not props:
+                return
+            split = current_split()
+            old = {f"{s}.{k}": (split.get(k) if k in ("high_share", "high_max") else policy.get(s, k))
+                   for s, k, v, why in props}
+            v0 = policy.version()
             secs = {}
             for s, k, v, why in props:
                 secs.setdefault(s, {})[k] = v
                 st["key_ts"][f"{s}.{k}"] = now
+            reason = "; ".join(f"{s}.{k} -> {v} ({why})" for s, k, v, why in props)
             new = policy.write(secs, reason)
             for s, k, v, why in props:
                 decisions.record("ceo", "policy", f"{s}.{k}", v, why)
             log(f"[ceo] live: policy v{new['version']}: {reason}")
+            hold = min((now + (86400 if k in ("high_share", "high_max") else KEY_HOLD_S)) for s, k, v, why in props)
+            policy_notify.notify("ceo", [{"key": f"{s}.{k}", "old": old[f"{s}.{k}"], "new": v,
+                                          "where": f"policy.json > {s}.{k}"} for s, k, v, why in props],
+                                 "; ".join(why for s, k, v, why in props), version=(f"v{v0}", f"v{new['version']}"),
+                                 next_at=f"{datetime.fromtimestamp(now + RUN_EVERY_S):%m-%d %H:%M} (30분마다), 이 키 "
+                                         f"다음 변경 가능 {datetime.fromtimestamp(hold):%m-%d %H:%M}", log=log)
         else:
             for s, k, v, why in props:
                 st["key_ts"][f"{s}.{k}"] = now
