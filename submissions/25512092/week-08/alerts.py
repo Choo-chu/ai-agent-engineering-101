@@ -547,7 +547,15 @@ def high_turnover(t0, t1):
     finally:
         db.close()
     hrs = sorted((s - a) / 3600 for _, a, s in rows if s)
-    return {"bought": len(rows), "sold": len(hrs),
+    db = connect()                                  # 11/07 ~17:55: sales amount in the window too
+    try:
+        n, rev = db.execute("SELECT COUNT(*), COALESCE(SUM(amount), 0) FROM settles WHERE shop=? AND ts>=? AND ts<?",
+                            (ME, t0, t1)).fetchone()
+        hrev = db.execute("SELECT COALESCE(SUM(s.amount), 0) FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE "
+                          "s.shop=? AND s.ts>=? AND s.ts<? AND m.cost>?", (ME, t0, t1, HIGH_MIN)).fetchone()[0]
+    finally:
+        db.close()
+    return {"bought": len(rows), "sold": len(hrs), "sales": n, "revenue": rev, "high_revenue": hrev,
             "median_h": round(hrs[len(hrs) // 2], 1) if hrs else None,
             "mean_h": round(sum(hrs) / len(hrs), 1) if hrs else None}
 
@@ -658,7 +666,8 @@ def expand_report(seen, log=print, now=None):
     o = {"after": after, "before": before, "unsold_high": len(high), "unsold_high_over_6h": len(old),
          "unsold_high_cost": sum(u.get("cost", 0) for u in high), "since_new_settings": new}
     decisions.record("purchasing", "expand_report", "buy_expand", o, "6 h result")
-    f = lambda w: (f"입고 {w['bought']}, 판매 {w['sold']}, 입고->판매 중앙 {w['median_h']} h / 평균 {w['mean_h']} h")
+    f = lambda w: (f"입고 {w['bought']}, 판매 {w['sold']}, 입고->판매 중앙 {w['median_h']} h / 평균 {w['mean_h']} h; "
+                   f"가게 매출 {w['revenue']:,} ({w['sales']}건), 그중 고가 매출 {w['high_revenue']:,}")
     s2_line = (f"새 설정(STOCK_CAP 15M, 고가 28개, 비중 60%) {time.strftime('%H:%M', time.localtime(s2))} 이후: "
                f"{f(new)}\n") if new else ""
     return send("daily", f"expand_report:{int(since)}",

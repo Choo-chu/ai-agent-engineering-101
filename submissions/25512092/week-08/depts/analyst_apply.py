@@ -345,7 +345,8 @@ def check_approvals(now=None):
         # Saved is not a condition for it (buyer experiments run); other keys (buyer keys included) keep it
         buyer = not p["key"].startswith("limits.")
         bad = ceo_policy.worse(after, before, min_sales=10, min_accounts=5, min_paid=5, buyer=buyer)
-        summary = {k: [after[k], before[k]] for k in ("sales", "profit", "stars", "buyer_paid", "buyer_saved_sum")}
+        summary = {k: [after[k], before[k]] for k in ("sales", "revenue", "profit", "stars", "buyer_paid",
+                                                       "buyer_saved_sum")}   # revenue: 11/07 ~17:55
         if not buyer:
             summary["buyer_saved"] = "information only (limits key)"
         decisions.record("analyst", "approval_check", p["key"], summary, f"#{p['id']}: " + ("; ".join(bad) or "not worse"))
