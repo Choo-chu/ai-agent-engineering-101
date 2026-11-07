@@ -586,9 +586,11 @@ def injection_report(seen, log=print, now=None):
     seen[f"injection_report:{int(since)}"] = now
     import sqlite3
     t1 = since + 86400
-    ref, amount, flags = 0, 0, {}
+    ref, amount, flags, no_avg = 0, 0, {}, 0
     with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
         for ln in f:
+            if '"injection_no_avg"' in ln and since <= json.loads(ln)["ts"] < t1:
+                no_avg += 1                         # 11/07 ~19:25: walked without an offer (no market average)
             if '"receipt_refused"' in ln:
                 d = json.loads(ln)
                 if since <= d["ts"] < t1:
@@ -605,13 +607,15 @@ def injection_report(seen, log=print, now=None):
     deals = [r for r in rows if r[0] == "deal"]
     ratio = [r[2] / r[3] for r in deals if r[2] and r[3]]
     o = {"refused": ref, "refused_amount": amount, "by_flag": flags, "injection_negotiations": len(rows),
+         "injection_no_avg": no_avg,
          "outcomes": {k: sum(1 for r in rows if r[0] == k) for k in {r[0] for r in rows}},
          "paid_vs_list": round(sum(ratio) / len(ratio), 3) if ratio else None}
     import decisions
     decisions.record("buyer", "injection_report", "buyer_biz", o, "24 h result")
     return send("daily", f"injection_report:{int(since)}",
                 f"인젝션 보완 24시간 결과\n거절한 영수증: {ref}건, {amount:,}원 {flags}\n"
-                f"인젝션 감지 후 코드가 끝낸 협상: {len(rows)}건, 결과 {o['outcomes']}, 결제가/정가 {o['paid_vs_list']}", log)
+                f"인젝션 감지 후 코드가 끝낸 협상: {len(rows)}건, 결과 {o['outcomes']}, 결제가/정가 {o['paid_vs_list']}; "
+                f"그중 시장 평균이 없어 제안 없이 walk {no_avg}건", log)
 
 
 def post_report(seen, log=print, now=None):

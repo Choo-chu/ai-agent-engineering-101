@@ -239,9 +239,11 @@ def code_move(ask, last, n_offers, budget, first_offer, market_avg=None):
     ask), never above the top: the market average (without one, the buyer's usual cap = budget), never above the
     budget; after INJECTION_MIN_OFFERS offers, once my last offer was already the top and the seller still did not take
     it, walk. A deal happens only if the seller accepts my offer (an offer above the ask is cut to the ask later)."""
+    if not market_avg:                             # 11/07 ~19:25: no market average -> no offer at all, walk
+        return {"action": "walk", "why": "no_avg"}
     if ask is None:
         return {"action": "offer", "price": last} if last is not None else {"action": "walk"}
-    top = max(1, min(budget, int(market_avg))) if market_avg else max(1, budget)
+    top = max(1, min(budget, int(market_avg)))
     if n_offers >= INJECTION_MIN_OFFERS and last is not None and last >= top:
         return {"action": "walk"}
     step = int(ask * first_offer) if last is None else last + max(1, (ask - last) // 3)
@@ -367,8 +369,16 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             res["code_injection"] = True
             d = code_move(ask, last, n_offers, budget, first_offer, market_avg)
             log(f"[injection] code move: {d['action']} {d.get('price', '')}")
+            if d["action"] == "walk" and d.get("why") == "no_avg":
+                __import__("decisions").record("buyer", "injection_no_avg", item, None,
+                                               f"injection flagged, no market average for the SKU: walked without an "
+                                               f"offer (offers made {n_offers}, ask {ask}, budget {budget})")
+                log("WALK (code, injection: no market average, no offer)")
+                res["ended"] = "walk_injection_no_avg"
+                client.cancel(tid)
+                return res
             if d["action"] == "walk":
-                log("WALK (code, injection: my budget offer was not taken after 3 offers)")
+                log("WALK (code, injection: my top offer was not taken after 3 offers)")
                 res["ended"] = "walk"
                 client.cancel(tid)
                 return res
