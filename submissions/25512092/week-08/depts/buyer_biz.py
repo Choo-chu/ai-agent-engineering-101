@@ -79,12 +79,22 @@ def harmless_mismatch(m):
         return False
 
 
+def shop_keys(shop):
+    """Every name a shop goes by: its name, its URL, and the last part of a hosted URL (.../shop/<name>); 11/07 ~16:05."""
+    url = (shop.get("url") or "").rstrip("/")
+    keys = {shop.get("name"), url}
+    if "/shop/" in url:
+        keys.add(url.rsplit("/shop/", 1)[1].split("/")[0])
+    return {k for k in keys if k}
+
+
 def summarize(shop, memory):
     revs = shop.get("reviews") or []
     stars = [r["stars"] for r in revs if isinstance(r.get("stars"), (int, float))]
     avg = sum(stars) / len(stars) if stars else None
     warns = sum(1 for r in revs if RECEIPT_WARN.search(str(r.get("review", ""))))
-    mine = [m for m in memory if m.get("shop") == shop["name"]]
+    keys = shop_keys(shop)
+    mine = [m for m in memory if m.get("shop") in keys]
     my_stars = [m["stars"] for m in mine if isinstance(m.get("stars"), (int, float))]
     my_avg = sum(my_stars) / len(my_stars) if my_stars else None
     cheated = any(m.get("flag") in ("receipt_mismatch", "over_budget", "item_mismatch", "no_receipt", "injection")
@@ -98,7 +108,7 @@ def summarize(shop, memory):
     score = (sum(a * w for a, w in weighted) / sum(w for _, w in weighted)) if weighted else NEW_SHOP_SCORE
     score -= 0.5 * warns
 
-    mf = SHOP_FLAGS.get(shop["name"]) or SHOP_FLAGS.get(shop["url"].rstrip("/")) or {}
+    mf = next((SHOP_FLAGS[k] for k in keys if k in SHOP_FLAGS), {})
     blocked = None
     if cheated:
         blocked = "cheated me before"
@@ -122,8 +132,8 @@ def choose(shops, memory, item, scores):
     for c in infos:
         if c["blocked"]:
             log(f"[skip] {c['name']}: {c['blocked']}")
-    if not allowed:  # everyone looks bad: still trade with the least bad one
-        allowed = infos
+    if not allowed:  # everyone looks bad: still trade with the least bad one, but never with a shop that cheated me
+        allowed = [c for c in infos if c["blocked"] != "cheated me before"]   # (11/07 ~16:05: elm-street came back here)
     for c in allowed:
         c["shop_score"] = scores.get(c["name"]) or DEFAULT_SCORE
     allowed.sort(key=lambda c: c["shop_score"]["score"], reverse=True)
