@@ -2,7 +2,7 @@
  "purchasing": {
   "spend_share": 0.4,
   "min_margin": 0.1,
-  "my_share": 0.25,
+  "my_share": 0.5,
   "wanted_qty": 3,
   "min_sold_30m": 3,
   "food_min_shelf_h": 24,
@@ -42,8 +42,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 4,
- "ts": 1793983650,
+ "version": 5,
+ "ts": 1794030332,
  "by": "person",
- "reason": "person's decision 11/07 ~02:00 (bundle 1): buyer posts mostly purchase records (3 of 5 turns)"
+ "reason": "person's decision 11/07 ~14:45: MY_SHARE 0.25 -> 0.5 (buying expansion)"
 }

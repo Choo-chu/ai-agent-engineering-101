@@ -172,6 +172,10 @@ def watch(reports=None, log=print):
     except Exception as e:
         log(f"[alert] claim report: {type(e).__name__}: {e}")
     try:
+        expand_report(seen, log)
+    except Exception as e:
+        log(f"[alert] expand report: {type(e).__name__}: {e}")
+    try:
         subst_report(seen, log)
     except Exception as e:
         log(f"[alert] subst report: {type(e).__name__}: {e}")
@@ -519,6 +523,54 @@ def haggle_report(seen, log=print, now=None):
     decisions.record("sales", "code_haggle_report", "code_haggle", o, "24 h result")
     return send("daily", f"haggle_report:{int(since)}", "전 품목 코드 흥정 30% 실험 24시간 결과 (소파 제외)\n"
                 + f("code") + "\n" + f("harness"), log)
+
+
+def high_turnover(t0, t1):
+    """High-price units (cost > HIGH_MIN) supplied in [t0, t1): bought, sold by t1, hours supply -> sale."""
+    from market_db import ME, connect
+    from sales_report import HIGH_MIN
+    db = connect()
+    try:
+        rows = db.execute("SELECT m.unit, m.supplied_at, (SELECT MIN(s.ts) FROM settles s WHERE s.unit=m.unit AND "
+                          "s.shop=? AND s.ts<?) FROM my_stock m WHERE m.cost>? AND m.supplied_at>=? AND m.supplied_at<?",
+                          (ME, t1, HIGH_MIN, t0, t1)).fetchall()
+    finally:
+        db.close()
+    hrs = sorted((s - a) / 3600 for _, a, s in rows if s)
+    return {"bought": len(rows), "sold": len(hrs),
+            "median_h": round(hrs[len(hrs) // 2], 1) if hrs else None,
+            "mean_h": round(sum(hrs) / len(hrs), 1) if hrs else None}
+
+
+def expand_report(seen, log=print, now=None):
+    """Once, 6 h after buy_expand.json 'since' (person's decision 11/07 ~14:45: high_max 8 -> 18, my_share
+    0.25 -> 0.5): high-price turnover (supply -> sale) in the 6 h after vs the 6 h before, unsold high-price units."""
+    now = now or time.time()
+    try:
+        j = json.load(open(os.path.join(HERE, "buy_expand.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    since = j.get("since")
+    if not since or now < since + 6 * 3600 or seen.get(f"expand_report:{int(since)}"):
+        return None
+    seen[f"expand_report:{int(since)}"] = now
+    from sales_report import HIGH_MIN
+    after, before = high_turnover(since, since + 6 * 3600), high_turnover(since - 6 * 3600, since)
+    try:
+        inv = json.load(open(os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        inv = {}
+    high = [u for u in inv.get("units", []) if u.get("grade") != "expired" and (u.get("cost") or 0) > HIGH_MIN]
+    old = [u for u in high if now - (u.get("supplied_at") or now) > 6 * 3600]
+    import decisions
+    o = {"after": after, "before": before, "unsold_high": len(high), "unsold_high_over_6h": len(old),
+         "unsold_high_cost": sum(u.get("cost", 0) for u in high)}
+    decisions.record("purchasing", "expand_report", "buy_expand", o, "6 h result")
+    f = lambda w: (f"입고 {w['bought']}, 판매 {w['sold']}, 입고->판매 중앙 {w['median_h']} h / 평균 {w['mean_h']} h")
+    return send("daily", f"expand_report:{int(since)}",
+                "매입 확대(high_max 8->18, MY_SHARE 0.25->0.5) 6시간 결과\n"
+                f"고가 적용 후 6h: {f(after)}\n고가 적용 전 6h: {f(before)}\n"
+                f"미판매 고가 지금 {len(high)}개 (원가 {o['unsold_high_cost']:,}), 그중 6시간 넘은 것 {len(old)}개", log)
 
 
 def subst_report(seen, log=print, now=None):

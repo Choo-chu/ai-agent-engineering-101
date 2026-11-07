@@ -36,7 +36,7 @@ MAX_LINES = 10
 POLICY_RANGES = {
     "purchasing.spend_share": (0.2, 0.5),
     "purchasing.high_share": (0.2, 0.5),
-    "purchasing.high_max": (0, 10),               # 11/06: 5 -> 10 (high-price units held, now 8)
+    "purchasing.high_max": (0, 20),               # 11/06: 5 -> 10; 11/07 ~14:45: 10 -> 20 (units held 8 -> 18)
     "purchasing.min_margin": (0.05, 0.5),
     "purchasing.my_share": (0.1, 0.5),
     "purchasing.wanted_qty": (0, 5),

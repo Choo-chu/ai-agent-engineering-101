@@ -22,7 +22,8 @@ REPORTS = os.path.join(HERE, "reports")
 HIGH_MIN = 100_000              # unit cost above this is "high price" ...
 HIGH_MAX = 1_000_000            # ... up to this (11/06: was 500,000; sofas cost ~0.6 x list)
 START_SHARE, START_MAX = 0.30, 2
-SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.50, 10   # MAX_CAP 5 -> 10 on 11/06 (units held 8)
+SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.50, 20   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
+#                                                     10 -> 20 on 11/07 ~14:45 (units held 8 -> 18, person's decision)
 
 
 def policy(db=None):

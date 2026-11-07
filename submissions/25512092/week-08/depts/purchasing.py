@@ -260,6 +260,18 @@ def cap_record(inv, units, catalog, budget, plan, case):
     for p in free_plan:
         free_qty[p["sku"]] = free_qty.get(p["sku"], 0) + p["qty"]
     extra = [(k, q - mine.get(k, 0)) for k, q in free_qty.items() if q > mine.get(k, 0)]
+    if extra:                                               # person's decision 11/07 ~14:45: Telegram when the cap
+        try:                                                # starts cutting buying (at most once per 6 h)
+            import alerts
+            cut = int(sum(q * ((catalog.get(k) or {}).get("list_price") or 0) * COST_SHARE.get(
+                (catalog.get(k) or {}).get("kind", "goods"), 0.6) for k, q in extra))
+            alerts.send("info", "stock_cap_binding",
+                        f"STOCK_CAP {MAX_STOCK_COST:,}에 매입이 막히기 시작: 재고 원가 {stock:,}, 현금 {cash:,}, "
+                        f"이번 run 예산 {int(max(budget, 0)):,} (상한 없으면 {int(free):,}), 상한 때문에 못 산 "
+                        f"{len(extra)}개 SKU 약 {cut:,}원. STOCK_CAP은 그대로(사람 결정 대기)", log=log,
+                        repeat_s=6 * 3600)
+        except Exception as e:
+            log(f"[cap] alert failed: {type(e).__name__}: {e}")
     log(f"[cap] case {case}, cash {cash:,}, stock at cost {stock:,}: budget without the cap {int(free):,} vs "
         f"actual {int(max(budget, 0)):,}; without the cap would also buy: "
         + (", ".join(f"{names[k][:24]} x{q}" for k, q in extra) or "nothing more"))
