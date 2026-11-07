@@ -122,6 +122,21 @@ def msg_log(task, who, text, sku=None):
 HAGGLE_FLAG = Path(__file__).with_name("code_haggle.json")    # 11/07 experiment: {"enabled", "share", "since"}
 
 
+# 11/07 ~15:45 (person's decision): in the code arm, a buyer message with a question about the unit (shelf life,
+# warranty, certificate, grade, condition) goes to the harness, which can answer it; the code only repeated its counter
+# (21 of 683 code-arm messages, 11:00-15:39). From code_haggle.json 'question_llm_since' (the 20:05 seller restart).
+QUESTION = re.compile(r"\?|shelf|expir|warrant|certific|grade|condition|remaining|use within|how long|refund|"
+                      r"유통|소비기한|보증|인증|증명|등급|상태|남은|환불|언제까지", re.I)
+
+
+def question_to_llm(text):
+    try:
+        since = json.loads(HAGGLE_FLAG.read_text(encoding="utf-8")).get("question_llm_since")
+    except (OSError, ValueError):
+        return False
+    return bool(since) and time.time() >= since and bool(QUESTION.search(text or ""))
+
+
 def haggle_pick():
     """'code' with the flag's share, else 'harness'; None while the experiment is off (read per negotiation)."""
     try:
@@ -322,6 +337,10 @@ class Seller(AgentExecutor):
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
         reserve, rule = floor(u, avg, deal["case"], overstock_mult=deal["mult"])   # pricing.py, the case's rules
         deal["rule"] = rule
+        q_llm = deal.get("haggle") == "code" and len(deal["lines"]) > 1 and question_to_llm(text)
+        if q_llm:                                       # 11/07: a question in the code arm goes to the harness
+            deal["q_llm"] = deal.get("q_llm", 0) + 1
+            print(f"[code haggle] {u['sku']} question in the buyer message -> harness", flush=True)
         if len(deal["lines"]) == 1:
             ask = first_ask(u, avg, reserve, rule, deal)    # stage 2: the code names the first ask, not the harness
             if deal.get("quoted"):                          # 11/07: a chosen substitute starts at the price I quoted
@@ -338,7 +357,7 @@ class Seller(AgentExecutor):
             if deal.get("quoted") and deal["offer"] is not None and deal["offer"] >= ask:   # 11/07: chose a
                 move, raw = {"action": "accept"}, f"(substitute: offer {deal['offer']} >= quoted {ask})"  # substitute
                 print(f"[subst] {u['sku']} offer {deal['offer']} >= quoted {ask} -> accept", flush=True)  # at >= quote
-        elif rule == "sofa" or deal.get("haggle") == "code":   # haggling by code (depts/sofa.py D): sofas, and the
+        elif rule == "sofa" or (deal.get("haggle") == "code" and not q_llm):   # haggling by code (depts/sofa.py D): sofas, and the
             nxt = sofa.next_counter(deal, reserve)             # 'code' arm of the 11/07 experiment; no harness call
             tag = "sofa" if rule == "sofa" else "code haggle"
             if deal["offer"] is not None and deal["offer"] >= max(reserve, nxt):

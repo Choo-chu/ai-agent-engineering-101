@@ -27,7 +27,7 @@ CHECK_EVERY_S = 300
 MAX_LISTED = 8
 # off (None) by default. A share like 0.5: a shop whose untrue share of its 24 h claimed settles is at least this has
 # its food settles counted too (aging makes a few food claims untrue; it cannot make most of them untrue)
-FOOD_SHARE_MIN = None
+FOOD_SHARE_MIN = 0.5             # person's decision 11/07 ~15:45: on (elm-street 16 of 17 untrue)
 BANNED = ("사기", "사기꾼", "도둑", "scam", "fraud", "cheat")
 ME = "choo-chu"
 BUTTONS = lambda pid: {"inline_keyboard": [[{"text": "승인 (게시)", "callback_data": f"approve:{pid}"},
