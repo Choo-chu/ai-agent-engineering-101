@@ -14,9 +14,15 @@ Keys the CEO may set (step 7 opens only these):
 A key changes at most once every KEY_HOLD_S (the daily rule once a day). Hard limits are not policy keys.
 
 Guard (live only, hourly after GUARD_MIN_H): the live window against the same hours a day earlier. Shop profit
-or sales down 30% or more, stars (one mean per reviewing account, Patch 3.4) down 0.4 or more, or the buyer's
-Saved (Patch 3.4) down: sum of shares kept down 30% or more, or share kept per deal down 5 %p or more (each with
-enough data) -> policy.reset() (back to the version-1 values), mode shadow, urgent alert.
+or sales down 30% or more, or stars (one mean per reviewing account, Patch 3.4) down 0.4 or more -> the 4 CEO keys
+(LIVE_KEYS) go back to their values when step 7 started (pre_live in ceo_state.json), mode shadow, urgent alert.
+Person's decision 11/07 ~14:30 (option B):
+  - the revert touches the 4 CEO keys only: limits (CASH_RESERVE ...), analyst approvals and the person's keys stay
+    (no logs/ceo_revert.json any more, so the analyst does not undo its approvals for a CEO revert)
+  - buyer Saved is not a guard condition (the CEO keys are purchasing keys; buyer experiments run); it stays in
+    the comparison as information
+  - while the base hours start before MIXED_UNTIL, every comparison says the 11/07 morning changes are mixed in
+    and it is for reference
 """
 import json
 import os
@@ -39,6 +45,14 @@ GUARD_MIN_H = 3
 HIGH_MIN = 100_000
 LIVE_KEYS = ("purchasing.high_share", "purchasing.high_max", "purchasing.spend_share",
              "purchasing.perishable_trial_qty")
+# the values a revert falls back to when pre_live is missing (None: key removed, the code's own rule applies)
+DEFAULTS_CEO = {"purchasing.high_share": None, "purchasing.high_max": None, "purchasing.spend_share": 0.4,
+                "purchasing.perishable_trial_qty": 2}
+# the 11/07 morning changes (01:47 volume pricing / buyer offers, 02:09 buyer tactics, 10:00 breadth buying +
+# CASH_RESERVE 1.0M + surge last, 11:00 code haggling + substitute / receipt rules) are in the live window and not
+# in base hours that start before this time
+MIXED_UNTIL = datetime(2026, 11, 7, 11, 0).timestamp()
+MIXED_NOTE = "오늘(11/07) 오전 변경들이 섞여 있어 참고용"
 
 
 def load_state():
@@ -153,6 +167,19 @@ def proposals(inv, catalog, reports, st, now):
     return held
 
 
+def anchor_start(L, now):
+    """Where the compared window starts (anchor() without the GUARD_MIN_H check)."""
+    from limits import STOCK_CAP_CHANGES
+    mine = analyst_change_times()
+    a = L
+    for t, _ in STOCK_CAP_CHANGES:
+        if any(abs(t - m) < 900 for m in mine):
+            continue
+        if L - 86400 < t < now:
+            a = max(a, t + 86400)
+    return a
+
+
 def anchor(L, now):
     """Start of the live window the guard compares (option B, 11/06). Normally live_since. When a STOCK_CAP change
     falls within a day before it (or after it), the window starts 24 h after the latest such change, so the base
@@ -187,8 +214,9 @@ def trial_units_if_stopped(db, now):
     return tuple(r[0] for r in rows)
 
 
-def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10):
-    """Measures clearly worse in cur than in base (dept_reports.window dicts); [] if none."""
+def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10, buyer=True):
+    """Measures clearly worse in cur than in base (dept_reports.window dicts); [] if none. buyer=False leaves the
+    buyer Saved measures out (the CEO guard, 11/07; the analyst's approval checks keep them)."""
     bad = []
     if base["sales"] >= min_sales and cur["sales"] < 0.7 * base["sales"]:
         bad.append(f"sales {cur['sales']} vs {base['sales']}")
@@ -197,6 +225,8 @@ def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10):
     if cur["review_accounts"] >= min_accounts and base["review_accounts"] >= min_accounts and cur["stars"] is not None \
             and base["stars"] is not None and cur["stars"] < base["stars"] - 0.4:
         bad.append(f"stars (one mean per account) {cur['stars']} vs {base['stars']}")
+    if not buyer:
+        return bad
     if base["buyer_paid"] >= min_paid and base["buyer_saved_sum"] > 0 and cur["buyer_saved_sum"] < 0.7 * base["buyer_saved_sum"]:
         bad.append(f"buyer saved (sum of shares kept) {cur['buyer_saved_sum']} vs {base['buyer_saved_sum']}, "
                    f"paid {cur['buyer_paid']} vs {base['buyer_paid']}")
@@ -225,8 +255,9 @@ def guard(st, now, log):
     L = st.get("live_since")
     if st.get("mode") != "live" or not L or now - L < GUARD_MIN_H * 3600 or now - st.get("last_guard", 0) < GUARD_EVERY_S:
         return None
-    st["last_guard"] = now
     A, why = anchor(L, now)
+    # while waiting, the next check is at the first possible comparison (19:46 on 11/07), not an hour later
+    st["last_guard"] = now if A is not None else min(now, anchor_start(L, now) + GUARD_MIN_H * 3600 - GUARD_EVERY_S)
     if A is None:                                  # within 24 h of a STOCK_CAP change: no comparison yet
         decisions.record("ceo", "guard_check", "live vs a day before", None, why)
         log(f"[ceo] guard waits: {why}")
@@ -240,20 +271,27 @@ def guard(st, now, log):
         db.close()
     if ex:
         log(f"[ceo] guard: sofa trial stopped, its {len(ex)} units' sales left out of both windows")
-    bad = worse(cur, base)
+    bad = worse(cur, base, buyer=False)
     summary = {k: [cur[k], base[k]] for k in ("sales", "profit", "stars", "review_accounts", "buyer_paid",
                                                "buyer_saved_sum", "buyer_saved_avg")}
-    decisions.record("ceo", "guard_check", "live vs a day before", summary, "; ".join(bad) or "no measure clearly worse")
-    log(f"[ceo] guard: live {cur['hours']} h vs same hours a day before: {summary}" + (f" -> WORSE: {bad}" if bad else ""))
+    summary["buyer_saved"] = "information only, not a guard condition"
+    note = f" [{MIXED_NOTE}]" if A - 86400 < MIXED_UNTIL else ""
+    if note:
+        summary["note"] = MIXED_NOTE
+    decisions.record("ceo", "guard_check", "live vs a day before", summary,
+                     ("; ".join(bad) or "no measure clearly worse") + note)
+    log(f"[ceo] guard: live {cur['hours']} h vs same hours a day before: {summary}"
+        + (f" -> WORSE: {bad}" if bad else "") + note)
     if bad:
-        policy.reset(f"ceo guard: {'; '.join(bad)}")
-        with open(os.path.join(HERE, "logs", "ceo_revert.json"), "w", encoding="utf-8") as f:
-            json.dump({"ts": now, "why": bad}, f)      # the analyst process reverts approved limits and asks again
+        pre = st.get("pre_live") or {}
+        back = {k.split(".", 1)[1]: pre.get(k, DEFAULTS_CEO[k]) for k in LIVE_KEYS}
+        policy.revert_keys("purchasing", back, f"ceo guard: {'; '.join(bad)} (CEO keys only)")
         st.update(mode="shadow", live_since=None, shadow_since=now, auto_live_at=None,
-                  reverts=st.get("reverts", []) + [{"ts": now, "why": bad}])
-        decisions.record("ceo", "revert", "mode", "shadow", "; ".join(bad))
+                  reverts=st.get("reverts", []) + [{"ts": now, "why": bad, "keys": back}])
+        decisions.record("ceo", "revert", "mode", {"mode": "shadow", "keys": back}, "; ".join(bad) + note)
         alerts.send("urgent", "ceo_revert", f"CEO policy reverted to step 6 (shadow): {'; '.join(bad)}. "
-                                            f"Live {cur['hours']} h vs the same hours a day before.", log)
+                                            f"Live {cur['hours']} h vs the same hours a day before. CEO keys back to "
+                                            f"{back}; limits and analyst approvals unchanged.{note}", log)
     return bad
 
 
@@ -276,7 +314,8 @@ def tick(inv, catalog, log=print):
         guard(st, now, log)
         if st.get("mode") == "shadow" and st.get("auto_live_at") and now >= st["auto_live_at"]:
             if st.get("runs", 0) >= 12 and not st.get("errors"):
-                st.update(mode="live", live_since=now)
+                st.update(mode="live", live_since=now,     # pre_live: the values a guard revert goes back to
+                          pre_live={k: policy.get(*k.split(".", 1)) for k in LIVE_KEYS})
                 decisions.record("ceo", "mode", "mode", "live", f"auto after {st['runs']} shadow runs, no errors")
                 alerts.send("info", "ceo_live", f"CEO policy is live (step 7) after {st['runs']} shadow runs.", log)
             else:

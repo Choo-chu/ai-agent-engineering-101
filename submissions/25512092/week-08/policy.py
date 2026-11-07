@@ -134,6 +134,29 @@ def reset(reason, by="ceo_guard"):
     return new
 
 
+def revert_keys(section, values, reason, by="ceo_guard"):
+    """New version with only these keys of one section set back ({key: value}; None removes the key, so the code's
+    own fallback applies again). Every other key, the person's and the analyst's included, stays (person's
+    decision 11/07: the CEO guard reverts the CEO's 4 keys only)."""
+    cur = load()
+    new = {k: v for k, v in cur.items() if k in DEFAULTS}
+    sec = dict(new.get(section) or {})
+    for k, v in values.items():
+        if v is None:
+            sec.pop(k, None)
+        else:
+            sec[k] = _check(section, k, v)
+    new[section] = sec
+    new.update(version=(cur.get("version") or 0) + 1, ts=round(time.time()), by=by, reason=reason)
+    tmp = PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(new, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, PATH)
+    with open(HISTORY, "a", encoding="utf-8") as f:
+        f.write(json.dumps(new, ensure_ascii=False) + "\n")
+    return new
+
+
 def init():
     """policy.json version 1 = DEFAULTS (the values in use before it)."""
     if not os.path.exists(PATH):
