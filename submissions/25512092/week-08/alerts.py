@@ -172,6 +172,11 @@ def watch(reports=None, log=print):
         claim_report(seen, log)
     except Exception as e:
         log(f"[alert] claim report: {type(e).__name__}: {e}")
+    for fn in (poster_check, post_report):
+        try:
+            fn(seen, log)
+        except Exception as e:
+            log(f"[alert] {fn.__name__}: {type(e).__name__}: {e}")
     try:
         avoid_report(seen, log)
     except Exception as e:
@@ -545,6 +550,63 @@ def high_turnover(t0, t1):
     return {"bought": len(rows), "sold": len(hrs),
             "median_h": round(hrs[len(hrs) // 2], 1) if hrs else None,
             "mean_h": round(sum(hrs) / len(hrs), 1) if hrs else None}
+
+
+def poster_check(seen, log=print, now=None):
+    """The buyer poster (analyst process) writes a heartbeat every 5 s; older than 15 min -> no buyer posts: urgent."""
+    now = now or time.time()
+    try:
+        hb = json.load(open(os.path.join(HERE, "logs", "buyer_post_state.json"), encoding="utf-8")).get("heartbeat", 0)
+    except (OSError, ValueError):
+        return None
+    if now - hb > 900:
+        return send("urgent", "buyer_poster_down", f"buyer 글 게시기 멈춤: 마지막 동작 {int((now - hb) / 60)}분 전 "
+                    "(분석관 프로세스 확인). 그동안 buyer 글 없음", log, repeat_s=3600)
+    return None
+
+
+def post_report(seen, log=print, now=None):
+    """Once, 24 h after buyer_post_rule.json 'since' (person's decision 11/07 ~17:10): buyer posts per day, likes per
+    post by kind (forum archive, the posts it saw), the board's buyer forum score; the 24 h after vs before."""
+    now = now or time.time()
+    try:
+        since = json.load(open(os.path.join(HERE, "buyer_post_rule.json"), encoding="utf-8")).get("since")
+    except (OSError, ValueError):
+        return None
+    if not since or now < since + 86400 or seen.get(f"post_report:{int(since)}"):
+        return None
+    seen[f"post_report:{int(since)}"] = now
+    import re
+    import sqlite3
+    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+
+    def win(t0, t1):
+        n, kinds = 0, {}
+        with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
+            for ln in f:
+                if '"action": "post"' in ln and '"target": "buyer' in ln:
+                    d = json.loads(ln)
+                    if t0 <= d["ts"] < t1:
+                        n += 1
+        for text, likes in db.execute("SELECT text, likes FROM forum_posts WHERE author='choo-chu' AND role='buyer' "
+                                      "AND ts>=? AND ts<?", (t0, t1)):
+            m = re.match(r"\[([^\]]+)\]", text or "")
+            k = m.group(1) if m else "기타"
+            a = kinds.setdefault(k, [0, 0])
+            a[0] += 1
+            a[1] += likes or 0
+        forum = [json.loads(b).get("forum") for ts, b in db.execute(
+            "SELECT ts, buyer FROM board_hist WHERE ts>=? AND ts<? ORDER BY ts", (t0, t1)) if b]
+        return {"posts": n, "likes": {k: {"posts": v[0], "per_post": round(v[1] / v[0], 2)} for k, v in kinds.items()},
+                "forum_start": forum[0] if forum else None, "forum_end": forum[-1] if forum else None}
+    a, b = win(since, since + 86400), win(since - 86400, since)
+    db.close()
+    import decisions
+    decisions.record("cs", "post_report", "buyer_poster", {"after": a, "before": b}, "24 h result")
+    f = lambda w: (f"글 {w['posts']}개, forum 점수 {w['forum_start']} -> {w['forum_end']}, 유형별 글당 좋아요 "
+                   + ", ".join(f"{k} {v['per_post']} ({v['posts']}개 집계)" for k, v in w["likes"].items()))
+    return send("daily", f"post_report:{int(since)}", "buyer 글 조정 24시간 결과 (빈 슬롯 채우기, 시세 리포트 72분마다)\n"
+                f"후: {f(a)}\n전: {f(b)}", log)
 
 
 def avoid_report(seen, log=print, now=None):

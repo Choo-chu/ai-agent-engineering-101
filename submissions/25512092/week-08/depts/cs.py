@@ -38,6 +38,8 @@ POST_EVERY_S = 300
 WINDOW_S = 2 * 3600              # report and comparison ads use the last 2 hours
 MIN_N = 3                        # an average needs this many deals in the window
 CALLOUT_MIN_NEW = 2
+BUYER_BY_POSTER = True           # 11/07 ~17:10: buyer posts come from depts/buyer_poster.py (every 5-min slot);
+#                                  run() posts only the shop's line and keeps collecting events
 CALLOUT_AUTO = False             # 11/07 ~15:40 (option B): callouts go out only after the person approves a draft
 #                                  (depts/callout.py, Telegram); the automatic ledger-record callout is off
 CALLOUT_EVERY_S = 6 * 3600
@@ -392,8 +394,10 @@ def run(state_dir, inv, catalog, log=print):
                 __import__("decisions").record("cs", "post", f"shop {it['kind'] if it else 'comparison ad'}",
                                                p["post"][:200], "shop slot, queue order endgame > clearance > want "
                                                "> aging > comparison ad")
-        once = _once(st)                               # a one-off record (forum_once.json) takes the next buyer slot
-        if now - st["buyer_ts"] >= POST_EVERY_S and once:
+        once = None if BUYER_BY_POSTER else _once(st)  # a one-off record (forum_once.json) takes the next buyer slot
+        if BUYER_BY_POSTER:
+            pass
+        elif now - st["buyer_ts"] >= POST_EVERY_S and once:
             _send(state_dir, {k: once[k] for k in ("post", "refs", "as", "thread") if k in once})
             st["once_done"].append(once["key"])
             st["buyer_ts"] = now

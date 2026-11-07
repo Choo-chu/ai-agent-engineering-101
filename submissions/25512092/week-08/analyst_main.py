@@ -24,6 +24,9 @@ callout.register()                                    # 11/07: grade-claim callo
 
 def main():
     analyst.log("analyst started")
+    import threading
+    from depts import buyer_poster                      # 11/07 ~17:10: buyer forum posts, one per 5-min slot
+    threading.Thread(target=buyer_poster.loop, kwargs={"log": analyst.log}, daemon=True).start()
     if "--test" in sys.argv:
         analyst.send_proposal("test", "test.no_effect", "ok", "시험 제안입니다. 아무 버튼이나 눌러 보세요 (승인해도 바뀌는 것 없음).")
     while True:
