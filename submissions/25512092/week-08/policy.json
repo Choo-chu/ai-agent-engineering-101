@@ -42,8 +42,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 5,
- "ts": 1794030332,
+ "version": 7,
+ "ts": 1794040197,
  "by": "person",
- "reason": "person's decision 11/07 ~14:45: MY_SHARE 0.25 -> 0.5 (buying expansion)"
+ "reason": "person: 되돌리기 purchasing.perishable_trial_qty -> 2"
 }

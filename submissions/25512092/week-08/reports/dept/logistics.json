@@ -1,30 +1,43 @@
 {
  "metrics": {
-  "cash": 2632628,
-  "stock_cost": 8902727,
-  "units": 283,
-  "storage_per_day": 89027,
-  "near_expiry_12h": 24,
-  "goods_over_48h": 0,
+  "cash": 10127020,
+  "stock_cost": 14309184,
+  "units": 349,
+  "storage_per_day": 143092,
+  "near_expiry_12h": 8,
+  "goods_over_48h": 2,
   "high_over_24h": 0,
   "perishable_24h": {
-   "bought": 164,
-   "sold": 155,
-   "wasted": 0,
-   "waste_cost": 0
+   "bought": 251,
+   "sold": 250,
+   "wasted": 3,
+   "waste_cost": 34937
   }
  },
- "disposal_candidates": [],
+ "disposal_candidates": [
+  {
+   "unit": "u-a592b8c0c6bf",
+   "sku": "Gc85fc68e",
+   "cost": 7606,
+   "hours": 56
+  },
+  {
+   "unit": "u-9b44a7f67014",
+   "sku": "Gc85fc68e",
+   "cost": 8145,
+   "hours": 56
+  }
+ ],
  "issues": [
   {
-   "level": "info",
-   "text": "stock at cost 8,902,727 within 5% of STOCK_CAP",
+   "level": "warn",
+   "text": "3 perishable units wasted in 24 h (34,937)",
    "refs": []
   }
  ],
  "dept": "logistics",
- "ts": 1793976950,
- "policy_version": 2,
+ "ts": 1794063367,
+ "policy_version": 7,
  "window_h": 6,
  "requests": []
 }

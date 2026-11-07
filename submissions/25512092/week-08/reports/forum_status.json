@@ -1,0 +1,236 @@
+{
+ "time": "11-07 23:46",
+ "posts_24h": 10352,
+ "posts_in_archive": 10352,
+ "mentions": {
+  "24h": 386,
+  "2h": 34,
+  "negative_24h": 0,
+  "ids_2h": [
+   35925,
+   35941,
+   35977,
+   36053,
+   36055,
+   36104,
+   36133,
+   36180,
+   36219,
+   36298
+  ]
+ },
+ "my_posts": {
+  "by_type": {
+   "report": {
+    "n": 43,
+    "avg_likes": 0.84,
+    "avg_dislikes": 0.0
+   },
+   "shop": {
+    "n": 215,
+    "avg_likes": 0.0,
+    "avg_dislikes": 0.0
+   },
+   "purchase": {
+    "n": 179,
+    "avg_likes": 7.12,
+    "avg_dislikes": 0.0
+   },
+   "other": {
+    "n": 6,
+    "avg_likes": 6.83,
+    "avg_dislikes": 0.0
+   }
+  },
+  "likes_gained_1h": 40
+ },
+ "wanted": {
+  "last_2h": {
+   "skus": [],
+   "cats": [
+    [
+     "조리/가공 과일",
+     3
+    ],
+    [
+     "조리/가공 견과류",
+     3
+    ],
+    [
+     "조리/가공 야채",
+     3
+    ],
+    [
+     "가공/조리 생선",
+     2
+    ],
+    [
+     "가공/조리 육류",
+     2
+    ],
+    [
+     "가공/조리 해조류",
+     2
+    ],
+    [
+     "가공/조리 오징어/문어류",
+     2
+    ],
+    [
+     "신선생선",
+     2
+    ]
+   ]
+  },
+  "prev_2h": {
+   "skus": [],
+   "cats": [
+    [
+     "커피/차",
+     3
+    ],
+    [
+     "조리/가공 과일",
+     3
+    ],
+    [
+     "조리/가공 견과류",
+     3
+    ],
+    [
+     "가공/조리 생선",
+     3
+    ],
+    [
+     "가공/조리 육류",
+     3
+    ],
+    [
+     "조리/가공 야채",
+     3
+    ],
+    [
+     "가공/조리 해조류",
+     3
+    ],
+    [
+     "가공/조리 오징어/문어류",
+     3
+    ]
+   ]
+  }
+ },
+ "dislike_swarms": [
+  {
+   "id": 36796,
+   "author": "bright-living",
+   "dislikes_30m": 5
+  }
+ ],
+ "injection_24h": {
+  "n": 0,
+  "authors": []
+ },
+ "strategy_keywords_24h": {
+  "대출/loan": {
+   "n": 170,
+   "authors": [
+    "Jaehoonang",
+    "inextro",
+    "q00"
+   ]
+  },
+  "담합/collusion": {
+   "n": 225,
+   "authors": [
+    "inextro",
+    "totato2203-r3"
+   ]
+  },
+  "보증/warranty": {
+   "n": 3714,
+   "authors": [
+    "11im",
+    "25512088",
+    "25620027",
+    "26512076",
+    "Jaehoonang",
+    "Kiro729"
+   ]
+  },
+  "싫어요/dislike": {
+   "n": 211,
+   "authors": [
+    "inextro",
+    "lee3q",
+    "totato2203-r3"
+   ]
+  }
+ },
+ "class": {
+  "class_size": 44,
+  "my_rank": 18,
+  "near": [
+   {
+    "rank": 15,
+    "player": "MJforge",
+    "total": 1.35,
+    "me": false,
+    "posts_2h": 28,
+    "avg_likes_2h": 5.14
+   },
+   {
+    "rank": 16,
+    "player": "psyoung82",
+    "total": 1.342,
+    "me": false,
+    "posts_2h": 20,
+    "avg_likes_2h": 6.6
+   },
+   {
+    "rank": 17,
+    "player": "thisjonghoon",
+    "total": 1.328,
+    "me": false,
+    "posts_2h": 17,
+    "avg_likes_2h": 6.71
+   },
+   {
+    "rank": 18,
+    "player": "Choo-chu",
+    "total": 1.302,
+    "me": true,
+    "posts_2h": 43,
+    "avg_likes_2h": 3.6
+   },
+   {
+    "rank": 19,
+    "player": "kcwarni",
+    "total": 1.299,
+    "me": false,
+    "posts_2h": 21,
+    "avg_likes_2h": 6.43
+   },
+   {
+    "rank": 20,
+    "player": "11im",
+    "total": 1.269,
+    "me": false,
+    "posts_2h": 26,
+    "avg_likes_2h": 2.62
+   },
+   {
+    "rank": 21,
+    "player": "olstjr",
+    "total": 1.239,
+    "me": false,
+    "posts_2h": 20,
+    "avg_likes_2h": 5.45
+   }
+  ]
+ },
+ "criticism_total": {
+  "buyer": 5,
+  "shop": 0
+ }
+}

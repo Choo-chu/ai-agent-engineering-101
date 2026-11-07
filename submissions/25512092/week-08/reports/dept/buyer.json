@@ -1,16 +1,16 @@
 {
  "metrics": {
-  "tries": 473,
-  "deals": 179,
-  "paid": 155,
-  "surplus": 10408690,
-  "saved_sum": 61.773,
-  "saved_avg": 0.3985
+  "tries": 322,
+  "deals": 148,
+  "paid": 137,
+  "surplus": 5767778,
+  "saved_sum": 63.476,
+  "saved_avg": 0.4633
  },
  "issues": [],
  "dept": "buyer",
- "ts": 1793976950,
- "policy_version": 2,
+ "ts": 1794063367,
+ "policy_version": 7,
  "window_h": 6,
  "requests": []
 }
