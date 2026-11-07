@@ -304,7 +304,11 @@ def guard(st, now, log):
                                         "where": f"policy.json > purchasing.{k}"} for k, v in back.items()],
                              "CEO 가드: 라이브 구간이 하루 전 같은 시간보다 나빠짐 -> CEO 키를 7단계 시작 값으로, CEO는 shadow",
                              evidence="; ".join(bad) + note + f" (live {cur['hours']} h: " +
-                             ", ".join(f"{k} {summary[k][0]} vs {summary[k][1]}" for k in ("sales", "profit", "stars")) + ")",
+                             ", ".join(f"{k} {summary[k][0]} vs {summary[k][1]}" for k in ("sales", "profit", "stars")) + ")"
+                             + f"\n비교 기간: 라이브 {datetime.fromtimestamp(A):%m-%d %H:%M}~{datetime.fromtimestamp(now):%m-%d %H:%M}"
+                               f" vs 하루 전 같은 시간 {datetime.fromtimestamp(A - 86400):%m-%d %H:%M}~"
+                               f"{datetime.fromtimestamp(now - 86400):%m-%d %H:%M}"
+                             + "\n예상 효과: CEO 키 4개가 7단계 시작 값으로 돌아가고, 다시 live로 바꿀 때까지 CEO는 제안만 기록",
                              version=(f"v{v0}", f"v{new_v}"), next_at="없음 (CEO shadow, 다시 live는 사람 결정)", log=log)
         st.update(mode="shadow", live_since=None, shadow_since=now, auto_live_at=None,
                   reverts=st.get("reverts", []) + [{"ts": now, "why": bad, "keys": back}])
@@ -372,9 +376,22 @@ def tick(inv, catalog, log=print):
                 decisions.record("ceo", "policy", f"{s}.{k}", v, why)
             log(f"[ceo] live: policy v{new['version']}: {reason}")
             hold = min((now + (86400 if k in ("high_share", "high_max") else KEY_HOLD_S)) for s, k, v, why in props)
+            ev = []                                      # 11/07 ~16:20: every number, the period, the effect
+            try:
+                from depts import ceo_detail
+                rep = dept_reports.load()
+                for s, k, v, why in props:
+                    if old[f"{s}.{k}"] == v:             # unchanged keys are not in the notice
+                        continue
+                    dt = ceo_detail.detail(s, k, old[f"{s}.{k}"], v, inv, catalog, rep, now)
+                    ev.append(f"[{s}.{k}]\n" + "\n".join(f"  {x}" for x in dt["numbers"])
+                              + f"\n  비교 기간: {dt['period']}\n  예상 효과: {dt['effect']}")
+            except Exception as e:
+                ev.append(f"(근거 상세 실패: {type(e).__name__}: {e})")
             policy_notify.notify("ceo", [{"key": f"{s}.{k}", "old": old[f"{s}.{k}"], "new": v,
                                           "where": f"policy.json > {s}.{k}"} for s, k, v, why in props],
-                                 "; ".join(why for s, k, v, why in props), version=(f"v{v0}", f"v{new['version']}"),
+                                 "; ".join(why for s, k, v, why in props), evidence="\n" + "\n".join(ev),
+                                 version=(f"v{v0}", f"v{new['version']}"),
                                  next_at=f"{datetime.fromtimestamp(now + RUN_EVERY_S):%m-%d %H:%M} (30분마다), 이 키 "
                                          f"다음 변경 가능 {datetime.fromtimestamp(hold):%m-%d %H:%M}", log=log)
         else:
