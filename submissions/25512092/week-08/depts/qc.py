@@ -24,6 +24,26 @@ HIGH_MAX = 1_000_000            # ... up to this (11/06: was 500,000; sofas cost
 START_SHARE, START_MAX = 0.30, 2
 SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.60, 30   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
 #                                                     11/07 ~16:05: SHARE_CAP 0.5 -> 0.6, MAX_CAP 20 -> 30 (share 0.6, units 28)
+HOLD_S = 24 * 3600   # 11/07 ~16:10 (person's decision): for 24 h after buying expansion 2 is applied, no rule lowers
+#                      the high-price share (0.6) or units held (28); raising stays allowed. buy_expand.json since2.
+
+
+def split_floor(now=None):
+    """{"high_share": 0.6, "high_max": 28} while the hold after buying expansion 2 runs, else None."""
+    import json
+    import os
+    try:
+        j = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                        "buy_expand.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    t = j.get("since2")
+    now = now or time.time()
+    if not t or not (t <= now < t + HOLD_S):
+        return None
+    return {"high_share": (j.get("high_share2") or [0, 0.6])[1], "high_max": (j.get("high_max2") or [0, 28])[1]}
+
+
 STALE_SHARE = 0.20   # 11/07 ~16:05 (person's decision): the share is cut only when >= 20% of the high-price units held
 #                      are unsold > 24 h (was: any one of them)
 #                                                     10 -> 20 on 11/07 ~14:45 (units held 8 -> 18, person's decision)
@@ -297,6 +317,11 @@ def daily(db, inv, catalog, log):
         reason = f"high profit/cost {pct(hr)} >= low {pct(lr)}"
     else:
         reason = f"no change (high {pct(hr)}, low {pct(lr)})"
+    fl = split_floor(now)
+    if fl and (share < fl["high_share"] or cap < fl["high_max"]):     # 24 h hold after buying expansion 2
+        reason += (f"; held: share {share:.0%} -> {fl['high_share']:.0%}, units {cap} -> {fl['high_max']} "
+                   f"(no lowering for 24 h after expansion 2)")
+        share, cap = max(share, fl["high_share"]), max(cap, fl["high_max"])
     db.execute("INSERT INTO policy VALUES (?,?,?,?)", (now, share, cap, f"{day:%Y-%m-%d}: {reason}"))
     __import__("decisions").record("ceo", "buying_split", "high_share/high_max", {"high_share": share, "high_max": cap},
                                    f"{day:%Y-%m-%d}: {reason}")

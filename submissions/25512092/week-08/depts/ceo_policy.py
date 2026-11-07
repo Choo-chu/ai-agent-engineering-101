@@ -138,8 +138,14 @@ def proposals(inv, catalog, reports, st, now):
         st["split_day"] = day
         new, why = split_rule(inv, catalog, now)
         cur = current_split()
+        from depts.qc import split_floor
+        fl = split_floor(now)                        # 11/07 ~16:10: 24 h after buying expansion 2, no lowering
         if new:
             for k, v in new.items():
+                if fl and v < fl[k]:
+                    decisions.record("ceo", "held", f"purchasing.{k}", v, f"daily buying split ({why}) would lower "
+                                     f"{k} below {fl[k]}: held for 24 h after buying expansion 2")
+                    continue
                 if v != cur[k]:
                     out.append(("purchasing", k, v, f"daily buying split: {why}"))
         decisions.record("ceo", "rule", "buying_split", new, why)
