@@ -126,6 +126,20 @@ def split_rule(inv, catalog, now):
     return None, f"no change (high {sales_report.pct(hr)}, low {sales_report.pct(lr)})"
 
 
+def trial_rule(inv, catalog, now):
+    """perishable_trial_qty (person's decision 11/07 ~16:40): only '부패주의' units wasted in the last 24 h that came
+    from a trial buy count (1 if any, else 2); normal-buy waste stays in the logistics report and its alert."""
+    from depts import ceo_detail
+    db = connect()
+    try:
+        units = ceo_detail.wasted_units(db, now - 86400, now, catalog, inv)
+    finally:
+        db.close()
+    t = [u for u in units if u["trial"]]
+    return (1 if t else 2), (f"trial-buy perishable units wasted in 24 h: {len(t)} (normal-buy waste {len(units) - len(t)} "
+                             f"not counted)")
+
+
 def proposals(inv, catalog, reports, st, now):
     """[(section, key, value, reason)] that differ from the policy in force."""
     out = []
@@ -161,10 +175,9 @@ def proposals(inv, catalog, reports, st, now):
     if spend is not None and spend != policy.get("purchasing", "spend_share"):
         out.append(("purchasing", "spend_share", spend, why))
 
-    wasted = ((lg.get("perishable_24h") or {}).get("wasted")) or 0
-    trial = 1 if wasted else 2
+    trial, why = trial_rule(inv, catalog, now)
     if trial != policy.get("purchasing", "perishable_trial_qty"):
-        out.append(("purchasing", "perishable_trial_qty", trial, f"perishable wasted in 24 h: {wasted}"))
+        out.append(("purchasing", "perishable_trial_qty", trial, why))
 
     held = []
     for sec, k, v, why in out:

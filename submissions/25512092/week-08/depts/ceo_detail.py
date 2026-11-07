@@ -56,7 +56,9 @@ def wasted_units(db, t0, t1, catalog, inv):
         shelf = catalog[sku].get("shelf_hours") or 0
         exp = supplied + shelf * 3600
         if t0 <= exp < t1 and exp <= now:
-            trial = any(supplied - 1800 <= ts <= supplied + 60 for ts in trials.get(name or "", []))
+            # decision targets keep only the first 60 characters of the item: match the name by prefix
+            trial = any(supplied - 1800 <= ts <= supplied + 60 for tn, tss in trials.items()
+                        if tn and (name or "").startswith(tn) for ts in tss)
             out.append({"unit": unit, "sku": sku, "name": (name or sku)[:30], "cost": cost or 0, "bought": supplied,
                         "shelf_h": shelf, "expired": exp, "trial": trial})
     return out
@@ -99,7 +101,8 @@ def detail(sec, k, old, new, inv, catalog, reports, now=None):
             lines.append(f"외 {len(units) - 10}개")
         trial_cost = sum(u["cost"] for u in units if u["trial"])
         lines.append(f"그중 시험 매입분 {sum(u['trial'] for u in units)}개 (원가 {trial_cost:,})")
-        lines.append("규칙: 24시간 안에 폐기 1개 이상이면 시험 매입 1개, 없으면 2개")
+        lines.append("규칙 (11/07 ~16:40부터): 24시간 안에 시험 매입분 폐기가 1개 이상이면 시험 매입 1개, 없으면 2개. "
+                     "일반 매입분 폐기는 이 키 판단에 쓰지 않음 (물류 보고·알림에만)")
         return {"numbers": lines, "period": f"최근 24시간 ({_t(now - 86400)}~{_t(now)}) 동안 유통기한이 끝난 유닛",
                 "effect": (f"내 판매 기록이 없는 부패주의 품목의 시험 매입 {old} -> {new}개: "
                            + ("폐기 위험을 절반으로" if new < (old or 0) else "판매 기회를 늘림, 폐기 위험도 같이 늘어남"))}
