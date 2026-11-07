@@ -233,14 +233,15 @@ def precheck(task, text, kind, need_hours):
 INJECTION_MIN_OFFERS = 3
 
 
-def code_move(ask, last, n_offers, budget, first_offer):
-    """The buyer's move after a seller message flagged as an injection (person's decision 11/07 ~19:00): no LLM, no
-    accept. Offers step up a third of the gap to the ask each time (the first one: the variant's share of the ask),
-    never above ask - 1 or the budget; after INJECTION_MIN_OFFERS offers, once my last offer was already the most I
-    can pay (the budget, or ask - 1), walk. A deal happens only if the seller accepts my offer."""
+def code_move(ask, last, n_offers, budget, first_offer, market_avg=None):
+    """The buyer's move after a seller message flagged as an injection (person's decisions 11/07 ~19:00, ~19:15): no
+    LLM, no accept. Offers step up a third of the gap to the ask each time (the first one: the variant's share of the
+    ask), never above the top: the market average (without one, the buyer's usual cap = budget), never above the
+    budget; after INJECTION_MIN_OFFERS offers, once my last offer was already the top and the seller still did not take
+    it, walk. A deal happens only if the seller accepts my offer (an offer above the ask is cut to the ask later)."""
     if ask is None:
         return {"action": "offer", "price": last} if last is not None else {"action": "walk"}
-    top = max(1, min(budget, ask - 1))
+    top = max(1, min(budget, int(market_avg))) if market_avg else max(1, budget)
     if n_offers >= INJECTION_MIN_OFFERS and last is not None and last >= top:
         return {"action": "walk"}
     step = int(ask * first_offer) if last is None else last + max(1, (ask - last) // 3)
@@ -305,7 +306,7 @@ def ask_price(text, budget=None):
 
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
-              force_first=False, kind=None, need_hours=None, tactic_line=None):
+              force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
@@ -364,7 +365,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                                    first_pct=round(100 * first_offer))
         if res["injection"]:                          # 11/07 ~19:00: the code finishes this negotiation, no LLM
             res["code_injection"] = True
-            d = code_move(ask, last, n_offers, budget, first_offer)
+            d = code_move(ask, last, n_offers, budget, first_offer, market_avg)
             log(f"[injection] code move: {d['action']} {d.get('price', '')}")
             if d["action"] == "walk":
                 log("WALK (code, injection: my budget offer was not taken after 3 offers)")
@@ -543,13 +544,14 @@ def main():
     tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
     for i, c in enumerate(tries):
         chosen = c
-        first, cap, market = None, args.budget, ""
+        first, cap, market, avg_now = None, args.budget, "", None
         min_offers = min_offers_for(c["shop_score"], c["name"])      # 1 at shops where the rule keeps failing
         if mo_variant is not None and min_offers > 1:
             min_offers = int(mo_variant)
         offers = next((s.get("offers") for s in shops if s["name"] == c["name"]), None)
         if offers:  # Round 3: pick the SKU, then cap the price at the market average (never above it)
             o, avg, n = pick_sku(offers, stats, catalog, args.budget)
+            avg_now = avg                              # injection mode's top offer (code_move)
             first = f"I want to buy {o['name']} ({o['sku']})"
             sku = o["sku"]
             if avg is not None and case == "normal":
@@ -575,7 +577,8 @@ def main():
         try:
             res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer,
                             force_first=variant_key is not None, kind=order.get("kind"),
-                            need_hours=order.get("use_within_hours"), tactic_line=t_line)
+                            need_hours=order.get("use_within_hours"), tactic_line=t_line,
+                            market_avg=avg_now)
             res["secs"] = round(time.time() - t_neg, 1)
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
