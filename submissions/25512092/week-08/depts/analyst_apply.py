@@ -329,8 +329,13 @@ def check_approvals(now=None):
             d.commit()
         finally:
             d.close()
-        bad = ceo_policy.worse(after, before, min_sales=10, min_accounts=5, min_paid=5)
+        # person's decision 11/07 ~14:50: a limits key (STOCK_CAP, HIGH_MAX, CASH_RESERVE) is a shop key, so buyer
+        # Saved is not a condition for it (buyer experiments run); other keys (buyer keys included) keep it
+        buyer = not p["key"].startswith("limits.")
+        bad = ceo_policy.worse(after, before, min_sales=10, min_accounts=5, min_paid=5, buyer=buyer)
         summary = {k: [after[k], before[k]] for k in ("sales", "profit", "stars", "buyer_paid", "buyer_saved_sum")}
+        if not buyer:
+            summary["buyer_saved"] = "information only (limits key)"
         decisions.record("analyst", "approval_check", p["key"], summary, f"#{p['id']}: " + ("; ".join(bad) or "not worse"))
         if bad:
             _auto_revert(p, f"반영 전후 {CHECK_H}시간 비교에서 나빠짐: {'; '.join(bad)}")
