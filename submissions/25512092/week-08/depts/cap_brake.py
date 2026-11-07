@@ -91,12 +91,41 @@ def fire(r, m, trips, log=print):
     log(f"cap brake fired: {old:,} -> {r['low']:,}: {trips}")
 
 
+def end_cap(log=print, now=None):
+    """Scheduled (person's decision 11/07 ~22:00): from limits.CAP_END_AT, STOCK_CAP above limits.CAP_END goes down to
+    it once (limits.py, commit + push, Telegram); the brake is switched off then (the cap is at its low already)."""
+    import limits
+    now = now or time.time()
+    if now < limits.CAP_END_AT:
+        return
+    import alerts
+    import decisions
+    from depts import analyst_apply
+    old = analyst_apply.current_limit("limits.STOCK_CAP")       # reloads limits.py
+    if old <= limits.CAP_END:
+        return
+    paths = analyst_apply.edit_limit("limits.STOCK_CAP", limits.CAP_END, "end", now)
+    head = analyst_apply.git_commit(list(paths), f"week-08 STOCK_CAP end of round (scheduled 11/15 23:59): {old:,} -> "
+                                                 f"{limits.CAP_END:,}")
+    r = rules()
+    if r.get("enabled"):
+        r.update(enabled=False, ended=round(now))
+        with open(RULES, "w", encoding="utf-8") as f:
+            json.dump(r, f, ensure_ascii=False, indent=1)
+    decisions.record("purchasing", "cap_end", "limits.STOCK_CAP", [old, limits.CAP_END], "scheduled 11/15 23:59 "
+                     "(person's decision 11/07 ~22:00); food bought only if it lasts past the round end from now")
+    alerts.send("urgent", "cap_end", f"막판 예약 적용: STOCK_CAP {old:,} -> {limits.CAP_END:,} (커밋 {head}). 지금부터 식품은 "
+                "소비기한이 11/17 23:59 이후까지 남는 것만 매입, 공산품은 11/16 11:59 매입 중단까지 그대로", log=log)
+    log(f"cap end: {old:,} -> {limits.CAP_END:,}")
+
+
 def tick(log=print, now=None):
     global _last
     now = now or time.time()
     if now - _last < CHECK_S:
         return
     _last = now
+    end_cap(log=log, now=now)
     r = rules()
     if not r.get("enabled"):
         return

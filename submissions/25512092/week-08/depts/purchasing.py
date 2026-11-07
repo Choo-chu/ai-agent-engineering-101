@@ -12,7 +12,7 @@ import policy
 import pricing
 import sales_report
 import strategy
-from limits import MAX_LINES, MAX_QTY  # noqa: F401
+from limits import FOOD_TO_END_FROM, MAX_LINES, MAX_QTY, ROUND_END  # noqa: F401
 from market_db import ME, connect, load_stats, price_of
 from sales_report import HIGH_MAX, HIGH_MIN
 
@@ -158,6 +158,8 @@ def make_plan(inv, units, catalog, budget, log):
         kind = c.get("kind", "goods")
         if kind == "food" and (c.get("shelf_hours") or 0) < FOOD_MIN_SHELF_H:
             continue
+        if kind == "food" and time.time() >= FOOD_TO_END_FROM                 and time.time() + (c.get("shelf_hours") or 0) * 3600 < ROUND_END:
+            continue                              # 11/15 23:59 on: food that would expire before the round ends
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
         if cost > HIGH_MAX or avg < cost * (1 + MIN_MARGIN):
             continue

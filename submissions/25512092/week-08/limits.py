@@ -18,6 +18,14 @@ STOCK_CAP_CHANGES = [(1793948058, 5_000_000),   # 11/06 15:54 KST, 4.0M -> 5.0M
 # round timing (local time, KST)
 ROUND_END = datetime(2026, 11, 17, 23, 59).timestamp()
 RESTOCK_STOP_H = 36           # no restock in the last 36 h
+# end of round (person's decision 11/07 ~22:00), scheduled only:
+#   at CAP_END_AT (11/15 23:59, when the endgame starts) STOCK_CAP goes to CAP_END (depts/cap_brake.py, analyst process,
+#   commit + push + Telegram; nothing happens if the cap is already at or under it)
+#   from FOOD_TO_END_FROM, food is bought only if its shelf life lasts past ROUND_END (depts/purchasing.py)
+#   goods: unchanged until the restock stop (RESTOCK_STOP_H, 11/16 11:59)
+CAP_END_AT = datetime(2026, 11, 15, 23, 59).timestamp()
+CAP_END = 15_000_000
+FOOD_TO_END_FROM = datetime(2026, 11, 15, 23, 59).timestamp()
 ENDGAME_MIN = 1.00            # the endgame floor never goes under cost x this (ALL ranks shops by book)
 
 # when the other limits changed (epoch, new value); HIGH_MAX itself lives in depts/qc.py (sales_report.HIGH_MAX)
