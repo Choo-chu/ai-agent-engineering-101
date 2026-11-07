@@ -355,7 +355,10 @@ def _once(st):
             items = json.load(f)
     except (OSError, ValueError):
         return None
-    return next((it for it in items if it.get("key") not in st["once_done"]), None)
+    # 11/07 ~16:00 (person's decision): an approved callout (relapse included) has "prio": 0 and goes first, even when
+    # older one-off records wait; praise and every other record (no prio: 1) after it, in file order
+    todo = [it for it in items if it.get("key") not in st["once_done"]]
+    return min(todo, key=lambda it: it.get("prio", 1)) if todo else None
 
 
 def _pop(st, role, render):
