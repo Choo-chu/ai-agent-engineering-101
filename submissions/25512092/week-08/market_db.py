@@ -249,7 +249,9 @@ def board_snapshot(db, now, log=print):
 WANT = re.compile(r"구합니다|구해요|찾습니다|찾아요|삽니다|wanted|looking for|want to buy|need", re.I)
 SKU_RE = re.compile(r"G[0-9a-f]{8}")
 FORUM_PATH = os.path.join(HERE, ".market", "forum.json")
-BAD_DISHONEST = 2          # a shop with this many dishonest grade claims is avoided
+BAD_DISHONEST = 2          # a shop with this many dishonest grade claims is avoided ...
+BAD_DISHONEST_SHARE = 0.05  # ... and only when they are at least this share of its settles (person's decision 11/07
+#                            ~16:10: a count alone blocked Kiro729 / 11im / winun1127 at 0.1-0.5% untrue claims)
 BAD_BROKEN_SHARE = 0.10    # ... or with this share of its sold units broken (at least 3)
 
 
@@ -352,7 +354,8 @@ def signals(db, names):
                 flag(url, "forum_dishonest")
                 flag(names.get(url), "forum_dishonest")
     for f in flags.values():
-        f["bad"] = (f["dishonest"] + f["forum_dishonest"] >= BAD_DISHONEST
+        d = f["dishonest"] + f["forum_dishonest"]
+        f["bad"] = ((d >= BAD_DISHONEST and d / max(f["deals"], 1) >= BAD_DISHONEST_SHARE)
                     or (f["broken"] >= 3 and f["broken"] / max(f["deals"], 1) >= BAD_BROKEN_SHARE))
     sku_n = {sku: n for sku, n in db.execute("SELECT sku, COUNT(*) FROM settles GROUP BY sku HAVING COUNT(*) >= 5")}
     grade_break = {}                              # per grade: breaks / units sold, over SKUs that ever broke;

@@ -10,6 +10,7 @@ The same alert key is sent at most once per REPEAT_S.
 """
 import json
 import os
+import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -171,6 +172,10 @@ def watch(reports=None, log=print):
         claim_report(seen, log)
     except Exception as e:
         log(f"[alert] claim report: {type(e).__name__}: {e}")
+    try:
+        avoid_report(seen, log)
+    except Exception as e:
+        log(f"[alert] avoid report: {type(e).__name__}: {e}")
     try:
         expand_report(seen, log)
     except Exception as e:
@@ -540,6 +545,29 @@ def high_turnover(t0, t1):
     return {"bought": len(rows), "sold": len(hrs),
             "median_h": round(hrs[len(hrs) // 2], 1) if hrs else None,
             "mean_h": round(sum(hrs) / len(hrs), 1) if hrs else None}
+
+
+def avoid_report(seen, log=print, now=None):
+    """Once, 24 h after avoid_rule.json 'since' (person's decision 11/07 ~16:10: avoid a shop for untrue grade claims
+    only with >= 2 of them AND >= 5% of its settles): buyer deal rate, ledger skips, missed deals, deals with the shops
+    no longer avoided; the 24 h after vs the 24 h before (tools/avoid_stats.py)."""
+    now = now or time.time()
+    try:
+        since = json.load(open(os.path.join(HERE, "avoid_rule.json"), encoding="utf-8")).get("since")
+    except (OSError, ValueError):
+        return None
+    if not since or now < since + 86400 or seen.get(f"avoid_report:{int(since)}"):
+        return None
+    seen[f"avoid_report:{int(since)}"] = now
+    sys.path.insert(0, os.path.join(HERE, "tools"))
+    import avoid_stats
+    a, b = avoid_stats.window(since, since + 86400), avoid_stats.window(since - 86400, since)
+    import decisions
+    decisions.record("buyer", "avoid_report", "market_db.BAD_DISHONEST_SHARE", {"after": a, "before": b}, "24 h result")
+    f = lambda w: (f"주문 {w['orders']}, 성사율 {w['deal_rate']}, 성사 {w['deals']}, 원장 플래그로 건너뛴 주문 "
+                   f"{w['ledger_skips']}, 놓친 거래 {w['missed']}, 회피 해제 가게와 성사 {w['unblocked_deals']}")
+    return send("daily", f"avoid_report:{int(since)}", "회피 기준 변경(2건 이상 + 정산 5% 이상) 24시간 결과\n"
+                f"후: {f(a)}\n전: {f(b)}", log)
 
 
 def expand_report(seen, log=print, now=None):
