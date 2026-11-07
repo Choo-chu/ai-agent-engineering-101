@@ -128,7 +128,34 @@ def fmt(m):
     return ", ".join(f"{k} {v}" for k, v in m.items())
 
 
+def rule_counts(t0, t1):
+    """11/07 ~18:30: stop-loss and buy-guard activity in [t0, t1): negotiations started at the stop-loss floor and
+    their receipts (seller first_ask decisions with 'rule stoploss', shop_haggle / shop_deals), and high-price buys
+    the guard skipped (buy_guard_skip decisions)."""
+    neg, skips = 0, 0
+    with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
+        for ln in f:
+            if '"buy_guard_skip"' in ln or "rule stoploss" in ln:
+                d = json.loads(ln)
+                if not (t0 <= d["ts"] < t1):
+                    continue
+                if d.get("action") == "buy_guard_skip":
+                    skips += 1
+                elif d.get("action") == "first_ask":
+                    neg += 1
+    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+    try:
+        rc = db.execute("SELECT COUNT(*), COALESCE(SUM(d.price - d.cost), 0) FROM shop_haggle h JOIN shop_deals d ON "
+                        "d.task=h.task WHERE h.rule='stoploss' AND d.outcome='receipt' AND d.ts>=? AND d.ts<?",
+                        (t0, t1)).fetchone()
+    finally:
+        db.close()
+    return {"stoploss_negotiations": neg, "stoploss_receipts": rc[0], "stoploss_margin": rc[1], "guard_skips": skips}
+
+
 def main():
+    if "--seller-only" in sys.argv:                 # restarted after the 16:23 buyer check (11/07 ~18:30)
+        return seller_part()
     log("waiting: buyer check at 16:23, seller switch at 20:05")
     wait(APPLY + 3600)
     a, b = buyer_metrics(APPLY, APPLY + 3600), buyer_metrics(APPLY - 3600, APPLY)
@@ -137,7 +164,11 @@ def main():
     log(f"buyer after: {fmt(a)} | before: {fmt(b)}")
     alerts.send("info", "strict_mcp_buyer", "buyer --strict-mcp-config 1시간 비교 (호가 파싱 수정 같이 적용)\n"
                 f"후: {fmt(a)}\n전: {fmt(b)}", log=log)
+    seller_part()
 
+
+def seller_part():
+    log("waiting: seller switch at 20:05")
     wait(SELLER_AT)
     with open(FLAG, "w", encoding="utf-8") as f:
         json.dump({"seller": True, "since": round(time.time())}, f)
@@ -155,7 +186,10 @@ def main():
     wait(t + 3600)
     a, b = seller_metrics(t, t + 3600), seller_metrics(t - 3600, t)
     bad = worse(a, b)
-    decisions.record("sales", "strict_mcp_check", "harness.CMD", {"after": a, "before": b, "worse": bad},
+    rc = rule_counts(t, t + 3600)                    # information for the person, not a revert condition
+    rc_line = (f"\n손절 규칙: 협상 {rc['stoploss_negotiations']}건, 영수증 {rc['stoploss_receipts']}건 (원가 대비 "
+               f"{rc['stoploss_margin']:+,}); 고가 매입 가드 차단 {rc['guard_skips']}건")
+    decisions.record("sales", "strict_mcp_check", "harness.CMD", {"after": a, "before": b, "worse": bad, "rules": rc},
                      "1 h after vs the hour before")
     log(f"seller after: {fmt(a)} | before: {fmt(b)} | worse: {bad}")
     if bad:
@@ -165,10 +199,10 @@ def main():
         decisions.record("sales", "strict_mcp_off", "harness.CMD", False, "; ".join(bad))
         log(f"reverted, seller restarted (killed {killed})")
         alerts.send("urgent", "strict_mcp_revert", "seller --strict-mcp-config 되돌림 (재시작): " + "; ".join(bad)
-                    + f"\n후: {fmt(a)}\n전: {fmt(b)}", log=log)
+                    + f"\n후: {fmt(a)}\n전: {fmt(b)}" + rc_line, log=log)
     else:
         alerts.send("info", "strict_mcp_seller", "seller --strict-mcp-config 1시간 비교: 나빠진 지표 없음, 유지\n"
-                    f"후: {fmt(a)}\n전: {fmt(b)}", log=log)
+                    f"후: {fmt(a)}\n전: {fmt(b)}" + rc_line, log=log)
     log("done")
 
 

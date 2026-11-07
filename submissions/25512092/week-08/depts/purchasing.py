@@ -60,6 +60,47 @@ BREADTH_MAX = 2
 BREADTH_LINES = 5          # 11/07: at most this many breadth lines per run (restock_c.json breadth_max_lines)
 
 
+GUARD_RULES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "guard_rules.json")
+_surge_live = {}
+
+
+def live_surge(inv, now=None):
+    """{sku: factor} from GET /api/supply-prices, cached 60 s; inventory.json's surge if the call fails."""
+    now = now or time.time()
+    if now - _surge_live.get("ts", 0) > 60:
+        try:
+            import httpx
+            from market_db import MARKET
+            j = httpx.get(f"{MARKET}/api/supply-prices", timeout=5).json()
+            _surge_live.update(ts=now, f={x["sku"]: x.get("factor", 1.0) for x in (j.get("surge") or [])}, src="live")
+        except Exception:
+            _surge_live.update(ts=now, f={x["sku"]: x.get("factor", 1.0) for x in (inv.get("surge") or [])
+                                          if isinstance(x, dict)}, src="inventory")
+    return _surge_live.get("f") or {}
+
+
+def guard_check(sku, c, avg, inv):
+    """High-price buy guard (person's decision 11/07 ~18:30, guard_rules.json): the market draws a unit's cost when it
+    arrives (goods A 55-75%, B 40-60%, C 25-45% of list; food similar), so the guard uses the expected cost: list x
+    share_goods (0.59) or share_food (0.5) x the live surge factor. The expected margin (market average / expected cost
+    - 1) under min_margin (5%) -> a reason string (skip); else None. SKUs without a market average never get here
+    (make_plan skips them before), so their estimate is unchanged."""
+    try:
+        r = json.load(open(GUARD_RULES, encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not r.get("enabled") or not avg or not c.get("list_price"):
+        return None
+    share = r.get("share_food", 0.5) if c.get("kind") == "food" else r.get("share_goods", 0.59)
+    f = live_surge(inv).get(sku, 1.0)
+    est = c["list_price"] * share * f
+    m = avg / est - 1
+    if m < r.get("min_margin", 0.05):
+        return (f"expected cost {int(est):,} (list {c['list_price']:,} x {share} x surge {f} [{_surge_live.get('src')}]), "
+                f"market average {int(avg):,}, expected margin {m:.1%} < {r.get('min_margin', 0.05):.0%}")
+    return None
+
+
 def make_plan(inv, units, catalog, budget, log):
     """The buy lines for this budget (unchanged rules; moved out of main so cap_record can run it without the cap)."""
     held, held_high = {}, 0
@@ -126,6 +167,11 @@ def make_plan(inv, units, catalog, budget, log):
         wide = leaf_of(sku) in breadth
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku):
+                continue
+            g = guard_check(sku, c, avg, inv)
+            if g:                                 # 11/07 ~18:30: expected margin under the guard's minimum
+                if high_room > 0:
+                    log(f"[guard] {s['name'] or sku}: {g} -> skip")
                 continue
             tier, qty = "high", min(1, high_room)
         elif src == "breadth":                    # bundle 2 (13): a SKU I do not hold, 1-2 units
