@@ -300,6 +300,9 @@ class Seller(AgentExecutor):
                                          "key": None, "variant": None, "mult": 1.0,
                                          "haggle": haggle_pick(), "calls": 0,      # 11/07: code vs harness arm
                                          "quoted": quoted, "subst_tier": tier}
+            if quoted:                                  # an offer in the choosing message counts (SKUs left out)
+                m = re.search(r"\d+", substitute.strip_skus(text))
+                deal["offer"] = int(m.group()) if m else None
             if case in ("normal", "overstock"):         # stage 2: one variant per negotiation, by weight
                 key = "shop_normal_ask" if case == "normal" else "shop_overstock_floor"
                 v, w = strategy.pick(key)
@@ -328,6 +331,9 @@ class Seller(AgentExecutor):
                              + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""))
             deal["first_ask"] = ask
             move, raw = {"action": "counter", "price": ask}, "(first ask by code)"
+            if deal.get("quoted") and deal["offer"] is not None and deal["offer"] >= ask:   # 11/07: chose a
+                move, raw = {"action": "accept"}, f"(substitute: offer {deal['offer']} >= quoted {ask})"  # substitute
+                print(f"[subst] {u['sku']} offer {deal['offer']} >= quoted {ask} -> accept", flush=True)  # at >= quote
         elif rule == "sofa" or deal.get("haggle") == "code":   # haggling by code (depts/sofa.py D): sofas, and the
             nxt = sofa.next_counter(deal, reserve)             # 'code' arm of the 11/07 experiment; no harness call
             tag = "sofa" if rule == "sofa" else "code haggle"
