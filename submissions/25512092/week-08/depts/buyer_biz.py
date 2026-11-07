@@ -230,6 +230,44 @@ def precheck(task, text, kind, need_hours):
     return None
 
 
+INJECTION_MIN_OFFERS = 3
+
+
+def code_move(ask, last, n_offers, budget, first_offer):
+    """The buyer's move after a seller message flagged as an injection (person's decision 11/07 ~19:00): no LLM, no
+    accept. Offers step up a third of the gap to the ask each time (the first one: the variant's share of the ask),
+    never above ask - 1 or the budget; after INJECTION_MIN_OFFERS offers, once my last offer was already the most I
+    can pay (the budget, or ask - 1), walk. A deal happens only if the seller accepts my offer."""
+    if ask is None:
+        return {"action": "offer", "price": last} if last is not None else {"action": "walk"}
+    top = max(1, min(budget, ask - 1))
+    if n_offers >= INJECTION_MIN_OFFERS and last is not None and last >= top:
+        return {"action": "walk"}
+    step = int(ask * first_offer) if last is None else last + max(1, (ask - last) // 3)
+    return {"action": "offer", "price": max(1, min(step, top))}
+
+
+REFUSE_FLAGS = ("receipt_mismatch", "item_mismatch", "over_budget")
+
+
+def refuse_receipt(flag, res, shop, item, order_id=None, log=print):
+    """A receipt the buyer judged wrong is not handed to the kit, so it is not paid (person's decision 11/07 ~19:00).
+    True when refused; each refusal is a decision (buyer receipt_refused) and an urgent Telegram."""
+    if flag not in REFUSE_FLAGS or not res.get("receipt"):
+        return False
+    r = res["receipt"]
+    import alerts
+    import decisions
+    decisions.record("buyer", "receipt_refused", r.get("item"), r.get("price"),
+                     f"{flag}: shop {shop}, order {order_id}, item {item}, agreed {res.get('agreed')}, receipt price "
+                     f"{r.get('price')}, receipt item {r.get('item')}; not handed to the kit, not paid")
+    alerts.send("urgent", f"receipt_refused:{r.get('task') or order_id}",
+                f"영수증 결제 거절 ({flag}): {shop}, 합의 {res.get('agreed')}, 영수증 {r.get('price')}, 품목 "
+                f"{r.get('item')} (주문 {item}). kit에 넘기지 않음", log=log, repeat_s=0)
+    log(f"[receipt] refused ({flag}): not handed to the kit")
+    return True
+
+
 def get_receipt(task):
     for art in task.get("artifacts", []) or []:
         for p in art.get("parts", []):
@@ -324,10 +362,20 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                                    ask=ask, last=last if last is not None else "none yet",
                                    n_offers=n_offers, min_offers=min_offers, market=market,
                                    first_pct=round(100 * first_offer))
-        d = ask_harness(prompt)
-        res["harness_calls"] += 1
+        if res["injection"]:                          # 11/07 ~19:00: the code finishes this negotiation, no LLM
+            res["code_injection"] = True
+            d = code_move(ask, last, n_offers, budget, first_offer)
+            log(f"[injection] code move: {d['action']} {d.get('price', '')}")
+            if d["action"] == "walk":
+                log("WALK (code, injection: my budget offer was not taken after 3 offers)")
+                res["ended"] = "walk"
+                client.cancel(tid)
+                return res
+        else:
+            d = ask_harness(prompt)
+            res["harness_calls"] += 1
         res["guard_last"] = False
-        if force_first and n_offers == 0 and ask is not None:
+        if force_first and n_offers == 0 and ask is not None and not res["injection"]:
             # stage 2: the opening offer is the variant's share of the ask, made by the code
             d = {"action": "offer", "price": max(1, min(int(ask * first_offer), budget, ask - 1))}
             log(f"[variant] first offer {first_offer:.0%} of {ask} -> {d['price']}")
@@ -547,7 +595,8 @@ def main():
               "budget": args.budget, "agreed": res["agreed"], "receipt_price": rp,
               "deal": res["deal"], "flag": flag, "stars": stars})
     log(f"stars {stars} ({flag}): {review}")
-    out = {"shop": chosen["url"], "receipt": res["receipt"] if res["deal"] else None,
+    refused = res["deal"] and refuse_receipt(flag, res, chosen["name"], args.item, order.get("order"), log=log)
+    out = {"shop": chosen["url"], "receipt": res["receipt"] if res["deal"] and not refused else None,
            "stars": stars, "review": review}
     accept = {}
     if order.get("use_within_hours"):  # food must last as long as the order needs, or the deal is worth 0
@@ -567,7 +616,11 @@ def main():
 
 
 def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant=None, tactic=None):
-    """[15] / stage 2: one row per negotiation in market.db (buyer_deals)."""
+    """[15] / stage 2: one row per negotiation in market.db (buyer_deals). A negotiation the code finished after an
+    injection (res code_injection, 11/07 ~19:00) is recorded with buyer_case 'injection_code' and no tactic, so the
+    buyer experiments (variant / mo_variant: buyer_case 'normal' only; tactic: tactic not null) leave it out."""
+    if res.get("code_injection"):
+        case, tactic = "injection_code", None
     if res["deal"]:
         outcome, reason = "deal", flag
     elif res.get("skip"):

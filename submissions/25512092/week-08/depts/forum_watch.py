@@ -268,9 +268,10 @@ def flow(day=None, log=print, send=None):
         d.close()
     if not rows:
         return None
-    data = "\n".join(f"[#{r[0]} {r[1]} {r[2]} +{r[3]}/-{r[4]}]{' [INJECTION?]' if INJECTION.search(r[5] or '') else ''} "
-                     + re.sub(r"\s+", " ", r[5] or "")[:160] for r in rows)
-    from depts.analyst_brain import LLM_CMD
+    from depts.analyst_brain import LLM_CMD, clean       # 11/07 ~19:00: the same cleaning as the analyst's input
+    data = "\n".join(f"[#{r[0]} {clean(r[1], 30)[0]} {r[2]} +{r[3]}/-{r[4]}]"
+                     f"{' [INJECTION?]' if INJECTION.search(r[5] or '') or clean(r[5])[1] else ''} " + clean(r[5])[0]
+                     for r in rows)
     try:
         r = subprocess.run(LLM_CMD, shell=True, input=FLOW_PROMPT.format(data=data), capture_output=True, text=True,
                            encoding="utf-8", timeout=240, cwd=tempfile.gettempdir())

@@ -172,7 +172,7 @@ def watch(reports=None, log=print):
         claim_report(seen, log)
     except Exception as e:
         log(f"[alert] claim report: {type(e).__name__}: {e}")
-    for fn in (post_report,):                         # poster_check: replaced by buyer_poster's switch alerts
+    for fn in (post_report, injection_report):        # poster_check: replaced by buyer_poster switch alerts
         try:
             fn(seen, log)
         except Exception as e:
@@ -571,6 +571,47 @@ def poster_check(seen, log=print, now=None):
         return send("urgent", "buyer_poster_down", f"buyer 글 게시기 멈춤: 마지막 동작 {int((now - hb) / 60)}분 전 "
                     "(분석관 프로세스 확인). 그동안 buyer 글 없음", log, repeat_s=3600)
     return None
+
+
+def injection_report(seen, log=print, now=None):
+    """Once, 24 h after injection_rules.json 'since' (person's decision 11/07 ~19:00): receipts the buyer refused
+    (count, amount, by flag) and negotiations the code finished after an injection (count, outcome, paid / list)."""
+    now = now or time.time()
+    try:
+        since = json.load(open(os.path.join(HERE, "injection_rules.json"), encoding="utf-8")).get("since")
+    except (OSError, ValueError):
+        return None
+    if not since or now < since + 86400 or seen.get(f"injection_report:{int(since)}"):
+        return None
+    seen[f"injection_report:{int(since)}"] = now
+    import sqlite3
+    t1 = since + 86400
+    ref, amount, flags = 0, 0, {}
+    with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
+        for ln in f:
+            if '"receipt_refused"' in ln:
+                d = json.loads(ln)
+                if since <= d["ts"] < t1:
+                    ref += 1
+                    amount += int(d.get("value") or 0)
+                    k = (d.get("reason") or "").split(":")[0]
+                    flags[k] = flags.get(k, 0) + 1
+    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+    try:
+        rows = db.execute("SELECT outcome, reason, price, list_price FROM buyer_deals WHERE buyer_case='injection_code' "
+                          "AND ts>=? AND ts<?", (since, t1)).fetchall()
+    finally:
+        db.close()
+    deals = [r for r in rows if r[0] == "deal"]
+    ratio = [r[2] / r[3] for r in deals if r[2] and r[3]]
+    o = {"refused": ref, "refused_amount": amount, "by_flag": flags, "injection_negotiations": len(rows),
+         "outcomes": {k: sum(1 for r in rows if r[0] == k) for k in {r[0] for r in rows}},
+         "paid_vs_list": round(sum(ratio) / len(ratio), 3) if ratio else None}
+    import decisions
+    decisions.record("buyer", "injection_report", "buyer_biz", o, "24 h result")
+    return send("daily", f"injection_report:{int(since)}",
+                f"인젝션 보완 24시간 결과\n거절한 영수증: {ref}건, {amount:,}원 {flags}\n"
+                f"인젝션 감지 후 코드가 끝낸 협상: {len(rows)}건, 결과 {o['outcomes']}, 결제가/정가 {o['paid_vs_list']}", log)
 
 
 def post_report(seen, log=print, now=None):

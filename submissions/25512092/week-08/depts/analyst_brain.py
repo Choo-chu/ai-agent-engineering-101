@@ -215,9 +215,9 @@ def collect(log_=log):
     try:                                         # bundle 2 D17 (11/07): the top 10 shops of the last daily report
         from depts import insights
         snap["top_shops"] = insights.latest_top_shops()
-        from depts import forum_watch                # 11/07: forum situation table (counts, no post text) and
-        snap["forum_status"] = forum_watch.latest_status()   # the daily haiku 3-line forum flow
-        snap["forum_flow"] = forum_watch.latest_flow()
+        from depts import forum_watch                # 11/07: forum situation table (counts, no post text); the
+        snap["forum_status"] = forum_watch.latest_status()   # daily forum flow summary is no longer an input
+        #                                              (11/07 ~19:00: LLM text made from other agents' posts)
     except Exception as e:
         snap["top_shops_error"] = type(e).__name__
     pol = policy.load()
