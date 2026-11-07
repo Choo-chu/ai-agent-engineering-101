@@ -670,6 +670,12 @@ def expand_report(seen, log=print, now=None):
                    f"가게 매출 {w['revenue']:,} ({w['sales']}건), 그중 고가 매출 {w['high_revenue']:,}")
     s2_line = (f"새 설정(STOCK_CAP 15M, 고가 28개, 비중 60%) {time.strftime('%H:%M', time.localtime(s2))} 이후: "
                f"{f(new)}\n") if new else ""
+    guard_n = 0                                     # 11/07 ~18:20: high-price buys the guard cancelled (0 before it)
+    with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as fh:
+        for ln in fh:
+            if '"action": "buy_guard_skip"' in ln and json.loads(ln)["ts"] >= since:
+                guard_n += 1
+    s2_line += f"고가 매입 가드로 취소된 매입: {guard_n}건\n"
     return send("daily", f"expand_report:{int(since)}",
                 "매입 확대(high_max 8->18, MY_SHARE 0.25->0.5) 6시간 결과\n"
                 f"고가 적용 후 6h: {f(after)}\n고가 적용 전 6h: {f(before)}\n" + s2_line +

@@ -39,6 +39,8 @@ def split_floor(now=None):
         return None
     t = j.get("since2")
     now = now or time.time()
+    if j.get("hold_paused"):                       # 0.4 / 18 for now (no buy guard by 22:00; tools/guard_watch.py)
+        return None
     if not t or not (t <= now < t + HOLD_S):
         return None
     return {"high_share": (j.get("high_share2") or [0, 0.6])[1], "high_max": (j.get("high_max2") or [0, 28])[1]}

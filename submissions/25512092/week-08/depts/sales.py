@@ -110,7 +110,30 @@ def floor(u, avg, case, now=None, overstock_mult=1.0):
     c, _ = clearance(u, avg, now)
     if c is not None:
         cands.append((c, "clearance"))
+    s = stoploss(u, avg, case, now)
+    if s is not None:
+        cands.append((s, "stoploss"))
     return min(cands)
+
+
+STORAGE_PER_DAY = 0.01      # goods pay 1% of their cost a day in storage (the market's rule); food pays none
+STOPLOSS_DAYS = 2
+
+
+def stoploss(u, avg, case, now=None):
+    """The market average as the floor of a unit under water (person's decision 11/07 ~18:20), not in the endgame
+    (book counts stock at cost there):
+      goods  cost > average and cost - average < STOPLOSS_DAYS days of storage: a small loss now beats paying
+             storage while it waits
+      food   cost > average and near expiry (policy logistics.near_expiry_h): sold at the market before it is thrown
+             away at cost (the clearance markdown then goes lower)"""
+    if case == "endgame" or avg is None or u.get("cost", 0) <= avg:
+        return None
+    if u.get("kind") == "food" or u.get("expires_at"):
+        near = policy.get("logistics", "near_expiry_h") or NEAR_EXPIRY_H
+        left = ((u.get("expires_at") or 0) - (now or time.time())) / 3600
+        return int(avg) if u.get("expires_at") and left < near else None
+    return int(avg) if u["cost"] - avg < STOPLOSS_DAYS * STORAGE_PER_DAY * u["cost"] else None
 
 
 WARRANTY_H = 48
