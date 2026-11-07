@@ -29,7 +29,8 @@ QUIET = (1, 7)
 COLLECT_S, ANALYSE_S = 900, 7200          # 11/06 evening: analysis every 2 h (was 1 h) to save the weekly limit
 DAY_CALLS = 12                             # was 24
 DAY_PROPOSALS, KEY_GAP_S = 6, 6 * 3600
-LLM_CMD = 'claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence --output-format json'  # was sonnet
+LLM_CMD = ('claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence --output-format json'
+           ' --strict-mcp-config')  # was sonnet; 11/07 ~15:25: no MCP connector tools (~96% of the input tokens)
 MARKET = "https://market.ourolabs.ai"
 
 POLICY_KEYS = {"purchasing.spend_share", "purchasing.high_share", "purchasing.high_max", "purchasing.min_margin",

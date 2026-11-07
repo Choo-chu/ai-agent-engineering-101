@@ -229,6 +229,33 @@ def get_receipt(task):
     return None
 
 
+# The seller's asking price in a message (person's decision 11/07 ~15:20). last_number() took the last number of the
+# message, which in 'asking 19080. SKU ...; shelf life left 443.68h' is 443, so the code-made first offer was 221;
+# 38 of 750 first offers in 24 h went out like that. Order: the number after a price word (not 'list price'), else the
+# last number that is not a SKU, a unit amount (h, %, kg, ...), a year or a grade, else None; and an ask under
+# ASK_MIN_SHARE of my budget is not believed (None: the harness's own offer stands).
+PRICE_WORD = re.compile(r"(?:asking(?:\s+price)?|counter\s*-?\s*offer(?:\s+price)?|my\s+price|final\s+price|"
+                        r"(?<!list\s)price|floor|lowest\s+price(?:\s+for\s+this\s+unit)?|offer\s+price|now)"
+                        r"\s*(?:is|of|at)?\s*[:=]?\s*(?:₩|KRW\s*)?(\d[\d,]*(?:\.\d+)?)(?!\s*(?:%|h\b|hours?|kg|g\b|ml|L\b|cm|개|입|봉|년))",
+                        re.I)
+NOT_PRICE = re.compile(r"\bG[0-9a-f]{8}\b|\bgrade\s+[A-C]\b|\d[\d,.]*\s*(?:%|h\b|hours?|kg|g\b|ml|mL|L\b|cm|mm|"
+                       r"개입?|입|봉|년|팩|병|x\b|X\b)|\b20\d\d\b", re.I)
+ASK_MIN_SHARE = 0.05
+
+
+def ask_price(text, budget=None):
+    t = text or ""
+    m = [x for x in PRICE_WORD.findall(t)]
+    if m:
+        ask = int(float(m[-1].replace(",", "")))
+    else:
+        nums = re.findall(r"\d[\d,]*(?:\.\d+)?", NOT_PRICE.sub(" ", t))
+        ask = int(float(nums[-1].replace(",", ""))) if nums else None
+    if ask is not None and budget and ask < ASK_MIN_SHARE * budget:
+        return None
+    return ask
+
+
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
               force_first=False, kind=None, need_hours=None, tactic_line=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
@@ -277,7 +304,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                 res["ended"], res["skip"] = "precheck", why
                 client.cancel(tid)
                 return res
-        ask = last_number(text)
+        ask = ask_price(text, budget)
         if ask is not None:
             res["last_ask"] = ask
             if res["first_ask"] is None:

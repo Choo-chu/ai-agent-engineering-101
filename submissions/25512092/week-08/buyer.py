@@ -25,7 +25,8 @@ DEADLINE = 270  # seconds; the trade test kills the buyer at 300
 
 CLAUDE = shutil.which("claude") or "claude"
 HARNESS_CMD = [CLAUDE, "-p", "--model", "haiku", "--tools", "",
-               "--setting-sources", "", "--no-session-persistence"]
+               "--setting-sources", "", "--no-session-persistence",
+               "--strict-mcp-config"]   # 11/07 ~15:25: no MCP connector tools (~109k of ~114k input tokens per call)
 WORKDIR = tempfile.mkdtemp(prefix="buyer-harness-")  # empty folder: no project instruction files
 
 

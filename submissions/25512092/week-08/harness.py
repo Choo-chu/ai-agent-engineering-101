@@ -16,7 +16,21 @@ import subprocess
 import tempfile
 
 DEFAULT_CMD = 'claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence'
-CMD = os.environ.get("HARNESS_CMD", DEFAULT_CMD)
+
+
+def _strict_mcp():
+    """strict_mcp.json {"seller": true, "since"}: add --strict-mcp-config (no MCP connector tools, ~96% of the input
+    tokens of a call; person's decision 11/07 ~15:25, seller from the 20:00 restart). Read once at import: the seller
+    loads it only when it restarts."""
+    try:
+        import time
+        j = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "strict_mcp.json"), encoding="utf-8"))
+        return bool(j.get("seller")) and time.time() >= (j.get("since") or 0)
+    except (OSError, ValueError):
+        return False
+
+
+CMD = os.environ.get("HARNESS_CMD", DEFAULT_CMD + (" --strict-mcp-config" if _strict_mcp() else ""))
 _CWD = tempfile.mkdtemp(prefix="harness-")
 
 
