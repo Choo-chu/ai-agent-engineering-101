@@ -395,8 +395,9 @@ def run(state_dir, inv, catalog, log=print):
                                                p["post"][:200], "shop slot, queue order endgame > clearance > want "
                                                "> aging > comparison ad")
         once = None if BUYER_BY_POSTER else _once(st)  # a one-off record (forum_once.json) takes the next buyer slot
-        if BUYER_BY_POSTER:
-            pass
+        if BUYER_BY_POSTER:                            # 11/07 ~17:45: restock writes only while the poster is down
+            from depts import buyer_poster
+            buyer_poster.fallback_tick(log)
         elif now - st["buyer_ts"] >= POST_EVERY_S and once:
             _send(state_dir, {k: once[k] for k in ("post", "refs", "as", "thread") if k in once})
             st["once_done"].append(once["key"])

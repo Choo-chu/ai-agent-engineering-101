@@ -16,8 +16,14 @@ A thread in the analyst process (analyst_main.py) runs tick() every TICK_S:
   A callout approved while a purchase record already waits in the outbox (~10-20 s of each slot) goes one slot
   later: the waiting line is not pulled back (the kit may be taking the file at that moment: a double post).
 State: logs/buyer_post_state.json (taken over once from cs's .market/forum_state.json: posted, once_done, report
-cats). depts/cs.run no longer posts as the buyer (cs.BUYER_BY_POSTER). Heartbeat in the state file; restock's
-alerts.watch warns when it is older than 15 min (no buyer posts then).
+cats). depts/cs.run no longer posts as the buyer (cs.BUYER_BY_POSTER).
+
+Fallback (person's decision 11/07 ~17:45): only the poster thread writes the heartbeat. restock (cs.run, about once a
+minute) calls fallback_tick(): heartbeat older than FALLBACK_S -> restock runs the same tick() itself (same state
+file: the posted list, the order and the 72-min report spacing are shared), so buyer posts go on at restock's pace.
+The poster's next tick takes over again. Each switch (fallback in, back to the poster) sends a Telegram. A lock file
+(LOCK, created with O_EXCL, stale after LOCK_STALE_S) lets only one of the two run tick() at a time. No LLM is called
+anywhere here: purchase records and market reports are built by code from the ledger (depts/cs.py).
 """
 import json
 import os
@@ -31,6 +37,46 @@ EARLY_S = 10
 TICK_S = 5
 REPORT_EVERY_S = 72 * 60
 POSTED_KEEP = 3000
+FALLBACK_S = 15 * 60
+LOCK = os.path.join(HERE, "logs", "buyer_post.lock")
+LOCK_STALE_S = 60
+
+
+def _lock():
+    """True when this process now holds the lock (a lock older than LOCK_STALE_S is taken over)."""
+    for _ in range(2):
+        try:
+            os.close(os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+            return True
+        except FileExistsError:
+            try:
+                if time.time() - os.path.getmtime(LOCK) > LOCK_STALE_S:
+                    os.remove(LOCK)
+                    continue
+            except OSError:
+                pass
+            return False
+    return False
+
+
+def _unlock():
+    try:
+        os.remove(LOCK)
+    except OSError:
+        pass
+
+
+def _switch(st, mode, why, log):
+    """Record a writer change (poster <-> restock) and send a Telegram."""
+    if st.get("mode", "poster") == mode:
+        return
+    st["mode"] = mode
+    import alerts
+    import decisions
+    text = (f"buyer 글 폴백 진입: restock이 대신 씀 ({why})" if mode == "restock"
+            else f"buyer 글 poster로 복귀 ({why})")
+    decisions.record("cs", "buyer_poster_mode", "buyer posts", mode, why)
+    alerts.send("urgent" if mode == "restock" else "info", f"buyer_poster_mode:{mode}", text, log=log, repeat_s=60)
 
 
 def _load():
@@ -107,16 +153,44 @@ def next_post(st, now):
     return None, None
 
 
-def tick(log=print):
+def tick(log=print, who="poster"):
+    if not _lock():
+        return
+    try:
+        _tick(log, who)
+    finally:
+        _unlock()
+
+
+def fallback_tick(log=print):
+    """From restock (cs.run): post as the buyer only while the poster's heartbeat is older than FALLBACK_S."""
+    try:
+        hb = json.load(open(STATE, encoding="utf-8")).get("heartbeat", 0)
+    except (OSError, ValueError):
+        hb = 0
+    if time.time() - hb > FALLBACK_S:
+        tick(log, who="restock")
+
+
+def _tick(log, who):
     import decisions
     from depts import cs
     now = time.time()
     st = _load()
-    st["heartbeat"] = now
+    if who == "poster":
+        if st.get("mode") == "restock":
+            _switch(st, "poster", f"poster heartbeat back after {int((now - st.get('heartbeat', now)) / 60)} min", log)
+        st["heartbeat"] = now
+    else:
+        if now - st.get("heartbeat", 0) <= FALLBACK_S:      # the poster came back in the meantime
+            _save(st)
+            return
+        _switch(st, "restock", f"poster heartbeat {int((now - st.get('heartbeat', 0)) / 60)} min old", log)
     pend = _pending()
-    if st.get("pending") and not pend:                # the waiting post just went out
-        st["last_post"] = now
-    st["pending"] = pend
+    if st.get("pending") and not pend:                # the waiting post went out after the previous tick: take that
+        st["last_post"] = st.get("last_tick", now)    # (early is safe, the kit retries a 429; after a long gap,
+    st["pending"] = pend                              #  e.g. the poster down, 'now' would skip a slot)
+    st["last_tick"] = now
     if not pend and now >= st["last_post"] + SLOT_S - EARLY_S:
         kind, p = next_post(st, now)
         if p:
@@ -125,7 +199,8 @@ def tick(log=print):
             st["posts"] = st.get("posts", 0) + 1
             log(f"[buyer_poster] {kind}: {p['post'][:90]}")
             decisions.record("cs", "post", f"buyer {kind}", p["post"][:200],
-                             "buyer poster: next 5-min slot, order once (prio) > report (every 72 min) > purchase")
+                             f"buyer {'poster' if who == 'poster' else 'fallback (restock)'}: next 5-min slot, order "
+                             "once (prio) > report (every 72 min) > purchase")
     _save(st)
 
 

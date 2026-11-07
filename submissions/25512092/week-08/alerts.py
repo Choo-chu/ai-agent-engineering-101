@@ -172,7 +172,7 @@ def watch(reports=None, log=print):
         claim_report(seen, log)
     except Exception as e:
         log(f"[alert] claim report: {type(e).__name__}: {e}")
-    for fn in (poster_check, post_report):
+    for fn in (post_report,):                         # poster_check: replaced by buyer_poster's switch alerts
         try:
             fn(seen, log)
         except Exception as e:
