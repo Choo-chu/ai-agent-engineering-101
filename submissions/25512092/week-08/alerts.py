@@ -167,6 +167,10 @@ def watch(reports=None, log=print):
         haggle_report(seen, log)
     except Exception as e:
         log(f"[alert] haggle report: {type(e).__name__}")
+    try:
+        subst_report(seen, log)
+    except Exception as e:
+        log(f"[alert] subst report: {type(e).__name__}: {e}")
     try:                                            # buyer tactic experiment: stop rule + 24 h interim (11/07)
         from depts import buyer_tactic
         buyer_tactic.guard(send, log)
@@ -511,6 +515,30 @@ def haggle_report(seen, log=print, now=None):
     decisions.record("sales", "code_haggle_report", "code_haggle", o, "24 h result")
     return send("daily", f"haggle_report:{int(since)}", "전 품목 코드 흥정 30% 실험 24시간 결과 (소파 제외)\n"
                 + f("code") + "\n" + f("harness"), log)
+
+
+def subst_report(seen, log=print, now=None):
+    """Once, 6 h after substitute.json 'since' (person's decision 11/07 ~10:00): substitute offers, choices / receipts /
+    settles by tier, 'receipt does not match' reviews in those 6 h vs the 6 h before."""
+    now = now or time.time()
+    try:
+        j = json.load(open(os.path.join(HERE, "substitute.json"), encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    since = j.get("since")
+    if not (j.get("enabled") and since) or now < since + 6 * 3600 or seen.get(f"subst_report:{int(since)}"):
+        return None
+    seen[f"subst_report:{int(since)}"] = now
+    from depts import substitute
+    o = substitute.numbers(since, since + 6 * 3600)
+    import decisions
+    decisions.record("sales", "subst_report", "substitute", o, "6 h result")
+    t = o["by_tier"]
+    return send("daily", f"subst_report:{int(since)}",
+                f"대체 제안 6시간 결과: 대체 제안 {o['offers']}건\n"
+                + "\n".join(f"{k}순위: 제시 {v['offered']}, 수락 {v['chosen']}, 영수증 {v['receipt']}, 결제 {v['settled']}"
+                             for k, v in t.items())
+                + f"\n영수증 불일치 리뷰: {o['mismatch_reviews']} (적용 전 6시간 {o['mismatch_reviews_before']})", log)
 
 
 MO_SHIFT = os.path.join(HERE, "logs", "buyer_mo_shift.json")

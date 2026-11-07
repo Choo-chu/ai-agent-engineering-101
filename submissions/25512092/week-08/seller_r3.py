@@ -29,6 +29,7 @@ from harness import CMD, ask_json
 from forum_post import promo
 import decisions
 from depts import sofa
+from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
 from market_db import connect, load_stats, price_of
@@ -83,6 +84,13 @@ def find_unit(text, taken=()):
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
     return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+
+
+def inventory_units():
+    try:
+        return json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8")).get("units", [])
+    except (OSError, ValueError):
+        return []
 
 
 def record(task, deal, u, reserve, ask):
@@ -228,11 +236,61 @@ class Seller(AgentExecutor):
         text = get_message_text(context.message) or ""
         deal = self.open.get(task.id)
 
-        if deal is None:
+        if deal is None or deal.get("subst"):
             now = time.time()
             self.sold = {k: t for k, t in self.sold.items() if now - t < 900}
-            taken = {d["unit"]["unit"] for d in self.open.values() if d["unit"]["unit"]} | set(self.sold)
-            unit = find_unit(text, taken)
+            taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit") and d["unit"]["unit"]} \
+                | set(self.sold)
+            quoted = tier = None
+            if deal is not None:                        # 11/07: waiting for the buyer to name one of my candidates
+                pick = substitute.chosen(text, deal["subst"])
+                if pick is None:
+                    msg_log(task.id, "buyer", text, deal["x"])
+                    deal["tries"] += 1
+                    if deal["tries"] >= 3:
+                        msg_log(task.id, "shop", "subst no choice -> reject", deal["x"])
+                        del self.open[task.id]
+                        await up.reject(say("No deal."))
+                        return
+                    msg_log(task.id, "shop", "subst repeat", deal["x"])
+                    await up.requires_input(say(f"{deal['x']} is not in stock. To buy an alternative, name its SKU: "
+                                                + ", ".join(deal["subst"]) + "."))
+                    return
+                tier, quoted = deal["subst"][pick]
+                unit = find_unit(pick, taken)
+                if unit is None or unit["sku"] != pick:
+                    msg_log(task.id, "shop", f"subst {pick} gone -> reject", pick)
+                    del self.open[task.id]
+                    await up.reject(say(f"Sorry, {pick} has just sold out."))
+                    return
+                substitute.log_choice(connect, task.id, pick, tier)
+                print(f"[subst] buyer chose {pick} (tier {tier}) instead of {deal['x']}, quoted {quoted}", flush=True)
+            else:
+                x = substitute.named_sku(text) if substitute.on() else None
+                cands = substitute.candidates(x, inventory_units(), taken) if x else None
+                if cands is not None:                   # a named SKU I do not hold: offer candidates, no receipt yet
+                    if not cands:
+                        await up.reject(say(f"Sorry, we have no {x} and nothing else in its category in stock."))
+                        return
+                    case = strategy.current()[0]
+                    offer, lines = {}, []
+                    for t, c in cands:
+                        avg, _ = price_of(c["sku"])
+                        reserve, rule = floor(c, avg, case)
+                        price = max(reserve, int(first_ask(c, avg, reserve, rule,
+                                                           {"key": None, "variant": None, "case": case, "mult": 1.0})))
+                        offer[c["sku"]] = (t, price)
+                        lines.append(f"{len(lines) + 1}) {c['sku']} {c['name']}: {price}")
+                    self.open[task.id] = {"subst": offer, "x": x, "tries": 0, "lines": [f"buyer: {text}"]}
+                    substitute.log_offer(connect, task.id, x, [[k, v[0]] for k, v in offer.items()])
+                    msg_log(task.id, "buyer", text, x)
+                    msg_log(task.id, "shop", "subst " + ", ".join(f"{k} t{v[0]} {v[1]}" for k, v in offer.items()), x)
+                    print(f"[subst] {x} not in stock -> offered {offer}", flush=True)
+                    await up.requires_input(say(
+                        f"{x} is not in stock. Alternatives in the same category: " + "; ".join(lines)
+                        + ". To buy one, name its SKU (accept it or make an offer for it)."))
+                    return
+                unit = find_unit(text, taken)
             if unit is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
@@ -240,7 +298,8 @@ class Seller(AgentExecutor):
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
                                          "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats()),
                                          "key": None, "variant": None, "mult": 1.0,
-                                         "haggle": haggle_pick(), "calls": 0}      # 11/07: code vs harness arm
+                                         "haggle": haggle_pick(), "calls": 0,      # 11/07: code vs harness arm
+                                         "quoted": quoted, "subst_tier": tier}
             if case in ("normal", "overstock"):         # stage 2: one variant per negotiation, by weight
                 key = "shop_normal_ask" if case == "normal" else "shop_overstock_floor"
                 v, w = strategy.pick(key)
@@ -248,7 +307,7 @@ class Seller(AgentExecutor):
                 print(f"[variant] {key} -> {v} (weights {w})", flush=True)
         else:
             deal["lines"].append(f"buyer: {text}")
-            m = re.search(r"\d+", text)
+            m = re.search(r"\d+", substitute.strip_skus(text))     # a SKU like G200e39a3 is not an offer of 200
             deal["offer"] = int(m.group()) if m else deal["offer"]
 
         u = deal["unit"]
@@ -258,6 +317,8 @@ class Seller(AgentExecutor):
         deal["rule"] = rule
         if len(deal["lines"]) == 1:
             ask = first_ask(u, avg, reserve, rule, deal)    # stage 2: the code names the first ask, not the harness
+            if deal.get("quoted"):                          # 11/07: a chosen substitute starts at the price I quoted
+                ask = max(reserve, deal["quoted"])
             print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), case {deal['case']}, rule {rule} "
                   f"-> floor {reserve}, first ask {ask}" + (f", warranty {deal['warranty']} h" if deal["warranty"] else ""),
                   flush=True)
