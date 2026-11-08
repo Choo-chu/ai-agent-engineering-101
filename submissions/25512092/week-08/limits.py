@@ -82,3 +82,4 @@ STOCK_CAP_CHANGES.append((1794054851, 20_000_000))   # 11/07 21:34 analyst #7, a
 STOCK_CAP_CHANGES.append((1794090562, 15_000_000))   # 11/08 07:29 analyst #brake, approved
 STOCK_CAP_CHANGES.append((1794103348, 20_000_000))   # 11/08 11:02 analyst #13, approved
 HIGH_MAX_CHANGES.append((1794112448, 1_500_000))   # 11/08 13:34 analyst #15, approved
+STOCK_CAP_CHANGES.append((1794124113, 20_000_000))   # 11/08 16:48 analyst #16, approved
