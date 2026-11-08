@@ -146,6 +146,25 @@ def make_plan(inv, units, catalog, budget, log):
         if late:
             order = [o for o in order if surge.get(o[0], 1.0) < C["surge_min"]] + late
             log(f"[surge] {len(late)} SKUs with surge >= {C['surge_min']} moved to the end")
+    try:                                         # 11/08 ~13:45: request-based candidates (depts/request_buy.py)
+        from depts import request_buy
+        reqc = request_buy.candidates(catalog, held, surge, log=log)
+    except Exception as e:
+        log(f"[request] failed: {type(e).__name__}: {e}")
+        reqc = []
+    for sku, qty, ravg, why in reqc:
+        c = catalog.get(sku) or {}
+        cost = c["list_price"] * COST_SHARE.get(c.get("kind", "goods"), 0.6) * surge.get(sku, 1.0)
+        qty = min(qty, int(left["low"] // cost))
+        if qty <= 0:
+            log(f"[low] {(c.get('name') or sku)[:40]}: request-based ({why}), low budget left {int(left['low']):,} -> skip")
+            continue
+        left["low"] -= qty * cost
+        line_of[sku] = (len(plan), "request")
+        plan.append({"sku": sku, "qty": qty})
+        log(f"[low] {(c.get('name') or sku)[:40]}: request-based ({why}), held {held.get(sku, 0)} -> buy {qty}")
+    if reqc:
+        request_buy.bought([s for s, _, _, _ in reqc if s in line_of])
     for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}

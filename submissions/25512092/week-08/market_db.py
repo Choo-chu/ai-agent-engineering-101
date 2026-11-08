@@ -40,6 +40,7 @@ ME = "choo-chu"
 REFRESH_S = 300          # refresh at most every 5 minutes
 AVG_WINDOW_S = 2 * 3600  # the average price uses deals of the last 2 hours ...
 MIN_N = 3                # ... and needs at least this many deals, else all deals of that SKU
+HOT_N = 60          # buy-plan hot list: the SKUs most sold in 5 / 30 min (11/08 ~13:45 person: 30 -> 60)
 BOOTSTRAP = 20000        # ledger entries read back on the first refresh
 
 
@@ -202,7 +203,7 @@ def refresh(force=False, log=print):
             if avg is not None:
                 stats["skus"][sku] = {"name": None, "avg": round(avg), "n": n, "sold_5m": 0, "sold_30m": 0}
     stats["hot"] = sorted(stats["skus"], key=lambda k: (stats["skus"][k]["sold_5m"], stats["skus"][k]["sold_30m"]),
-                          reverse=True)[:30]
+                          reverse=True)[:HOT_N]
     for sku, paid, k in db.execute("SELECT sku, AVG(amount), COUNT(*) FROM settles WHERE buyer=? GROUP BY sku", (ME,)):
         stats["my_buys"][sku] = {"avg_paid": round(paid), "n": k}
 
