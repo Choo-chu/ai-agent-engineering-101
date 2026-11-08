@@ -5,6 +5,10 @@
            same average the buyers' market shows); the floor does not change, so the ask is max(floor, min(ask, avg))
   clear    listed SKUs (G3e0d6c67, G53b150b5, bought 13:44-13:46 and unsold) ask first at share x the average
            (0.98); their floor is lowered to that ask when it is higher, never under the unit's cost
+  floor    (person's decision 11/08 ~17:30, on from the 20:02 check: high_ask.json floor_rule.enabled) a high-price
+           unit's floor is max(cost x 1.10, the 48 h market median (depts/sofa.market) x 0.80) in every case but the
+           endgame (whose markdown stays); it replaces the volume / sofa / markdown floors of those units; without a
+           market median: cost x 1.10. The first-ask cap above stays (the ask is never under the floor)
   buy      depts/purchasing: a high-price SKU whose expected first ask (the same floor / first-ask code on a unit at
            the expected cost, then the cap) is above the market average is not bought (decision high_price_above_avg)
 """
@@ -29,11 +33,25 @@ def _high(u):
     return (u.get("cost") or 0) > HIGH_MIN
 
 
-def floor(u, avg, reserve):
-    """The floor for this unit: lowered for a cleared SKU to its clearance ask, never under cost."""
+def high_floor(u, now=None, fr=None):
+    """max(cost x 1.10, market median x 0.80) for a high-price unit."""
+    fr = fr if fr is not None else (rules().get("floor_rule") or {})
+    from depts import sofa
+    med = sofa.market(u["sku"], now)[0]
+    return max(int(u["cost"] * fr.get("cost", 1.10)), int(med * fr.get("median", 0.80)) if med else 0)
+
+
+def floor(u, avg, reserve, case=None, now=None):
+    """The floor for this unit: the high-price floor rule when on (not in the endgame); then a cleared SKU's floor
+    is lowered to its clearance ask, never under cost."""
     r = rules()
+    if not r.get("enabled"):
+        return reserve
+    fr = r.get("floor_rule") or {}
+    if fr.get("enabled") and _high(u) and case != "endgame":
+        reserve = high_floor(u, now, fr)
     share = (r.get("clear") or {}).get(u.get("sku"))
-    if not r.get("enabled") or share is None or not avg:
+    if share is None or not avg:
         return reserve
     return max(int(u["cost"]), min(reserve, int(avg * share)))
 
@@ -61,6 +79,7 @@ def expected_first_ask(sku, c, cost, avg, case, now=None):
     u = {"sku": sku, "cost": int(cost), "list_price": c.get("list_price"), "kind": c.get("kind", "goods"),
          "grade": "A", "category": c.get("category"), "supplied_at": now, "expires_at": None, "name": c.get("name")}
     reserve, rule = pricing.floor(u, avg, case, now)
+    reserve = floor(u, avg, reserve, case, now)
     ask = pricing.first_ask(u, avg, reserve, rule, {"key": None, "variant": None})
     ask, _ = first_ask(u, avg, reserve, ask)
     return ask, reserve
