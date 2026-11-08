@@ -32,6 +32,7 @@ from depts import sofa
 from depts import receipt_exp  # 11/07: category receipt item, grade claim experiment
 from depts import receipt_check  # 11/08: the receipt amount = the price the buyer agreed to
 from depts import receipt_hold  # 11/08: how long a unit with a receipt stays held (receipt_hold.json)
+from depts import high_ask  # 11/08 ~17:00: high-price first ask <= market average
 from depts import subst_exp  # 11/08: substitute offers, option A experiment (subst_exp.json)
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 WORDS = {48: "forty-eight", 72: "seventy-two"}
@@ -386,6 +387,7 @@ class Seller(AgentExecutor):
         msg_log(task.id, "buyer", text, u["sku"])
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
         reserve, rule = floor(u, avg, deal["case"], overstock_mult=deal["mult"])   # pricing.py, the case's rules
+        reserve = high_ask.floor(u, avg, reserve)       # 11/08 ~17:00: cleared SKUs, never under cost
         deal["rule"] = rule
         q_llm = deal.get("haggle") == "code" and len(deal["lines"]) > 1 and question_to_llm(text)
         if q_llm:                                       # 11/07: a question in the code arm goes to the harness
@@ -393,6 +395,9 @@ class Seller(AgentExecutor):
             print(f"[code haggle] {u['sku']} question in the buyer message -> harness", flush=True)
         if len(deal["lines"]) == 1:
             ask = first_ask(u, avg, reserve, rule, deal)    # stage 2: the code names the first ask, not the harness
+            ask, why_hi = high_ask.first_ask(u, avg, reserve, ask)   # 11/08 ~17:00: high price <= market average
+            if why_hi:
+                print(f"[high ask] {u['sku']} first ask -> {ask} ({why_hi})", flush=True)
             if deal.get("quoted"):                          # 11/07: a chosen substitute starts at the price I quoted
                 ask = max(reserve, deal["quoted"])
             print(f"[price] {u['sku']} cost {u['cost']}, market avg {avg} (n={n}), case {deal['case']}, rule {rule} "

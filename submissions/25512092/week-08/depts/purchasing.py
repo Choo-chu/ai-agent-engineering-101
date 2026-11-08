@@ -189,6 +189,19 @@ def make_plan(inv, units, catalog, budget, log):
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku):
                 continue
+            try:                                  # 11/08 ~17:00: expected first ask above the market average
+                from depts import high_ask
+                ok, eask, efl = high_ask.buy_ok(sku, c, cost, avg, strategy.current()[0])
+            except Exception as e:
+                log(f"[high] {sku}: first-ask check failed ({type(e).__name__}: {e}) -> skip")
+                continue
+            if not ok:
+                if high_room > 0:
+                    log(f"[high] {s['name'] or sku}: expected first ask {eask:,} (floor {efl:,}) > avg {int(avg):,} -> skip")
+                    decisions.record("purchasing", "high_price_above_avg", sku, [eask, efl, int(avg), int(cost)],
+                                     f"expected first ask {eask:,} (floor {efl:,}, est. cost {int(cost):,}) > market avg "
+                                     f"{int(avg):,}: not bought")
+                continue
             g = guard_check(sku, c, avg, inv)
             if g:                                 # 11/07 ~18:30: expected margin under the guard's minimum
                 if high_room > 0:
