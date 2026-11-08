@@ -20,7 +20,7 @@ from depts.logistics import perishable, perishable_line, perishable_numbers  # n
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # week-08/ (this file is in depts/)
 REPORTS = os.path.join(HERE, "reports")
 HIGH_MIN = 100_000              # unit cost above this is "high price" ...
-HIGH_MAX = 1_000_000            # ... up to this (11/06: was 500,000; sofas cost ~0.6 x list)
+HIGH_MAX = 1_500_000            # ... up to this (11/06: was 500,000; sofas cost ~0.6 x list)
 START_SHARE, START_MAX = 0.30, 2
 SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.60, 60   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
 #                                                     11/07 ~16:05: SHARE_CAP 0.5 -> 0.6, MAX_CAP 20 -> 30 (share 0.6, units 28)
