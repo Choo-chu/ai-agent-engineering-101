@@ -30,6 +30,7 @@ from forum_post import promo
 import decisions
 from depts import sofa
 from depts import receipt_exp  # 11/07: category receipt item, grade claim experiment
+from depts import receipt_check  # 11/08: the receipt amount = the price the buyer agreed to
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
@@ -387,6 +388,21 @@ class Seller(AgentExecutor):
             decisions.record("cs", "guard", u["sku"], deal["offer"], f"harness accepted under floor {reserve}",
                              limit_hit="floor")
             action, move = "counter", {"price": deal["ask"] or u["list_price"]}
+        if action == "accept":                      # 11/08 ~11:20 (person): the receipt amount checked by code
+            buyer_text = next((ln[7:] for ln in reversed(deal["lines"]) if ln.startswith("buyer: ")), "")
+            agreed, why = receipt_check.agreed(buyer_text, deal["offer"], deal["ask"])
+            if why:
+                if agreed is None or agreed < reserve:  # the buyer's own offer is under the floor: no receipt
+                    print(f"[receipt_fixed] {u['sku']} receipt {deal['offer']} != agreed {agreed} ({why}); under "
+                          f"floor {reserve} -> counter", flush=True)
+                    decisions.record("cs", "receipt_fixed", u["sku"], [deal["offer"], agreed],
+                                     f"task {task.id}: {why}; under floor {reserve}: counter {deal['ask']}, no receipt")
+                    action, move = "counter", {"price": deal["ask"] or u["list_price"]}
+                else:
+                    print(f"[receipt_fixed] {u['sku']} receipt {deal['offer']} -> {agreed} ({why})", flush=True)
+                    decisions.record("cs", "receipt_fixed", u["sku"], [deal["offer"], agreed],
+                                     f"task {task.id}: {why}; receipt issued at {agreed}")
+                    deal["offer"] = agreed
         if action == "accept":
             price = deal["offer"]
             receipt = {"shop": NAME, "item": deal.get("receipt_item") or u["sku"], "price": price, "task": task.id}
