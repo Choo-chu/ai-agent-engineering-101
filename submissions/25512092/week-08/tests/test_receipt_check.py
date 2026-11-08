@@ -4,6 +4,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from depts.receipt_check import agreed, buyer_offer  # noqa: E402
+from depts import receipt_check as _rc  # noqa: E402
+_fn = _rc.first_number
+
+
+def _after(t):
+    return _fn(t, now=_rc.UNITS_FROM + 1)
+
 
 
 def test_shop_name_number():
@@ -46,7 +53,7 @@ def test_korean():
 
 
 def test_first_number_thousands():
-    from depts.receipt_check import first_number
+    first_number = _after
     assert first_number("I can do 27,000.") == 27000
     assert first_number("27000") == 27000
     assert first_number("10,400 then") == 10400
@@ -57,7 +64,7 @@ def test_first_number_thousands():
 
 
 def test_first_number_units():
-    from depts.receipt_check import first_number
+    first_number = _after
     assert first_number("Need at least 540 hours of shelf life. I can pay 12000") == 12000
     assert first_number("I need it to last 360.5 hours. 8000?") == 8000
     assert first_number("1 unit please, 15000") == 15000
@@ -68,7 +75,13 @@ def test_first_number_units():
 
 
 def test_korean_price_sentences():
-    from depts.receipt_check import first_number
+    first_number = _after
     assert first_number("제가 가능한 금액은 6732입니다.") == 6732
     assert first_number("제가 드릴 수 있는 금액은 63942입니다.") == 63942
     assert first_number("Need at least 360.25 h remaining") is None
+
+
+def test_units_gate_before_2105():
+    assert _fn("Need at least 540 hours", now=_rc.UNITS_FROM - 1) == 540      # before: as the 14:06 seller reads it
+    assert _fn("27,000", now=_rc.UNITS_FROM - 1) == 27000
+    assert _fn("Need at least 540 hours", now=_rc.UNITS_FROM + 1) is None

@@ -11,6 +11,8 @@ The seller then issues the receipt at the agreed price (decision receipt_fixed),
 price is under the floor. Pricing rules are not changed.
 """
 import re
+import time
+from datetime import datetime
 
 OVER_ASK = 2.0
 SKU = re.compile(r"G[0-9a-f]{8}")
@@ -24,13 +26,17 @@ NUM = re.compile(r"(?<![\w.])\d[\d,]*(?![A-Za-z0-9_.,%])(?!\s*(?:hours?\b|hrs?\b
 UNITS = (r"(?!\s*(?:hours?|hrs?|h|units?|pcs|pieces|days?|minutes?|mins?|items?|packs?|kg|g|ml|l|cm|x)\b)"
          r"(?!\s*(?:%|시간|개|팩|박스|병|봉|kg))")   # not 입 / 일 / 분: "6732입니다", "...일까요" are prices
 FIRST = re.compile(r"(?<![\d,.])(?:\d{1,3}(?:,\d{3})+|\d+)(?!\d)(?![.,]\d)" + UNITS, re.I)
+FIRST_COMMA = re.compile(r"\d{1,3}(?:,\d{3})+(?!\d)|\d+")       # thousands only (from the 14:06 restart)
+# person 11/08 ~13:30: the unit skipping goes with the seller restart after the 21:00 substitute experiment ends
+UNITS_FROM = datetime(2026, 11, 8, 21, 5).timestamp()
 
 
-def first_number(text):
+def first_number(text, now=None):
     """The first number of a message that is a price: thousands separators read (11/08: "27,000" is 27000, it was
-    read as 27), and a number with a unit after it is skipped (11/08: "540 hours", "1 unit", "360.5 hours", "20%"
-    were read as offers); the seller's offer parse (SKUs stripped before)."""
-    m = FIRST.search(text or "")
+    read as 27), and from UNITS_FROM a number with a unit after it is skipped (11/08: "540 hours", "1 unit",
+    "360.5 hours", "20%" were read as offers); the seller's offer parse (SKUs stripped before)."""
+    rx = FIRST if (now or time.time()) >= UNITS_FROM else FIRST_COMMA
+    m = rx.search(text or "")
     return int(m.group().replace(",", "")) if m else None
 
 
