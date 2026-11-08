@@ -111,8 +111,13 @@ def report(t, now=None):
     lines = [
         f"객단가 1+2 {(t1 - t) / 3600:.1f}시간 점검 (high_max 60, HIGH_MAX 1.5M; {datetime.fromtimestamp(t):%H:%M} ~ "
         f"{datetime.fromtimestamp(t1):%H:%M}, 후 vs 전 같은 길이)",
-        f"- 고가 매입 {a['high_buy_lines']}줄 {a['high_buy_units']}개 vs {b['high_buy_lines']}줄 {b['high_buy_units']}개 / "
-        f"고가 판매 {a['high_sales']} vs {b['high_sales']} (매출 {a['high_rev']:,} vs {b['high_rev']:,})",
+        "주의: 13:45부터 hot 매입 대상 30 -> 60, 요청 기반 매입(run당 최대 3줄)이 같이 돌았음. 아래 [고가 전용]은 원가 10만 초과 "
+        "단위만이라 이 두 변경(저가 위주)의 영향이 적고, 그 아래 전체 지표(객단가, 50만 이상 비중, 막힌 매입)는 섞여 있음",
+        "[고가 전용 - 이번 변경의 직접 효과]",
+        f"  고가 매입 {a['high_buy_lines']}줄 {a['high_buy_units']}개 vs {b['high_buy_lines']}줄 {b['high_buy_units']}개",
+        f"  고가 판매 {a['high_sales']}개 vs {b['high_sales']}개",
+        f"  고가 매출 {a['high_rev']:,} vs {b['high_rev']:,}",
+        "[전체 - 다른 변경과 섞임]",
         f"- 50만 이상 판매: 건수 {a['big_n']}/{a['sales']} ({pct(a['big_n'], a['sales'])}) vs {b['big_n']}/{b['sales']} "
         f"({pct(b['big_n'], b['sales'])}), 매출 비중 {pct(a['big_rev'], a['revenue'])} vs {pct(b['big_rev'], b['revenue'])}",
         f"- 객단가 {a['avg']:,} vs {b['avg']:,}, 매출 {a['revenue']:,} vs {b['revenue']:,}",
@@ -129,6 +134,13 @@ def report(t, now=None):
 def main():
     if "--report-dry" in sys.argv:
         print(report(time.time() - 3600))
+        return
+    if "--report-at" in sys.argv:                 # 11/08 ~13:50: the waiting report restarted with the new layout
+        t = float(sys.argv[sys.argv.index("--report-at") + 1])
+        while time.time() < t + H * 3600 + 60:
+            time.sleep(60)
+        alerts.send("daily", f"aov_report:{int(t)}", report(t), log=log)
+        log("report sent")
         return
     import policy
     from depts import analyst, analyst_apply
