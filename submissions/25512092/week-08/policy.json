@@ -1,6 +1,6 @@
 {
  "purchasing": {
-  "spend_share": 0.4,
+  "spend_share": 0.5,
   "min_margin": 0.1,
   "my_share": 0.5,
   "wanted_qty": 3,
@@ -10,7 +10,8 @@
   "perishable_trial_market_30m": 3,
   "perishable_trial_qty": 2,
   "sofa_trial_start": 1793951508,
-  "sofa_trial_end": 1794124308.0
+  "sofa_trial_end": 1794797940,
+  "high_max": 30
  },
  "sales": {
   "warranty_enabled": true,
@@ -42,8 +43,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 7,
- "ts": 1794040197,
+ "version": 14,
+ "ts": 1794124912,
  "by": "person",
- "reason": "person: 되돌리기 purchasing.perishable_trial_qty -> 2"
+ "reason": "person's decision 11/08 ~17:00: revenue fell with the high-price expansion; back to high_max 30 / HIGH_MAX 1.0M: high_max 60 -> 30"
 }

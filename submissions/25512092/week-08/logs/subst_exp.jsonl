@@ -1,0 +1,740 @@
+{"ts": 1794117630.0, "task": "c0af5ab6-c940-4d3e-9ad7-a178ef7422b7", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794117674.2, "task": "51f33ef3-371c-4ddf-9189-05aba396ae35", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794117674.3, "task": "51f33ef3-371c-4ddf-9189-05aba396ae35", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 9130}
+{"ts": 1794117674.3, "task": "51f33ef3-371c-4ddf-9189-05aba396ae35", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8755}
+{"ts": 1794117674.3, "task": "51f33ef3-371c-4ddf-9189-05aba396ae35", "arm": "A", "event": "receipt", "sku": "G1831f2c0", "unit": "u-37f89a0a25e1", "price": 9130, "item": "과자"}
+{"ts": 1794117679.6, "task": "86e8c54c-5874-4b78-9b4b-e36901698619", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794117693.0, "task": "3be30325-16df-48c4-84f5-1aff05290122", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794117725.7, "task": "8c5db75e-8fb0-4c74-9888-05684f793ea6", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794117814.8, "task": "19599b14-3bc3-438c-acce-24d713aa42ef", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794117814.9, "task": "19599b14-3bc3-438c-acce-24d713aa42ef", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 9130}
+{"ts": 1794117814.9, "task": "19599b14-3bc3-438c-acce-24d713aa42ef", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8755}
+{"ts": 1794117814.9, "task": "19599b14-3bc3-438c-acce-24d713aa42ef", "arm": "A", "event": "receipt", "sku": "G1831f2c0", "unit": "u-bfcd7b3e8ecb", "price": 9130, "item": "과자"}
+{"ts": 1794117815.4, "task": "30da9235-a2dd-44a5-ae78-2fb3ca7874e3", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33182], ["Gb27433e8", 1, 27273], ["G200e39a3", 1, 29377]]}
+{"ts": 1794117950.3, "task": "aea93fae-9f23-4957-a092-e855332e0574", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794118073.4, "task": "0c9044f5-208f-4350-b3e9-cfab2c310b5b", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794118085.9, "task": "c5f73b7a-6913-49f4-98f9-a653e7457a6c", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794118134.8, "task": "6059d4c2-90a1-4672-b1a3-dd8f3ca3ce41", "arm": "A", "event": "no_offer", "x": "G37da7a5c", "n": 3}
+{"ts": 1794118313.6, "task": "af8af338-c8af-4c09-b03d-14bc43921422", "arm": "control", "event": "offer", "x": "G37da7a5c", "offered": [["G66ded25b", 3, 11296], ["G1561d2a8", 3, 14140], ["Gac0c1622", 3, 12987]]}
+{"ts": 1794118351.9, "task": "359dd4ad-8211-44b6-aacb-0bb74362cee5", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9176]]}
+{"ts": 1794118363.8, "task": "394bfb90-9d50-4d31-830a-2d043cf415fc", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9176]]}
+{"ts": 1794118444.9, "task": "c9727ba1-a234-43b4-a810-058945a443ac", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794118448.3, "task": "995cd48d-8543-4e32-9531-42a18d34e2ea", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16275], ["G05e3e5db", 2, 14925], ["Gc90705c9", 2, 21109]]}
+{"ts": 1794118466.3, "task": "8aadeb95-45a6-4ceb-8ae4-01aef29241fa", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794118466.3, "task": "8aadeb95-45a6-4ceb-8ae4-01aef29241fa", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 9130}
+{"ts": 1794118466.4, "task": "8aadeb95-45a6-4ceb-8ae4-01aef29241fa", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8756}
+{"ts": 1794118466.4, "task": "8aadeb95-45a6-4ceb-8ae4-01aef29241fa", "arm": "A", "event": "receipt", "sku": "G1831f2c0", "unit": "u-37f89a0a25e1", "price": 9130, "item": "과자"}
+{"ts": 1794118498.3, "task": "bc507f45-3b46-4765-86e3-bb8ecfe0e6fb", "arm": "A", "event": "no_offer", "x": "G74e686be", "n": 0}
+{"ts": 1794118509.2, "task": "319a2dbe-1563-4e0c-820d-e9738644d9f1", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794118544.0, "task": "c240955d-09d3-425e-9d48-36eaba3a40f5", "arm": "control", "event": "offer", "x": "G37da7a5c", "offered": [["G66ded25b", 3, 11296], ["G3c1b4d11", 3, 15682], ["G32bf9a8e", 3, 16459]]}
+{"ts": 1794118578.3, "task": "96c0b811-c859-4e6e-8491-d1a5f27159fc", "arm": "control", "event": "offer", "x": "G6380fc73", "offered": [["Gacd42643", 1, 29007], ["G1957829c", 1, 30230], ["G0e5c604f", 2, 26825]]}
+{"ts": 1794118588.3, "task": "1230792c-c9c0-46f9-b861-4ae8ced0ae13", "arm": "A", "event": "offer", "x": "Gaae7863f", "offered": [["G2cb8041b", 2, 204821], ["Gcc06fe5c", 2, 346462]]}
+{"ts": 1794118595.5, "task": "1230792c-c9c0-46f9-b861-4ae8ced0ae13", "arm": "A", "event": "number_reply", "x": "Gaae7863f", "sku": "G2cb8041b", "offer": 310000}
+{"ts": 1794118595.5, "task": "1230792c-c9c0-46f9-b861-4ae8ced0ae13", "arm": "A", "event": "chosen", "x": "Gaae7863f", "sku": "G2cb8041b", "tier": 2, "quoted": 204821}
+{"ts": 1794118595.5, "task": "1230792c-c9c0-46f9-b861-4ae8ced0ae13", "arm": "A", "event": "receipt", "sku": "G2cb8041b", "unit": "u-692a31c08dff", "price": 310000, "item": "소파/의자/스툴"}
+{"ts": 1794118608.3, "task": "07cd3025-60a5-410f-a36e-5539b5aa8fec", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 43764]]}
+{"ts": 1794118613.7, "task": "b534ac9f-1ae1-48c7-b665-6c977a73ef3b", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794118614.2, "task": "286c8d59-4de2-4059-934b-d9728ff42c83", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794118635.4, "task": "85780a4c-0f32-4dd1-8eb4-6b5f03ed99a1", "arm": "A", "event": "no_offer", "x": "G37da7a5c", "n": 3}
+{"ts": 1794118669.9, "task": "ae198901-c7cc-448c-bba2-9d46f737b482", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794118695.6, "task": "d3f0181b-679f-4c88-9e70-c44f3010015e", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794118695.6, "task": "d3f0181b-679f-4c88-9e70-c44f3010015e", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 9130}
+{"ts": 1794118695.7, "task": "d3f0181b-679f-4c88-9e70-c44f3010015e", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8756}
+{"ts": 1794118695.7, "task": "d3f0181b-679f-4c88-9e70-c44f3010015e", "arm": "A", "event": "receipt", "sku": "G1831f2c0", "unit": "u-37f89a0a25e1", "price": 9130, "item": "과자"}
+{"ts": 1794118865.4, "task": "881dac39-ed28-48b3-9c7c-37d43e87db98", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794118868.3, "task": "50cdd869-4cde-4d1a-a675-5f36a732783e", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33240], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31983]]}
+{"ts": 1794118880.1, "task": "944c551c-a891-473f-952d-c7f91ccbdab8", "arm": "control", "event": "offer", "x": "Gb67975ff", "offered": [["G757bdfb4", 2, 46404], ["G1cccaaa2", 2, 47417], ["Gc95a6511", 2, 52600]]}
+{"ts": 1794118905.2, "task": "e2723bce-ebb1-43e4-a62d-7056e45988ba", "arm": "A", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10644]]}
+{"ts": 1794118905.4, "task": "e2723bce-ebb1-43e4-a62d-7056e45988ba", "arm": "A", "event": "number_reply", "x": "G53e73f8c", "sku": "G117d7562", "offer": 7440}
+{"ts": 1794118905.4, "task": "e2723bce-ebb1-43e4-a62d-7056e45988ba", "arm": "A", "event": "chosen", "x": "G53e73f8c", "sku": "G117d7562", "tier": 2, "quoted": 10644}
+{"ts": 1794118905.9, "task": "e2723bce-ebb1-43e4-a62d-7056e45988ba", "arm": "A", "event": "receipt", "sku": "G117d7562", "unit": "u-5cca99ead6b4", "price": 9888, "item": "침구"}
+{"ts": 1794118911.4, "task": "769607a3-b264-4471-96b4-4d7ae8dae538", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33299], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31983]]}
+{"ts": 1794118933.6, "task": "a20b3eef-7c76-4e74-b2d9-28f2330a267f", "arm": "control", "event": "offer", "x": "G16822d88", "offered": [["G1cccaaa2", 1, 47417], ["G796e9122", 1, 52395], ["Ga7918a2e", 1, 60682]]}
+{"ts": 1794118950.7, "task": "acf78bed-a128-4c4f-b7ca-06d6dc24ae9b", "arm": "A", "event": "offer", "x": "G575cddb8", "offered": [["G0e5c604f", 1, 26825], ["G03cab593", 1, 26048], ["Gc90705c9", 2, 21137]]}
+{"ts": 1794118952.5, "task": "acf78bed-a128-4c4f-b7ca-06d6dc24ae9b", "arm": "A", "event": "number_reply", "x": "G575cddb8", "sku": "G0e5c604f", "offer": 13392}
+{"ts": 1794118952.5, "task": "acf78bed-a128-4c4f-b7ca-06d6dc24ae9b", "arm": "A", "event": "chosen", "x": "G575cddb8", "sku": "G0e5c604f", "tier": 1, "quoted": 26825}
+{"ts": 1794118957.4, "task": "9fa697be-fc29-4f0f-99f7-7f9ccc4a959b", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 43764], ["G0d2e767d", 3, 33299], ["G0415d680", 3, 35559]]}
+{"ts": 1794119003.8, "task": "62e232df-30df-4407-9fa5-a236ddf00f84", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8752], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794119015.3, "task": "4fb877e0-d191-442d-8124-0c0582d1e127", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794119046.9, "task": "a837316e-a8e0-48f1-913a-941d910b0401", "arm": "control", "event": "offer", "x": "G18868a23", "offered": [["G80435d53", 1, 18000]]}
+{"ts": 1794119067.5, "task": "bafb320e-6d20-443e-98a7-cbc01abde271", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33299], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31983]]}
+{"ts": 1794119068.9, "task": "dbbd74b3-5bd0-4f25-8123-f4c175930454", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33299], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31983]]}
+{"ts": 1794119207.2, "task": "048f011a-b3f5-49d2-8895-cd476bc72cbb", "arm": "control", "event": "offer", "x": "G18868a23", "offered": [["G80435d53", 1, 18000]]}
+{"ts": 1794119278.7, "task": "d1129fb8-540b-4d98-ac25-5257150c74eb", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794119343.5, "task": "1664521a-1d97-42aa-a0d4-00889de248a2", "arm": "control", "event": "offer", "x": "Gcc75125e", "offered": [["G75f11c19", 2, 86854], ["Ge62449c9", 2, 63430], ["Ga7918a2e", 2, 60682]]}
+{"ts": 1794119370.1, "task": "46900f39-8106-4f42-afa0-c69453029080", "arm": "A", "event": "offer", "x": "G2111d113", "offered": [["G1cccaaa2", 1, 47417], ["G796e9122", 1, 49458], ["Ga7918a2e", 1, 60682]]}
+{"ts": 1794119370.5, "task": "d540e4b8-449a-4660-8588-bee0e636e49a", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794119371.2, "task": "4d0c2c91-5c5e-436e-92bd-5d4bf8b784fc", "arm": "control", "event": "offer", "x": "G16822d88", "offered": [["G1cccaaa2", 1, 47417], ["G796e9122", 1, 49458], ["Ga7918a2e", 1, 60682]]}
+{"ts": 1794119380.9, "task": "9ef118ee-72ae-4280-8ef4-608f7c2b1568", "arm": "A", "event": "offer", "x": "Gb67975ff", "offered": [["G757bdfb4", 2, 45799], ["G796e9122", 2, 49458], ["G9508712b", 2, 43552]]}
+{"ts": 1794119384.2, "task": "954905ce-da0d-4a08-b367-7da1ca9ead60", "arm": "control", "event": "offer", "x": "G2f0b69a8", "offered": [["G757bdfb4", 1, 45799], ["G796e9122", 1, 49458], ["G7e580db7", 1, 36564]]}
+{"ts": 1794119389.8, "task": "e784f01f-6955-49cb-ab5d-fcd8b97bc1af", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36564], ["G1957829c", 1, 30840], ["G835cb76c", 1, 27799]]}
+{"ts": 1794119408.6, "task": "b42651e6-3ea7-47f6-9668-c45f8f2e3115", "arm": "A", "event": "offer", "x": "G78487d68", "offered": [["G9476605f", 1, 13386], ["G3434758a", 2, 12987]]}
+{"ts": 1794119430.3, "task": "ea77738e-4e63-4474-aa8f-24b519d4087e", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794119517.1, "task": "be1a62a6-75a8-4c20-97a4-bc17b80be483", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794119562.2, "task": "7fa62497-12ea-4bec-b6bc-6bb08601c6c7", "arm": "A", "event": "offer", "x": "G78487d68", "offered": [["G9476605f", 1, 13386], ["G3434758a", 2, 12987]]}
+{"ts": 1794119584.6, "task": "2ecb546b-c208-4e08-b56f-5310bb452df2", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23280]]}
+{"ts": 1794119611.6, "task": "3cd23940-2320-41a8-9859-f6166820ca2b", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794119618.1, "task": "de85b090-ea1f-412e-a2db-569499f478ba", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8755], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794119646.1, "task": "c903cc88-3f3c-4c47-bf3a-4a38f76c28a8", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794119698.3, "task": "7d38d056-291e-4ff2-8bbc-b3bdb1a24122", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23280]]}
+{"ts": 1794119698.4, "task": "7d38d056-291e-4ff2-8bbc-b3bdb1a24122", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 16403}
+{"ts": 1794119698.4, "task": "7d38d056-291e-4ff2-8bbc-b3bdb1a24122", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794119744.7, "task": "cb44c70e-507d-4b8f-b5fc-afe8555cd3d5", "arm": "A", "event": "offer", "x": "Gcc75125e", "offered": [["G75f11c19", 2, 86787], ["Ge62449c9", 2, 63438], ["Ga7918a2e", 2, 60682]]}
+{"ts": 1794119744.7, "task": "cb44c70e-507d-4b8f-b5fc-afe8555cd3d5", "arm": "A", "event": "number_reply", "x": "Gcc75125e", "sku": "G75f11c19", "offer": 44200}
+{"ts": 1794119744.8, "task": "cb44c70e-507d-4b8f-b5fc-afe8555cd3d5", "arm": "A", "event": "chosen", "x": "Gcc75125e", "sku": "G75f11c19", "tier": 2, "quoted": 86787}
+{"ts": 1794119815.2, "task": "785f6b1e-ff8f-424d-a82d-26af527cd624", "arm": "A", "event": "offer", "x": "G18868a23", "offered": [["G80435d53", 1, 18000]]}
+{"ts": 1794119894.1, "task": "7660f593-2e00-4886-bff4-8a3d616a6ffc", "arm": "A", "event": "offer", "x": "G78487d68", "offered": [["G9476605f", 1, 13386], ["G3434758a", 2, 12987]]}
+{"ts": 1794119895.8, "task": "7660f593-2e00-4886-bff4-8a3d616a6ffc", "arm": "A", "event": "number_reply", "x": "G78487d68", "sku": "G9476605f", "offer": 12048}
+{"ts": 1794119895.9, "task": "7660f593-2e00-4886-bff4-8a3d616a6ffc", "arm": "A", "event": "chosen", "x": "G78487d68", "sku": "G9476605f", "tier": 1, "quoted": 13386}
+{"ts": 1794119896.0, "task": "7660f593-2e00-4886-bff4-8a3d616a6ffc", "arm": "A", "event": "receipt", "sku": "G9476605f", "unit": "u-85fd36ad585b", "price": 14809, "item": "주스/코코아/생수"}
+{"ts": 1794119912.2, "task": "2f99f90e-e3a9-4b8f-9c33-a21cb54717e8", "arm": "A", "event": "no_offer", "x": "G16dcdc73", "n": 3}
+{"ts": 1794119925.7, "task": "cc82a810-4d04-4000-a62c-4449bc8cb929", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23248]]}
+{"ts": 1794119931.4, "task": "b6aa4a45-f412-4fbb-8675-11399759b7a1", "arm": "A", "event": "offer", "x": "G0102056d", "offered": [["G55c364cb", 1, 22555], ["G8202c6b5", 1, 23248], ["G35a6e5ca", 1, 22968]]}
+{"ts": 1794119932.0, "task": "2802b8ed-e7c6-4d2b-b333-4adbc38c00c4", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794119983.6, "task": "9efcbf0e-470c-4476-9921-5780721ecdb0", "arm": "control", "event": "offer", "x": "Gaae7863f", "offered": [["Gcc06fe5c", 2, 346165], ["G5e3784e6", 3, 410819], ["G33e8bdd8", 3, 53104]]}
+{"ts": 1794120048.9, "task": "86ec04fc-e2ee-44c1-a76e-ecd048a73fe7", "arm": "control", "event": "offer", "x": "G630a202e", "offered": [["Gc4b857d4", 3, 9834], ["G77ea48f4", 3, 12526], ["G2d348ccc", 3, 13680]]}
+{"ts": 1794120073.7, "task": "7ae03ca3-914e-48d7-9f4a-2f8e7a658df1", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23248]]}
+{"ts": 1794120092.5, "task": "09bef543-2cae-4050-b782-4116fe484b02", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11294], ["G32bf9a8e", 1, 16420]]}
+{"ts": 1794120120.7, "task": "2b12b8dd-be68-4b7f-b16c-c1f98c47d09e", "arm": "control", "event": "offer", "x": "G78487d68", "offered": [["G9476605f", 1, 13386], ["G3434758a", 2, 12987], ["Gdf79cd07", 3, 9763]]}
+{"ts": 1794120139.8, "task": "19660a1f-e653-402a-898b-771f3aceb66e", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794120183.9, "task": "7419eda6-9631-4b23-93ac-aec781ee5721", "arm": "A", "event": "no_offer", "x": "Gea0b0c3f", "n": 0}
+{"ts": 1794120223.1, "task": "08134078-50d3-45a8-b1af-1337eda0c08e", "arm": "A", "event": "offer", "x": "Gac0c1622", "offered": [["G66ded25b", 1, 11294], ["G1561d2a8", 2, 14140], ["G3c1b4d11", 2, 15524]]}
+{"ts": 1794120290.7, "task": "7f3cc7f2-de98-4d65-b153-d768ea4c22a8", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794120332.1, "task": "2e2f6e12-595e-43b2-90e1-92f1692f0337", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794120404.3, "task": "62544f93-71b2-4e7e-a839-5deb0c4dba1d", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794120434.5, "task": "6044ff6d-9db7-4582-8434-1fd1501346eb", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794120434.6, "task": "6044ff6d-9db7-4582-8434-1fd1501346eb", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 16403}
+{"ts": 1794120434.6, "task": "6044ff6d-9db7-4582-8434-1fd1501346eb", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794120435.0, "task": "6044ff6d-9db7-4582-8434-1fd1501346eb", "arm": "A", "event": "receipt", "sku": "G9843067b", "unit": "u-b8476712ec14", "price": 23093, "item": "김치"}
+{"ts": 1794120435.2, "task": "2a554295-b5b4-4442-b521-eca59f0371fa", "arm": "control", "event": "offer", "x": "G18868a23", "offered": [["G80435d53", 1, 18000]]}
+{"ts": 1794120445.9, "task": "deecb06f-d551-4c32-a7cc-39f478ea6998", "arm": "control", "event": "offer", "x": "G630a202e", "offered": [["Gc4b857d4", 3, 9834], ["G77ea48f4", 3, 12526], ["G2d348ccc", 3, 13680]]}
+{"ts": 1794120473.8, "task": "2752c770-2262-4134-adae-141c908d7adc", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794120509.4, "task": "c8e3ec08-95d6-493a-8ead-4cfece6a454d", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 33240], ["G0415d680", 3, 35559]]}
+{"ts": 1794120511.4, "task": "04a883bf-a208-474e-83f7-fc621977a140", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["Ga6784f77", 1, 31983], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794120515.6, "task": "84a7a56d-0c91-4fd4-be6e-e161335845e9", "arm": "A", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794120515.7, "task": "d98156d2-395e-40bc-ba6a-1a519ecc3805", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794120517.2, "task": "84a7a56d-0c91-4fd4-be6e-e161335845e9", "arm": "A", "event": "number_reply", "x": "G9843067b", "sku": "G35a6e5ca", "offer": 13572}
+{"ts": 1794120517.2, "task": "84a7a56d-0c91-4fd4-be6e-e161335845e9", "arm": "A", "event": "chosen", "x": "G9843067b", "sku": "G35a6e5ca", "tier": 1, "quoted": 22968}
+{"ts": 1794120517.8, "task": "84a7a56d-0c91-4fd4-be6e-e161335845e9", "arm": "A", "event": "receipt", "sku": "G35a6e5ca", "unit": "u-86f2f916cbeb", "price": 22968, "item": "김치"}
+{"ts": 1794120549.4, "task": "3c8f79d0-0b4e-4917-83df-bf0b3fb0a689", "arm": "control", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16275], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21166]]}
+{"ts": 1794120558.6, "task": "1c44b28f-b1b3-4f59-89ee-9ef92a66388a", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794120569.6, "task": "bf05f896-e3da-4dd8-9140-6e020dd98335", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 33240], ["G0415d680", 3, 35559]]}
+{"ts": 1794120744.6, "task": "49559085-f718-4c64-b6c2-c19b262ae8ff", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949], ["G55c364cb", 1, 22555]]}
+{"ts": 1794120752.1, "task": "ad8b0122-6745-450a-bce8-8f7339bfaec6", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794120753.0, "task": "310d2125-d9ec-42cf-a2df-89702a01f138", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949], ["G55c364cb", 1, 22555]]}
+{"ts": 1794120772.2, "task": "6fdb98fc-f8a2-4248-aa61-76d1a2ff7194", "arm": "A", "event": "no_offer", "x": "G16dcdc73", "n": 3}
+{"ts": 1794120786.3, "task": "bb4778ad-85d4-48ff-a5f7-62e455b690fd", "arm": "A", "event": "offer", "x": "G2607d1f6", "offered": [["G28bd9142", 1, 407876], ["Gf918c335", 1, 367771], ["G77834f4a", 2, 405765]]}
+{"ts": 1794120790.2, "task": "316c983a-df70-47d9-9c75-72e7eba4cb86", "arm": "control", "event": "offer", "x": "Gc4681038", "offered": [["G0d2e767d", 1, 33182], ["G0415d680", 1, 35559], ["Ga6784f77", 3, 32475]]}
+{"ts": 1794120840.1, "task": "7192c539-f627-4a21-8bb8-0b786aa35751", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8756], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794120862.8, "task": "19a03add-2e53-4d48-85a8-cded28f9da94", "arm": "A", "event": "offer", "x": "Gfced42a1", "offered": [["G2b11f53d", 1, 7441], ["G117d7562", 1, 10640]]}
+{"ts": 1794120867.3, "task": "19a03add-2e53-4d48-85a8-cded28f9da94", "arm": "A", "event": "number_reply", "x": "Gfced42a1", "sku": "G2b11f53d", "offer": 7265}
+{"ts": 1794120867.3, "task": "19a03add-2e53-4d48-85a8-cded28f9da94", "arm": "A", "event": "chosen", "x": "Gfced42a1", "sku": "G2b11f53d", "tier": 1, "quoted": 7441}
+{"ts": 1794120867.5, "task": "19a03add-2e53-4d48-85a8-cded28f9da94", "arm": "A", "event": "receipt", "sku": "G2b11f53d", "unit": "u-8435c3c72477", "price": 7441, "item": "침구"}
+{"ts": 1794120897.3, "task": "ad65d570-62b6-436b-b4a5-e7d09466e0b2", "arm": "A", "event": "offer", "x": "G2607d1f6", "offered": [["G28bd9142", 1, 407876], ["Gf918c335", 1, 367771], ["G77834f4a", 2, 405765]]}
+{"ts": 1794120898.1, "task": "ad65d570-62b6-436b-b4a5-e7d09466e0b2", "arm": "A", "event": "number_reply", "x": "G2607d1f6", "sku": "G28bd9142", "offer": 232097}
+{"ts": 1794120898.2, "task": "ad65d570-62b6-436b-b4a5-e7d09466e0b2", "arm": "A", "event": "chosen", "x": "G2607d1f6", "sku": "G28bd9142", "tier": 1, "quoted": 407876}
+{"ts": 1794120912.5, "task": "ad65d570-62b6-436b-b4a5-e7d09466e0b2", "arm": "A", "event": "receipt", "sku": "G28bd9142", "unit": "u-6ec3e00644f5", "price": 376000, "item": "침대/매트리스"}
+{"ts": 1794120927.5, "task": "c48dd1a7-e2c0-4ab0-a17c-bffb01f5d71a", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794120932.1, "task": "6831612d-7931-4fc0-b001-e8283a2f21c7", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36617], ["G1957829c", 1, 30675], ["G835cb76c", 1, 27760]]}
+{"ts": 1794120932.7, "task": "6831612d-7931-4fc0-b001-e8283a2f21c7", "arm": "A", "event": "number_reply", "x": "G998b9322", "sku": "G7e580db7", "offer": 27760}
+{"ts": 1794120932.7, "task": "6831612d-7931-4fc0-b001-e8283a2f21c7", "arm": "A", "event": "chosen", "x": "G998b9322", "sku": "G7e580db7", "tier": 1, "quoted": 36617}
+{"ts": 1794121011.3, "task": "4a0cb945-bb1b-441b-8c7a-c2f8f909f2f6", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10640], ["G06f2c594", 3, 16275], ["G05e3e5db", 3, 14996]]}
+{"ts": 1794121062.9, "task": "18769dee-8427-403e-ae0e-b0ce7a95c2f0", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794121083.3, "task": "794e73b3-46ba-45b9-8ee8-57c9b6846e08", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555]]}
+{"ts": 1794121087.0, "task": "8e204b35-99eb-4cc2-9df8-d9da30c03be6", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G55c364cb", 1, 22555], ["G200e39a3", 1, 29377], ["Gb27433e8", 1, 27273]]}
+{"ts": 1794121128.6, "task": "fdceb301-9957-4b81-8466-537a1dbb58b5", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33180], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121198.1, "task": "f3fed715-2d1a-407c-b01b-c0892cbe0825", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794121222.8, "task": "acb28fa4-17ab-4650-a680-751969bd5217", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8752], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794121222.9, "task": "acb28fa4-17ab-4650-a680-751969bd5217", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 9130}
+{"ts": 1794121222.9, "task": "acb28fa4-17ab-4650-a680-751969bd5217", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8752}
+{"ts": 1794121223.0, "task": "acb28fa4-17ab-4650-a680-751969bd5217", "arm": "A", "event": "receipt", "sku": "G1831f2c0", "unit": "u-64171ab28629", "price": 9130, "item": "과자"}
+{"ts": 1794121236.2, "task": "8b087a23-e785-4ad1-94a3-311b43efdda3", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33180], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121246.2, "task": "0c54798f-3ec6-4409-b39f-b09e73470d59", "arm": "control", "event": "offer", "x": "G4dda300c", "offered": [["G06f2c594", 2, 16275], ["G05e3e5db", 2, 14996], ["G117d7562", 2, 10640]]}
+{"ts": 1794121250.4, "task": "774d2626-1d79-4ece-abd7-1fd2a4ae75aa", "arm": "A", "event": "offer", "x": "G0102056d", "offered": [["G55c364cb", 1, 22555], ["G8202c6b5", 1, 23221], ["G35a6e5ca", 1, 22968]]}
+{"ts": 1794121250.4, "task": "78cbf96e-4f22-4d9b-864f-c2a4604aea28", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555]]}
+{"ts": 1794121251.1, "task": "4b1178cd-af66-443e-a90c-26b493e73133", "arm": "A", "event": "offer", "x": "G9843067b", "offered": [["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555], ["G200e39a3", 1, 29377]]}
+{"ts": 1794121303.2, "task": "bf272f34-28ba-4ef4-bd75-eff782192057", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33180], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121355.1, "task": "3797e102-0913-440b-a94c-03c4dd5ec592", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794121371.4, "task": "e9417c20-44d9-4387-a059-1185710b355a", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8752], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794121391.3, "task": "fdba8554-6f0b-47d5-a29b-f4d8d4c2ca70", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33180], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121393.9, "task": "de6bb79d-6f6d-4261-ad99-678c9a1c937b", "arm": "control", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16275], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21137]]}
+{"ts": 1794121401.4, "task": "c540d8fe-bac5-4e7a-84dd-945511620b79", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8752], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794121422.6, "task": "b2cdb3f4-bf16-414d-9f55-29ca285fcf44", "arm": "control", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16275], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21137]]}
+{"ts": 1794121539.1, "task": "73fb00de-9907-4d99-9a79-ad91fc2da7d1", "arm": "control", "event": "offer", "x": "Gaae7863f", "offered": [["G2cb8041b", 2, 201700], ["Gcc06fe5c", 2, 346165], ["G5e3784e6", 3, 410819]]}
+{"ts": 1794121557.8, "task": "a7b2fd51-6c6d-4277-bc31-42889a2ef37b", "arm": "control", "event": "offer", "x": "Gd6b03f11", "offered": [["G054ff120", 3, 5859], ["G2b11f53d", 3, 8222], ["G117d7562", 3, 10640]]}
+{"ts": 1794121563.3, "task": "23ae0b25-1913-4939-b28d-c6f93657f023", "arm": "control", "event": "offer", "x": "Gcc75125e", "offered": [["G75f11c19", 2, 86694], ["Ge62449c9", 2, 63456], ["Ga7918a2e", 2, 60682]]}
+{"ts": 1794121620.0, "task": "526a03bb-bdf2-4a22-a8fe-37ae1076e665", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794121645.2, "task": "977cf4ef-e9f6-408b-a84c-8460d3db41be", "arm": "control", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36671], ["G1957829c", 1, 30675], ["G835cb76c", 1, 27799]]}
+{"ts": 1794121695.0, "task": "00e0cf34-4fbc-4fa6-b099-8df20aa76910", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36671], ["G1957829c", 1, 30675], ["G835cb76c", 1, 27799]]}
+{"ts": 1794121697.9, "task": "00e0cf34-4fbc-4fa6-b099-8df20aa76910", "arm": "A", "event": "number_reply", "x": "G998b9322", "sku": "G7e580db7", "offer": 20760}
+{"ts": 1794121697.9, "task": "00e0cf34-4fbc-4fa6-b099-8df20aa76910", "arm": "A", "event": "chosen", "x": "G998b9322", "sku": "G7e580db7", "tier": 1, "quoted": 36671}
+{"ts": 1794121698.6, "task": "00e0cf34-4fbc-4fa6-b099-8df20aa76910", "arm": "A", "event": "receipt", "sku": "G7e580db7", "unit": "u-60f19ed2fc59", "price": 33737, "item": "침구"}
+{"ts": 1794121712.4, "task": "bab9ed79-b424-4918-9df5-575186104e07", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33179], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121759.7, "task": "47f3ff41-b644-4c0f-8fa7-ad1749d27a37", "arm": "A", "event": "offer", "x": "Gb67975ff", "offered": [["G757bdfb4", 2, 45799], ["G1cccaaa2", 2, 47417], ["Gc95a6511", 2, 52541]]}
+{"ts": 1794121759.8, "task": "47f3ff41-b644-4c0f-8fa7-ad1749d27a37", "arm": "A", "event": "number_reply", "x": "Gb67975ff", "sku": "G757bdfb4", "offer": 44893}
+{"ts": 1794121759.8, "task": "47f3ff41-b644-4c0f-8fa7-ad1749d27a37", "arm": "A", "event": "chosen", "x": "Gb67975ff", "sku": "G757bdfb4", "tier": 2, "quoted": 45799}
+{"ts": 1794121766.9, "task": "47f3ff41-b644-4c0f-8fa7-ad1749d27a37", "arm": "A", "event": "receipt", "sku": "G757bdfb4", "unit": "u-d5fa7271d948", "price": 45799, "item": "침구"}
+{"ts": 1794121773.3, "task": "a0eaec48-4b78-4501-99bf-9bbe80349730", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33179], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121773.8, "task": "6a798ad8-4de2-43fe-a516-2642863a0541", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 8914]]}
+{"ts": 1794121779.5, "task": "c779a54b-fe93-42e0-926c-7506ecc94ad0", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794121780.7, "task": "543b3035-8990-49f9-bcf3-33d2d3eec6fc", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794121820.1, "task": "07e370c7-2af3-4c14-bf49-1793ac5b92d6", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794121887.6, "task": "32c54ee5-ad56-46a2-bb08-4166d955be58", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794121917.3, "task": "c735d3cc-2088-492c-87aa-5ffc1f4e9831", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33179], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475]]}
+{"ts": 1794121917.4, "task": "c735d3cc-2088-492c-87aa-5ffc1f4e9831", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0d2e767d", "offer": 19560}
+{"ts": 1794121917.4, "task": "c735d3cc-2088-492c-87aa-5ffc1f4e9831", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0d2e767d", "tier": 1, "quoted": 33179}
+{"ts": 1794121918.0, "task": "c735d3cc-2088-492c-87aa-5ffc1f4e9831", "arm": "A", "event": "receipt", "sku": "G0d2e767d", "unit": "u-b8fbe302e59d", "price": 30524, "item": "김치"}
+{"ts": 1794121978.2, "task": "da202f3f-0336-4ef6-a351-d3f717572f41", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["G0415d680", 3, 35559], ["Ga6784f77", 3, 32475], ["Gb27433e8", 3, 27273]]}
+{"ts": 1794121981.1, "task": "77f76f3b-9ce5-4584-aa49-5ef873f9b058", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 32475], ["Gb27433e8", 1, 27273]]}
+{"ts": 1794121982.4, "task": "47a98bf4-4b06-4c72-833a-295a6900252c", "arm": "A", "event": "offer", "x": "Gd732ef75", "offered": [["G200e39a3", 1, 26611], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794121984.0, "task": "b8674874-7e38-4af5-a060-f4286063d434", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794121984.8, "task": "eca8b3a8-b47d-44c6-b339-36b1eb5cb346", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122171.1, "task": "49b25cda-eaaf-405d-bed3-4043c5430d3b", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794122229.8, "task": "4a58f785-9a4f-4ef0-b5f0-27bd64dff7d0", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122256.1, "task": "c55aa5e6-287a-44d8-b6ae-e5d48cf177a1", "arm": "control", "event": "offer", "x": "G18868a23", "offered": [["G80435d53", 1, 17966]]}
+{"ts": 1794122362.6, "task": "df3569bc-950e-4a8d-b2f4-280f9b1c0f95", "arm": "A", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122370.1, "task": "5101dcb3-c093-46d0-97f8-6b88b10998c4", "arm": "A", "event": "no_offer", "x": "G16dcdc73", "n": 3}
+{"ts": 1794122451.5, "task": "5f7e669b-c638-46a5-95f7-7ee8d02af9ae", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794122483.0, "task": "4a503740-34e9-4ee9-b3cd-a4f7456a3342", "arm": "A", "event": "offer", "x": "Gc4681038", "offered": [["G0415d680", 1, 35559]]}
+{"ts": 1794122483.1, "task": "4a503740-34e9-4ee9-b3cd-a4f7456a3342", "arm": "A", "event": "number_reply", "x": "Gc4681038", "sku": "G0415d680", "offer": 35559}
+{"ts": 1794122483.1, "task": "4a503740-34e9-4ee9-b3cd-a4f7456a3342", "arm": "A", "event": "chosen", "x": "Gc4681038", "sku": "G0415d680", "tier": 1, "quoted": 35559}
+{"ts": 1794122483.1, "task": "4a503740-34e9-4ee9-b3cd-a4f7456a3342", "arm": "A", "event": "receipt", "sku": "G0415d680", "unit": "u-4b5404c369c3", "price": 35559, "item": "김치"}
+{"ts": 1794122504.9, "task": "6c42254f-23a3-40f7-a25e-c634bd223314", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8751], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794122533.9, "task": "4dceacd0-09bd-46e3-8ad3-5f59bd9704e4", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["Ga6784f77", 1, 32475], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794122535.2, "task": "cdde13a3-fe8c-4e66-8e39-1ec1318dd891", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["Gb27433e8", 1, 27273], ["G200e39a3", 1, 26596], ["G35a6e5ca", 1, 22968]]}
+{"ts": 1794122537.4, "task": "d3df1a9c-7743-4048-8845-d6902ebc4bfb", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["Gb27433e8", 1, 27273], ["G200e39a3", 1, 26596], ["G35a6e5ca", 3, 22968]]}
+{"ts": 1794122539.9, "task": "c8a5c78e-d463-49f0-89c8-57eefbf70d30", "arm": "A", "event": "offer", "x": "G6380fc73", "offered": [["Gacd42643", 1, 29007], ["G1957829c", 1, 30675], ["G03cab593", 2, 28772]]}
+{"ts": 1794122541.8, "task": "c8a5c78e-d463-49f0-89c8-57eefbf70d30", "arm": "A", "event": "number_reply", "x": "G6380fc73", "sku": "Gacd42643", "offer": 16272}
+{"ts": 1794122541.8, "task": "c8a5c78e-d463-49f0-89c8-57eefbf70d30", "arm": "A", "event": "chosen", "x": "G6380fc73", "sku": "Gacd42643", "tier": 1, "quoted": 29007}
+{"ts": 1794122542.4, "task": "95cd3af9-dbed-4a6f-b931-50615409096c", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122544.9, "task": "bc3d1933-c248-467b-a113-69d1d215831a", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122548.4, "task": "82efa8d9-0389-40fa-8bde-462fe2ee2d96", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794122550.6, "task": "9be68b9f-eb60-40b2-8118-8f6a01c80aeb", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16275], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21166]]}
+{"ts": 1794122561.4, "task": "eb02dad1-6446-49bb-b9a1-5ab1b6d9fd58", "arm": "A", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122561.5, "task": "eb02dad1-6446-49bb-b9a1-5ab1b6d9fd58", "arm": "A", "event": "number_reply", "x": "G9843067b", "sku": "G35a6e5ca", "offer": 21949}
+{"ts": 1794122561.5, "task": "eb02dad1-6446-49bb-b9a1-5ab1b6d9fd58", "arm": "A", "event": "chosen", "x": "G9843067b", "sku": "G35a6e5ca", "tier": 1, "quoted": 22968}
+{"ts": 1794122561.6, "task": "eb02dad1-6446-49bb-b9a1-5ab1b6d9fd58", "arm": "A", "event": "receipt", "sku": "G35a6e5ca", "unit": "u-d0e847239b7c", "price": 22968, "item": "김치"}
+{"ts": 1794122604.1, "task": "287bbf9c-758b-44d8-98f5-02e6c73fa5a8", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 37338], ["G1957829c", 1, 30675], ["G835cb76c", 1, 27721]]}
+{"ts": 1794122604.7, "task": "287bbf9c-758b-44d8-98f5-02e6c73fa5a8", "arm": "A", "event": "number_reply", "x": "G998b9322", "sku": "G7e580db7", "offer": 20760}
+{"ts": 1794122629.1, "task": "8ce6f1a9-a066-47f1-88a7-a6c42b530cae", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["Ga6784f77", 1, 32475], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794122629.2, "task": "8ce6f1a9-a066-47f1-88a7-a6c42b530cae", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "Ga6784f77", "offer": 26110}
+{"ts": 1794122629.2, "task": "8ce6f1a9-a066-47f1-88a7-a6c42b530cae", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "Ga6784f77", "tier": 1, "quoted": 32475}
+{"ts": 1794122661.9, "task": "b0b834aa-af0a-4e71-ab2e-0954c087840d", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16275], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21166]]}
+{"ts": 1794122698.7, "task": "fb78a3c8-6b9c-40d9-82a7-9c94f00e2d06", "arm": "control", "event": "offer", "x": "G4f957db7", "offered": [["G2d348ccc", 2, 13496], ["G77ea48f4", 2, 12526], ["Gc4b857d4", 3, 9834]]}
+{"ts": 1794122874.4, "task": "c9aa4b73-4137-492c-87f0-b204c8a7a8f4", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794122915.4, "task": "691a5a6d-0f5c-426f-937e-9c87241b6abf", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122933.9, "task": "430ba661-2201-4848-b2ef-58d1c9de726c", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794122934.7, "task": "27fb9c04-ea8f-437b-a770-4f985219e6af", "arm": "control", "event": "offer", "x": "Ga6784f77", "offered": [["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794122944.8, "task": "6160fab1-02ae-4132-8268-1a9f0205f473", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794122946.4, "task": "a0d4bd98-396c-4f53-ac6b-e15e5b7fa79d", "arm": "A", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123000.4, "task": "89e93670-4df9-4e63-b2c2-2aca19425b79", "arm": "A", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10640]]}
+{"ts": 1794123002.0, "task": "89e93670-4df9-4e63-b2c2-2aca19425b79", "arm": "A", "event": "number_reply", "x": "G53e73f8c", "sku": "G117d7562", "offer": 6200}
+{"ts": 1794123002.0, "task": "89e93670-4df9-4e63-b2c2-2aca19425b79", "arm": "A", "event": "chosen", "x": "G53e73f8c", "sku": "G117d7562", "tier": 2, "quoted": 10640}
+{"ts": 1794123002.6, "task": "89e93670-4df9-4e63-b2c2-2aca19425b79", "arm": "A", "event": "receipt", "sku": "G117d7562", "unit": "u-5cca99ead6b4", "price": 9788, "item": "침구"}
+{"ts": 1794123079.4, "task": "b3778c97-ce8c-43fd-9c13-9d41e4c23149", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123091.7, "task": "81e1d937-0c75-4c28-9ad5-e45c4a93e2f6", "arm": "control", "event": "offer", "x": "Gcc75125e", "offered": [["G75f11c19", 2, 86543], ["Ge62449c9", 2, 63353], ["Ga7918a2e", 2, 60682]]}
+{"ts": 1794123093.3, "task": "a24484e5-5948-42d8-a2f7-f77a856d200d", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123143.9, "task": "fd5ff19a-c5c9-4be8-8235-a2ff8ab3bc3e", "arm": "control", "event": "offer", "x": "Ga6784f77", "offered": [["G0415d680", 1, 35559], ["Gb27433e8", 1, 27273], ["G200e39a3", 1, 29377]]}
+{"ts": 1794123189.5, "task": "ac8093c1-2a4c-4012-b449-e600078165bf", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123196.2, "task": "5ea64e40-9e92-496a-9832-25d6afffba84", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123205.8, "task": "910cc39f-d0bc-48ca-b614-93f1c4947445", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10640], ["G2b11f53d", 3, 8222], ["G06f2c594", 3, 16271]]}
+{"ts": 1794123209.7, "task": "2b8684cb-7d7f-417b-a136-55e14c489cce", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 34230], ["G0d2e767d", 3, 33180]]}
+{"ts": 1794123239.4, "task": "738bab04-3e94-4d2f-accb-6ba4bf829f98", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794123251.2, "task": "00e3754c-032f-4ed2-87da-d77710494286", "arm": "A", "event": "offer", "x": "G05b6b504", "offered": [["G2560a8c9", 2, 11356]]}
+{"ts": 1794123347.4, "task": "75388583-2691-41f7-99eb-43376e8470b5", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794123391.2, "task": "b3123ab0-6425-47dc-8efe-3489bf139c9c", "arm": "control", "event": "offer", "x": "Gb5f23ecf", "offered": [["G25fe9221", 1, 99170], ["Gccfb0ac5", 3, 50992], ["Gc21ca0bf", 3, 41208]]}
+{"ts": 1794123411.2, "task": "a2ae8010-4619-4ba0-ad4d-aa57e128c1f3", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123447.6, "task": "c7b27acc-d73b-4d0e-bc0f-718d61284905", "arm": "A", "event": "offer", "x": "G18868a23", "offered": [["G80435d53", 1, 17935]]}
+{"ts": 1794123478.0, "task": "913d7157-5e28-41b4-8fbe-946b545742e4", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794123548.8, "task": "dc564d0e-16be-43e6-8c2f-a673e33878dc", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794123598.2, "task": "5691137d-4230-41ea-8b79-809b8e0e0d26", "arm": "control", "event": "offer", "x": "Gfced42a1", "offered": [["G2b11f53d", 1, 8229], ["G117d7562", 1, 10640], ["G054ff120", 3, 5859]]}
+{"ts": 1794123599.1, "task": "2de6219c-caa6-419b-bf76-ab1e10e4ed19", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G0102056d", 1, 21949]]}
+{"ts": 1794123608.1, "task": "e804e450-9ffc-43ec-bf3f-fe214e4ccdf1", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33085], ["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794123611.9, "task": "f30c2e46-4fde-466f-821d-3cadfd5fc9ac", "arm": "control", "event": "offer", "x": "Ga6784f77", "offered": [["Gb27433e8", 1, 28231], ["G200e39a3", 1, 26556], ["G0d2e767d", 1, 33085]]}
+{"ts": 1794123612.4, "task": "02d51aab-82f9-40de-aa3c-b4a7d69dfa96", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555]]}
+{"ts": 1794123614.8, "task": "6ccaeff3-3368-46fc-abb8-0f5b620dac67", "arm": "A", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555]]}
+{"ts": 1794123619.2, "task": "d7a65fcf-b9a1-4553-ab4a-5e3181433b79", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 33085], ["Gb27433e8", 3, 27273]]}
+{"ts": 1794123632.1, "task": "061c2b97-44e9-414c-af8e-3e71437a2402", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33085], ["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794123632.2, "task": "061c2b97-44e9-414c-af8e-3e71437a2402", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0d2e767d", "offer": 19560}
+{"ts": 1794123632.2, "task": "061c2b97-44e9-414c-af8e-3e71437a2402", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0d2e767d", "tier": 1, "quoted": 33085}
+{"ts": 1794123632.7, "task": "061c2b97-44e9-414c-af8e-3e71437a2402", "arm": "A", "event": "receipt", "sku": "G0d2e767d", "unit": "u-2d089dcc867b", "price": 30438, "item": "김치"}
+{"ts": 1794123653.9, "task": "4f1eb112-7ace-47ed-aa49-f3f69dfcf2fb", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794123664.0, "task": "d0c5a335-64fc-4de8-b9a7-b9ba40924631", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16271], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21137]]}
+{"ts": 1794123683.3, "task": "815c1cd9-8b4a-4dab-807a-9fe1d10f9880", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9121]]}
+{"ts": 1794123711.6, "task": "df61e2c2-17df-4cb7-bf8b-85f19d189f19", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10640], ["G2b11f53d", 3, 8229], ["G06f2c594", 3, 16271]]}
+{"ts": 1794123754.4, "task": "702ef80e-de9d-46c3-826d-a6c171c10b41", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33085], ["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794123754.5, "task": "702ef80e-de9d-46c3-826d-a6c171c10b41", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0d2e767d", "offer": 28231}
+{"ts": 1794123754.5, "task": "702ef80e-de9d-46c3-826d-a6c171c10b41", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0d2e767d", "tier": 1, "quoted": 33085}
+{"ts": 1794123754.6, "task": "702ef80e-de9d-46c3-826d-a6c171c10b41", "arm": "A", "event": "receipt", "sku": "G0d2e767d", "unit": "u-c53d56ade967", "price": 33085, "item": "김치"}
+{"ts": 1794123777.3, "task": "c22d3d54-220c-436f-a3cb-d70d53003896", "arm": "A", "event": "offer", "x": "G0d2e767d", "offered": [["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794123779.2, "task": "6e71782c-070c-4482-ba1b-0e12db13e067", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0415d680", 3, 35559], ["Gb27433e8", 3, 28231]]}
+{"ts": 1794123785.8, "task": "de959433-8b06-410b-87f4-6f969be45d6f", "arm": "control", "event": "offer", "x": "Gfced42a1", "offered": [["G2b11f53d", 1, 8229], ["G117d7562", 1, 10640], ["G054ff120", 3, 5859]]}
+{"ts": 1794123817.8, "task": "efdea3f2-6ccc-4ec1-b36a-7e555ed1868b", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9121]]}
+{"ts": 1794123836.7, "task": "2e300c0d-0440-4181-be0d-e992d42ac090", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9121]]}
+{"ts": 1794123848.9, "task": "cf688e3d-1974-4d33-a670-0dc5173726a7", "arm": "A", "event": "offer", "x": "Gcc75125e", "offered": [["G75f11c19", 2, 86495], ["Ge62449c9", 2, 63383], ["Ga7918a2e", 2, 60682]]}
+{"ts": 1794123860.5, "task": "437b8623-7b43-4fb2-b8ab-decdc1a1beef", "arm": "control", "event": "offer", "x": "Ga6784f77", "offered": [["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110], ["G200e39a3", 1, 29377]]}
+{"ts": 1794123862.2, "task": "a0bf895d-9464-498c-9862-21c788f555f9", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794123865.0, "task": "cf688e3d-1974-4d33-a670-0dc5173726a7", "arm": "A", "event": "number_reply", "x": "Gcc75125e", "sku": "G75f11c19", "offer": 44200}
+{"ts": 1794123865.0, "task": "cf688e3d-1974-4d33-a670-0dc5173726a7", "arm": "A", "event": "chosen", "x": "Gcc75125e", "sku": "G75f11c19", "tier": 2, "quoted": 86495}
+{"ts": 1794123917.4, "task": "aef54d0c-af0b-40f1-8dc2-76e6344de5d7", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794123917.6, "task": "145cf431-2574-45a1-bce7-ec771865e5dd", "arm": "A", "event": "no_offer", "x": "G5bdaf222", "n": 0}
+{"ts": 1794123946.5, "task": "810db4ca-f1bc-46e2-89b9-c639bae4ccff", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794124006.4, "task": "8a387dbd-ea1e-4127-924f-cd0add2d1ede", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 34230], ["G0d2e767d", 3, 33085]]}
+{"ts": 1794124008.2, "task": "4affde57-83d6-4126-8b1d-ed8e0756b8bd", "arm": "A", "event": "offer", "x": "Ga6784f77", "offered": [["G0415d680", 1, 35559], ["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794124075.9, "task": "3db211ab-4a21-4876-b181-9d9c512d95c0", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23700], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794124096.9, "task": "71178fde-9dd9-4040-a77c-ecc638d6159e", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9113]]}
+{"ts": 1794124104.4, "task": "205a1ea3-6822-4854-9b1b-ca4eef10fbf8", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794124106.2, "task": "1379294e-0191-4049-a90b-c543be575b1e", "arm": "control", "event": "offer", "x": "Ga6784f77", "offered": [["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110], ["G200e39a3", 1, 29377]]}
+{"ts": 1794124114.9, "task": "559f9240-a064-4953-931f-483577ce9ad1", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16271], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21166]]}
+{"ts": 1794124115.9, "task": "8dca1f4f-3da8-4651-9e98-2c31c9b793d7", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794124134.7, "task": "23c22a52-dcd4-43c9-b896-3a3fd4d17711", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8749], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794124184.8, "task": "0f788397-a1e3-432a-b873-337520241d67", "arm": "A", "event": "offer", "x": "G2607d1f6", "offered": [["Gf918c335", 1, 367740], ["G77834f4a", 2, 405417], ["G021aae64", 2, 390386]]}
+{"ts": 1794124203.3, "task": "cd69ca2e-df35-47e3-aa36-b95ca4529249", "arm": "control", "event": "offer", "x": "Gef4d3036", "offered": [["G74e686be", 3, 9113]]}
+{"ts": 1794124215.9, "task": "f3f20663-6bdb-4382-83f2-13ab4f716c0a", "arm": "A", "event": "offer", "x": "G021aae64", "offered": [["G2c023a8c", 1, 387001], ["G9357d6c2", 2, 353726], ["Gf918c335", 2, 367740]]}
+{"ts": 1794124265.4, "task": "4fd635a2-8dce-4b4e-9ef5-e49ad6c4b8d0", "arm": "A", "event": "offer", "x": "Gaae7863f", "offered": [["G2cb8041b", 2, 212765], ["Gcc06fe5c", 2, 345024]]}
+{"ts": 1794124383.8, "task": "ce1a9832-f46c-41e3-ae08-e42d04af598d", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8749], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794124385.0, "task": "ce1a9832-f46c-41e3-ae08-e42d04af598d", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 5222}
+{"ts": 1794124385.0, "task": "ce1a9832-f46c-41e3-ae08-e42d04af598d", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8749}
+{"ts": 1794124432.7, "task": "65f8a0bf-f2a5-4326-a9e9-0a09a932d28d", "arm": "control", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16165], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21166]]}
+{"ts": 1794124556.1, "task": "cf2d11d8-5635-48e1-92f9-a32a2e5d8e8c", "arm": "A", "event": "no_offer", "x": "Gea0b0c3f", "n": 0}
+{"ts": 1794124585.3, "task": "6b14eeb4-e41b-4e25-a337-bf50a8cd1f44", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 33085], ["G0415d680", 3, 35559]]}
+{"ts": 1794124588.1, "task": "3db12e7f-0ded-4126-a823-75ebbec0c7ed", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33085], ["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794124588.5, "task": "0318b661-9cad-4146-bedc-30b22cf4164b", "arm": "control", "event": "offer", "x": "Ga6784f77", "offered": [["G0415d680", 1, 35559], ["Gb27433e8", 1, 27273], ["G200e39a3", 1, 29377]]}
+{"ts": 1794124592.0, "task": "311ce814-5aaa-426f-8ebb-5e7ce117e7dc", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["Gb27433e8", 1, 27273], ["G200e39a3", 1, 29377], ["Gc4681038", 1, 42630]]}
+{"ts": 1794124594.4, "task": "d88fcf86-6fd8-41fb-ba1b-122652823640", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555]]}
+{"ts": 1794124595.5, "task": "f988c587-cf03-4bfa-a039-f4f4e3e8839c", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794124597.3, "task": "07ac9e5c-1b95-4f2e-85b6-dd0d9787dbb5", "arm": "control", "event": "offer", "x": "G9843067b", "offered": [["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221], ["G55c364cb", 1, 22555]]}
+{"ts": 1794124617.1, "task": "7cf78d45-1cc1-4a50-8ec0-acc6d475ec1f", "arm": "A", "event": "offer", "x": "Gaae7863f", "offered": [["G2cb8041b", 2, 212765], ["Gcc06fe5c", 2, 345024]]}
+{"ts": 1794124634.1, "task": "566f914f-091b-4c52-bd25-edf17c0b710d", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8749], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794124642.5, "task": "cdecef11-8867-4a42-92d6-8ec28b23e725", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G06f2c594", 1, 16165], ["G05e3e5db", 2, 14996], ["Gc90705c9", 2, 21166]]}
+{"ts": 1794124691.6, "task": "2454562d-7ed8-49f6-876d-2ea7418e2446", "arm": "control", "event": "offer", "x": "G4de4eb5e", "offered": [["Gf0293c0e", 2, 128560], ["G8c06c1a5", 2, 122931], ["Gdef153a2", 2, 122840]]}
+{"ts": 1794124695.8, "task": "f9955a7a-ae48-4a13-9df3-05de0bccbd73", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 33085], ["G0415d680", 1, 35559], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794124757.9, "task": "c35cf937-5d8d-4ec5-b789-21332e39f797", "arm": "control", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8749], ["G1fdeffa7", 2, 9130], ["G114aefb6", 3, 6582]]}
+{"ts": 1794124789.4, "task": "87100964-b098-4580-a24d-1a9f767cb88b", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794124800.4, "task": "200c973a-6a4a-4da8-b781-98f4f056943b", "arm": "A", "event": "offer", "x": "G0d52d508", "offered": [["G1831f2c0", 2, 8749], ["G1fdeffa7", 2, 9130]]}
+{"ts": 1794124802.8, "task": "200c973a-6a4a-4da8-b781-98f4f056943b", "arm": "A", "event": "number_reply", "x": "G0d52d508", "sku": "G1831f2c0", "offer": 8064}
+{"ts": 1794124802.8, "task": "200c973a-6a4a-4da8-b781-98f4f056943b", "arm": "A", "event": "chosen", "x": "G0d52d508", "sku": "G1831f2c0", "tier": 2, "quoted": 8749}
+{"ts": 1794124803.0, "task": "200c973a-6a4a-4da8-b781-98f4f056943b", "arm": "A", "event": "receipt", "sku": "G1831f2c0", "unit": "u-0d504cc3daf0", "price": 9912, "item": "과자"}
+{"ts": 1794124885.2, "task": "f83e8a63-2267-4368-83d9-feacf170d55d", "arm": "control", "event": "offer", "x": "G37da7a5c", "offered": [["G66ded25b", 3, 11238], ["G1561d2a8", 3, 14140], ["Gac0c1622", 3, 12987]]}
+{"ts": 1794125311.8, "task": "1bcf6630-27c6-44dd-945f-ccb380138fa1", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794125429.1, "task": "f1d6a958-45ac-4641-bc88-2c6ffa6e1e40", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794125506.3, "task": "6f6a4c04-3731-4282-86f0-184bdd548409", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11227], ["G32bf9a8e", 1, 16392], ["G37da7a5c", 3, 7184]]}
+{"ts": 1794125638.9, "task": "886b234f-3f07-4540-870b-2cab9f98bfc0", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794125653.9, "task": "b0747830-e6f8-4447-b965-ba71e5bae358", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11226], ["G32bf9a8e", 1, 16392], ["G37da7a5c", 3, 7184]]}
+{"ts": 1794125738.2, "task": "147ba6a2-274d-4511-991b-8f8aa2544881", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11226], ["G32bf9a8e", 1, 16392], ["G37da7a5c", 3, 7184]]}
+{"ts": 1794125771.5, "task": "b7f900b5-627c-4b95-abff-4d3b01b75bfb", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794125874.5, "task": "0a196814-290c-4d6a-8c60-b7acef957b36", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794125886.8, "task": "16fe1b33-3131-45a3-8511-60bb12c2b0a6", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11226], ["G32bf9a8e", 1, 16399]]}
+{"ts": 1794125992.6, "task": "2f70dd74-27dc-4fac-8972-577e0669e0a5", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794125996.6, "task": "2f70dd74-27dc-4fac-8972-577e0669e0a5", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 13960}
+{"ts": 1794125996.6, "task": "2f70dd74-27dc-4fac-8972-577e0669e0a5", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794125997.2, "task": "2f70dd74-27dc-4fac-8972-577e0669e0a5", "arm": "A", "event": "receipt", "sku": "G9843067b", "unit": "u-49600e034ba9", "price": 21827, "item": "김치"}
+{"ts": 1794126077.6, "task": "e076be2f-3dc6-4173-b312-16817dcc3031", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126080.1, "task": "7a3ad168-6a2f-401c-997a-3b46618598c5", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11226], ["G32bf9a8e", 1, 16399], ["G37da7a5c", 3, 7177]]}
+{"ts": 1794126123.7, "task": "1aabeb93-975a-44f8-91ad-caf6e8c4896f", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126438.0, "task": "36527b37-e09d-43c3-82c4-9d273f5d34d6", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126503.8, "task": "16978033-e3c0-428b-bfe6-02f6d3149bf5", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126560.5, "task": "e70f65e7-efb1-4044-9965-9acca572cbbf", "arm": "control", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28511], ["G0e5c604f", 1, 26507]]}
+{"ts": 1794126650.3, "task": "24efc802-f454-47eb-b235-167a3569df7e", "arm": "A", "event": "no_offer", "x": "Gea0b0c3f", "n": 0}
+{"ts": 1794126682.8, "task": "768a99c1-e5d7-4e1b-89d1-41e023bf888e", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126713.4, "task": "aeaf9418-538e-4a2d-86c3-25539d16636c", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28511], ["G0e5c604f", 1, 26507]]}
+{"ts": 1794126757.4, "task": "c74ab339-1463-4297-9b86-6fa7727b0b5b", "arm": "control", "event": "offer", "x": "G022ce883", "offered": [["Gef4d3036", 3, 19787]]}
+{"ts": 1794126829.1, "task": "1f6728cb-0537-4b13-b9e5-40a9edf7699f", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126846.9, "task": "8c05e9a5-06cd-4570-9b6f-6962f62e2a81", "arm": "A", "event": "no_offer", "x": "G9a240832", "n": 3}
+{"ts": 1794126858.5, "task": "82fa8255-8874-4fc5-a1be-cf209261f8d7", "arm": "control", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28511], ["G0e5c604f", 1, 26507]]}
+{"ts": 1794126952.2, "task": "c584eaf2-fed9-4573-abe3-4c52cb9eead6", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9718], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794126957.0, "task": "a9abc24f-a545-4d00-9696-fb279c37472f", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794126987.0, "task": "d24ca7a8-c796-4fea-9c02-4160973b9438", "arm": "A", "event": "no_offer", "x": "G0b0ca441", "n": 0}
+{"ts": 1794127055.7, "task": "b68375f9-228b-41cd-b288-c28034de7d96", "arm": "A", "event": "no_offer", "x": "G0b0ca441", "n": 0}
+{"ts": 1794127069.5, "task": "aef32613-0039-40d1-a156-0b8b4338f288", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794127069.6, "task": "aef32613-0039-40d1-a156-0b8b4338f288", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 16403}
+{"ts": 1794127069.6, "task": "aef32613-0039-40d1-a156-0b8b4338f288", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794127083.1, "task": "2d37327d-094c-4c64-9318-e5da7adbb240", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794127173.5, "task": "172d8082-39b9-4603-a18f-6c64fc4df59a", "arm": "A", "event": "no_offer", "x": "G9a240832", "n": 3}
+{"ts": 1794127494.3, "task": "8dad277c-1944-432c-be82-c85f16d47adf", "arm": "A", "event": "offer", "x": "G85a1a856", "offered": [["G374f8060", 2, 504879], ["G754bf0ca", 2, 473083]]}
+{"ts": 1794127542.6, "task": "73100604-f533-495d-951e-b1685b77b6bf", "arm": "control", "event": "offer", "x": "G7c9163a5", "offered": [["G03aae7ca", 3, 11761], ["Gce0a6c84", 3, 11456], ["Ga789dfa1", 3, 11454]]}
+{"ts": 1794127658.4, "task": "d326883d-d8e7-4f56-b920-2679dd6e3065", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794127681.8, "task": "133006a7-8e03-41b6-a7d0-dc1a3e4573b9", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794127681.9, "task": "133006a7-8e03-41b6-a7d0-dc1a3e4573b9", "arm": "A", "event": "number_reply", "x": "G16dcdc73", "sku": "Gc4681038", "offer": 42630}
+{"ts": 1794127681.9, "task": "133006a7-8e03-41b6-a7d0-dc1a3e4573b9", "arm": "A", "event": "chosen", "x": "G16dcdc73", "sku": "Gc4681038", "tier": 1, "quoted": 42630}
+{"ts": 1794127681.9, "task": "133006a7-8e03-41b6-a7d0-dc1a3e4573b9", "arm": "A", "event": "receipt", "sku": "Gc4681038", "unit": "u-70f830e3bd03", "price": 42630, "item": "김치"}
+{"ts": 1794127706.5, "task": "74cdb8de-200a-40e3-b123-7c84b481b1e0", "arm": "A", "event": "no_offer", "x": "G0b0ca441", "n": 0}
+{"ts": 1794127769.4, "task": "a648db8d-a193-47c8-8f34-f1859dc1cfe3", "arm": "A", "event": "no_offer", "x": "G7c9163a5", "n": 3}
+{"ts": 1794127809.1, "task": "593726e4-2e7c-490c-8978-3d5c3153e456", "arm": "A", "event": "no_offer", "x": "G0b0ca441", "n": 0}
+{"ts": 1794127823.3, "task": "de2a5a21-e3f8-440d-8090-8c9bb22a747e", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794127870.0, "task": "433b3053-bb69-4c11-9368-0c5b07a0a954", "arm": "A", "event": "no_offer", "x": "G7c9163a5", "n": 3}
+{"ts": 1794128147.5, "task": "e6370706-3758-4ae7-8719-f0051778f6d2", "arm": "control", "event": "offer", "x": "G7c9163a5", "offered": [["G03aae7ca", 3, 11761], ["Gce0a6c84", 3, 11456], ["Ga789dfa1", 3, 11434]]}
+{"ts": 1794128182.9, "task": "7b9b227b-943e-4749-a983-a2104fa2ffcd", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 26330]]}
+{"ts": 1794128286.4, "task": "b2822f25-4ad1-4cc7-8abf-27f3eb0aea2f", "arm": "control", "event": "offer", "x": "G7c9163a5", "offered": [["G03aae7ca", 3, 11761], ["Gce0a6c84", 3, 11456], ["Ga789dfa1", 3, 11434]]}
+{"ts": 1794128437.6, "task": "50f2ff45-93ea-427d-94ca-8d34f83f57af", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23751], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794128437.7, "task": "50f2ff45-93ea-427d-94ca-8d34f83f57af", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 19195}
+{"ts": 1794128437.7, "task": "50f2ff45-93ea-427d-94ca-8d34f83f57af", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23751}
+{"ts": 1794128437.9, "task": "50f2ff45-93ea-427d-94ca-8d34f83f57af", "arm": "A", "event": "receipt", "sku": "G9843067b", "unit": "u-3841796e9523", "price": 23118, "item": "김치"}
+{"ts": 1794128648.5, "task": "09830525-6c04-4907-ab4a-708b12c933a4", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9685], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794128651.8, "task": "7824fa1c-b49c-45b3-9bac-06981edb0325", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9685], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794128657.0, "task": "48fb3fd5-33b0-4bc6-bfdd-3951a753a55b", "arm": "control", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 26330]]}
+{"ts": 1794128756.6, "task": "1d5f122c-6334-4d26-8e78-965398c46dcd", "arm": "control", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 750000], ["G374f8060", 2, 504879], ["G754bf0ca", 2, 454938]]}
+{"ts": 1794128785.2, "task": "f3632fe6-485e-49f3-8537-6abeacc74f45", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23751], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794128791.3, "task": "a2c1547e-1dc4-40a4-a52b-f584a310955a", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["Gb27433e8", 1, 27273], ["G4a998429", 1, 34151], ["G200e39a3", 1, 29377]]}
+{"ts": 1794128892.6, "task": "4f4cedba-b7a5-4a7a-9161-56fb1ef527a3", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23751], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129081.2, "task": "8a82ab61-ffa2-4376-b203-20b8b3ed42f2", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225]]}
+{"ts": 1794129100.5, "task": "4b8d742e-4c48-4bbd-8d99-cdb4311a57f1", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129117.4, "task": "7c866c22-a437-4969-aeb3-468cdfe00eff", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 26330]]}
+{"ts": 1794129117.5, "task": "7c866c22-a437-4969-aeb3-468cdfe00eff", "arm": "A", "event": "number_reply", "x": "G1957829c", "sku": "G482c1f4c", "offer": 16360}
+{"ts": 1794129117.6, "task": "7c866c22-a437-4969-aeb3-468cdfe00eff", "arm": "A", "event": "chosen", "x": "G1957829c", "sku": "G482c1f4c", "tier": 1, "quoted": 29740}
+{"ts": 1794129134.3, "task": "0726d556-44f2-4116-b782-320549e7d6f5", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11225], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794129134.3, "task": "0726d556-44f2-4116-b782-320549e7d6f5", "arm": "A", "event": "number_reply", "x": "G3c1b4d11", "sku": "G1561d2a8", "offer": 12987}
+{"ts": 1794129134.3, "task": "0726d556-44f2-4116-b782-320549e7d6f5", "arm": "A", "event": "chosen", "x": "G3c1b4d11", "sku": "G1561d2a8", "tier": 1, "quoted": 14140}
+{"ts": 1794129134.4, "task": "0726d556-44f2-4116-b782-320549e7d6f5", "arm": "A", "event": "receipt", "sku": "G1561d2a8", "unit": "u-84561d601775", "price": 14140, "item": "김치"}
+{"ts": 1794129140.9, "task": "237f5b38-762a-45e6-b1c8-a99f41f88ca7", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794129215.7, "task": "eb8348d9-34ad-456c-a262-05ed70fe1850", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794129243.6, "task": "83d224f8-a25f-44b0-a1f4-e21bc828ff66", "arm": "control", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 26330]]}
+{"ts": 1794129270.0, "task": "0f1f65ae-619f-4982-b66e-f4efaf3e60c2", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129361.1, "task": "6ce99e19-4419-4078-916f-22c630f63328", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129361.2, "task": "6ce99e19-4419-4078-916f-22c630f63328", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 23221}
+{"ts": 1794129361.2, "task": "6ce99e19-4419-4078-916f-22c630f63328", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794129361.3, "task": "6ce99e19-4419-4078-916f-22c630f63328", "arm": "A", "event": "receipt", "sku": "G9843067b", "unit": "u-3841796e9523", "price": 23725, "item": "김치"}
+{"ts": 1794129422.9, "task": "01c64031-6938-44ca-8103-9943e012ba40", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 32963], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 32968]]}
+{"ts": 1794129422.9, "task": "01c64031-6938-44ca-8103-9943e012ba40", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0d2e767d", "offer": 32968}
+{"ts": 1794129422.9, "task": "01c64031-6938-44ca-8103-9943e012ba40", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0d2e767d", "tier": 1, "quoted": 32963}
+{"ts": 1794129423.0, "task": "01c64031-6938-44ca-8103-9943e012ba40", "arm": "A", "event": "receipt", "sku": "G0d2e767d", "unit": "u-fa353bf51533", "price": 32968, "item": "김치"}
+{"ts": 1794129466.4, "task": "a90fe58e-5df6-4c6c-83b9-f053a3ec7445", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11225], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794129641.7, "task": "96e72d71-3a72-4331-a0a5-ddada9db3bfc", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 32968], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794129648.5, "task": "8cb5da25-e9fa-4148-991f-1a7c705a53b8", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129676.6, "task": "e194fb18-4aef-44ef-8168-433e422364d0", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 32968], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794129676.7, "task": "e194fb18-4aef-44ef-8168-433e422364d0", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0415d680", "offer": 26895}
+{"ts": 1794129676.7, "task": "e194fb18-4aef-44ef-8168-433e422364d0", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0415d680", "tier": 1, "quoted": 35559}
+{"ts": 1794129677.0, "task": "e194fb18-4aef-44ef-8168-433e422364d0", "arm": "A", "event": "receipt", "sku": "G0415d680", "unit": "u-4b5404c369c3", "price": 34611, "item": "김치"}
+{"ts": 1794129725.8, "task": "97bc2a89-df31-46fd-832e-ea47d0e68025", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["Ga6784f77", 1, 32968], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794129725.8, "task": "eccce016-c590-4b6d-bfb6-ba835cc2f7c2", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["Ga6784f77", 1, 32968], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794129731.7, "task": "ee80b7d1-9cc1-4093-840b-1405e6750de2", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 26035]]}
+{"ts": 1794129732.0, "task": "ee80b7d1-9cc1-4093-840b-1405e6750de2", "arm": "A", "event": "number_reply", "x": "G1957829c", "sku": "G482c1f4c", "offer": 16360}
+{"ts": 1794129732.0, "task": "ee80b7d1-9cc1-4093-840b-1405e6750de2", "arm": "A", "event": "chosen", "x": "G1957829c", "sku": "G482c1f4c", "tier": 1, "quoted": 29740}
+{"ts": 1794129747.0, "task": "8abbf6b4-7bac-4696-8ba9-a03907c796cb", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129757.5, "task": "d744b7fd-cc76-46cc-875f-16ab0cecf44c", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["Ga6784f77", 1, 32968], ["Gb27433e8", 1, 28231], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794129854.6, "task": "8ae9c278-0449-4ee4-8372-87dce1ace6e6", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794129859.3, "task": "0be3334a-aa43-44ad-9462-2066316c198e", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 32968], ["Gb27433e8", 1, 28231]]}
+{"ts": 1794129859.3, "task": "0be3334a-aa43-44ad-9462-2066316c198e", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0415d680", "offer": 28231}
+{"ts": 1794129859.3, "task": "0be3334a-aa43-44ad-9462-2066316c198e", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0415d680", "tier": 1, "quoted": 35559}
+{"ts": 1794129859.4, "task": "0be3334a-aa43-44ad-9462-2066316c198e", "arm": "A", "event": "receipt", "sku": "G0415d680", "unit": "u-4b5404c369c3", "price": 35559, "item": "김치"}
+{"ts": 1794129868.1, "task": "1297d41f-2b29-40c5-bd1c-401d4b00050a", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["Gb27433e8", 1, 28231], ["G200e39a3", 1, 29377], ["G9843067b", 1, 23725]]}
+{"ts": 1794129868.6, "task": "ce65624b-07a3-4627-8bc5-65104a044f55", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225]]}
+{"ts": 1794129892.2, "task": "23c89c78-8182-4dde-a093-17bbc94cee33", "arm": "control", "event": "offer", "x": "G0e7161d7", "offered": [["G8074a394", 2, 11400]]}
+{"ts": 1794130034.9, "task": "2131e331-cab3-49d9-9082-b3de8774afb4", "arm": "control", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 750000], ["G374f8060", 2, 503877], ["G754bf0ca", 2, 453425]]}
+{"ts": 1794130063.0, "task": "d62351d4-6d26-4903-87f4-52136a351edd", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794130080.8, "task": "8a112fa9-6cb7-4527-a636-a6a09653d5f4", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9685], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794130102.9, "task": "335b2b7f-f500-483e-a190-2bdd0c51004b", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225], ["G32bf9a8e", 1, 16358]]}
+{"ts": 1794130150.4, "task": "c8b6ad02-2ee2-47bb-83a3-8e0e1e1db159", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 37033], ["G0d2e767d", 3, 32963]]}
+{"ts": 1794130170.5, "task": "11576a6a-ba85-4640-8263-6d8bc40c1065", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794130170.5, "task": "11576a6a-ba85-4640-8263-6d8bc40c1065", "arm": "A", "event": "number_reply", "x": "G16dcdc73", "sku": "Gc4681038", "offer": 42630}
+{"ts": 1794130170.5, "task": "11576a6a-ba85-4640-8263-6d8bc40c1065", "arm": "A", "event": "chosen", "x": "G16dcdc73", "sku": "Gc4681038", "tier": 1, "quoted": 42630}
+{"ts": 1794130170.6, "task": "11576a6a-ba85-4640-8263-6d8bc40c1065", "arm": "A", "event": "receipt", "sku": "Gc4681038", "unit": "u-2e79b2c9a4e6", "price": 42630, "item": "김치"}
+{"ts": 1794130191.7, "task": "12e6f54f-6130-4b54-8dfb-5ecb25388c71", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 37033], ["G0d2e767d", 3, 32963]]}
+{"ts": 1794130245.5, "task": "9c8ea75d-62a9-4aea-8db8-a2fb3dc4fad4", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794130246.3, "task": "0ad700da-c3dc-4e3c-8273-bcb5eb31d958", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G200e39a3", 3, 29377], ["G9843067b", 3, 23725]]}
+{"ts": 1794130298.0, "task": "59eff885-ebf6-479d-957d-5d4bc760e0b9", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 37033], ["G0d2e767d", 3, 32963]]}
+{"ts": 1794130359.0, "task": "f7c37c37-8ac9-4943-b6cc-db4913107414", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794130372.6, "task": "bcd5886c-be17-4c66-9d5d-c6cff3ecaa55", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225]]}
+{"ts": 1794130379.9, "task": "2cace63d-7960-4236-9cc3-ac05fa6c1961", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225]]}
+{"ts": 1794130380.0, "task": "2cace63d-7960-4236-9cc3-ac05fa6c1961", "arm": "A", "event": "number_reply", "x": "G3c1b4d11", "sku": "G66ded25b", "offer": 11225}
+{"ts": 1794130380.0, "task": "2cace63d-7960-4236-9cc3-ac05fa6c1961", "arm": "A", "event": "chosen", "x": "G3c1b4d11", "sku": "G66ded25b", "tier": 1, "quoted": 11225}
+{"ts": 1794130380.0, "task": "2cace63d-7960-4236-9cc3-ac05fa6c1961", "arm": "A", "event": "receipt", "sku": "G66ded25b", "unit": "u-385400732f88", "price": 11225, "item": "김치"}
+{"ts": 1794130402.0, "task": "97a13527-b6ec-4023-b22d-8cc83875bce1", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794130402.3, "task": "97a13527-b6ec-4023-b22d-8cc83875bce1", "arm": "A", "event": "number_reply", "x": "G16dcdc73", "sku": "Gc4681038", "offer": 42240}
+{"ts": 1794130402.3, "task": "97a13527-b6ec-4023-b22d-8cc83875bce1", "arm": "A", "event": "chosen", "x": "G16dcdc73", "sku": "Gc4681038", "tier": 1, "quoted": 42630}
+{"ts": 1794130417.0, "task": "d1d17345-5c0a-454d-88eb-f40bbfda69bc", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 37033], ["G0d2e767d", 3, 32963]]}
+{"ts": 1794130455.8, "task": "b2ad631f-4b6c-4056-a3fa-91f9ded6b92a", "arm": "A", "event": "no_offer", "x": "G7c9163a5", "n": 3}
+{"ts": 1794130535.8, "task": "37f94335-12aa-4c27-b481-e97a992cd73f", "arm": "control", "event": "offer", "x": "G03d0199f", "offered": [["Gb5d0dde7", 3, 750000], ["G374f8060", 3, 503877], ["G754bf0ca", 3, 472652]]}
+{"ts": 1794130565.7, "task": "5b9fedb1-7a1c-4c94-8bd4-5c333b7fc034", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 37033], ["G0d2e767d", 3, 32963]]}
+{"ts": 1794130572.9, "task": "e9246859-1b5b-497b-bea1-11f17421a546", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794130577.3, "task": "c71d0e55-dd68-47c1-9256-78bd58b46956", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G200e39a3", 1, 29377], ["Gc4681038", 1, 42630], ["G9843067b", 3, 23725]]}
+{"ts": 1794130600.6, "task": "538cd7b7-f834-400c-a9cd-925f323ad23c", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11225], ["G37da7a5c", 3, 7114], ["G294b0ce8", 3, 24322]]}
+{"ts": 1794130619.6, "task": "52bc16c6-923e-43dc-a335-496eb3d36871", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11225], ["Gac0c1622", 2, 12968]]}
+{"ts": 1794130619.8, "task": "52bc16c6-923e-43dc-a335-496eb3d36871", "arm": "A", "event": "number_reply", "x": "G3c1b4d11", "sku": "G1561d2a8", "offer": 11225}
+{"ts": 1794130619.9, "task": "52bc16c6-923e-43dc-a335-496eb3d36871", "arm": "A", "event": "chosen", "x": "G3c1b4d11", "sku": "G1561d2a8", "tier": 1, "quoted": 14140}
+{"ts": 1794130661.8, "task": "7d1469d7-364a-4d8d-a4b6-c285285df819", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G03cab593", 1, 28376], ["G6380fc73", 1, 24544], ["G7e580db7", 1, 36671]]}
+{"ts": 1794130694.7, "task": "90ddb562-8960-4cc6-8ab9-31e341ab1969", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10584], ["G2b11f53d", 3, 8194], ["G054ff120", 3, 5859]]}
+{"ts": 1794130740.1, "task": "09caef15-cb42-4cdc-b3a2-20f9ad779bb4", "arm": "control", "event": "offer", "x": "G998b9322", "offered": [["G482c1f4c", 1, 29740], ["G2f0b69a8", 1, 50284], ["G835cb76c", 1, 27575]]}
+{"ts": 1794130744.5, "task": "686c27cb-c0be-4032-b5cb-6b638decf985", "arm": "control", "event": "offer", "x": "G0667d440", "offered": [["G0c4045d3", 1, 265920], ["G58c8543f", 1, 286185], ["Gf27f8931", 1, 246788]]}
+{"ts": 1794130746.9, "task": "1db7884a-ec7d-4793-af31-1988a318efcd", "arm": "control", "event": "offer", "x": "G0667d440", "offered": [["G0c4045d3", 1, 265920], ["G58c8543f", 1, 286185], ["Gf27f8931", 1, 246788]]}
+{"ts": 1794130752.2, "task": "bdcf5200-8f99-4781-9d97-7721ed432f0e", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 25740]]}
+{"ts": 1794130756.1, "task": "a00dbc2c-36f5-4844-b719-1e3f45ccd2be", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794130756.3, "task": "a00dbc2c-36f5-4844-b719-1e3f45ccd2be", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0415d680", "offer": 26110}
+{"ts": 1794130756.3, "task": "a00dbc2c-36f5-4844-b719-1e3f45ccd2be", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0415d680", "tier": 1, "quoted": 35559}
+{"ts": 1794130853.8, "task": "d063a6a9-3ebb-42d5-8b10-e41eeabf21e0", "arm": "control", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 750000], ["G374f8060", 2, 504378], ["G754bf0ca", 2, 472399]]}
+{"ts": 1794130855.1, "task": "bec1592a-257c-49b4-900c-1b6e1f4ebc89", "arm": "control", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 750000], ["G374f8060", 2, 504378], ["G754bf0ca", 2, 472399]]}
+{"ts": 1794130863.5, "task": "7c54020b-8a53-44ca-a3a0-a2641327e00a", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9728], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794130947.7, "task": "1c0a8135-1875-40d3-a21b-0bcd79853354", "arm": "A", "event": "no_offer", "x": "G9a240832", "n": 3}
+{"ts": 1794130952.5, "task": "062e7ca3-8400-4514-ab58-29676c449c25", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11224]]}
+{"ts": 1794130959.4, "task": "b641a6da-7eb1-4ae8-95a7-1365383d33fa", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794130989.8, "task": "9f2f2acb-caf3-46fa-a485-f225c95d18d2", "arm": "control", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36671], ["G482c1f4c", 1, 29740], ["G2f0b69a8", 1, 50284]]}
+{"ts": 1794131017.7, "task": "84bb579e-fe8c-4e55-9bee-b07e049547cc", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131053.2, "task": "6d548e62-e002-44e6-951e-878f1d35312f", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11224], ["G32bf9a8e", 1, 16344]]}
+{"ts": 1794131109.4, "task": "423f5c16-d0aa-4377-9735-e0ce99d52bd1", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 36452], ["G0d2e767d", 3, 32963]]}
+{"ts": 1794131127.2, "task": "4d88a198-bbff-4568-82c0-53d1fcd8663e", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11224], ["G32bf9a8e", 1, 16344]]}
+{"ts": 1794131127.2, "task": "4d88a198-bbff-4568-82c0-53d1fcd8663e", "arm": "A", "event": "number_reply", "x": "G3c1b4d11", "sku": "G1561d2a8", "offer": 16344}
+{"ts": 1794131127.2, "task": "4d88a198-bbff-4568-82c0-53d1fcd8663e", "arm": "A", "event": "chosen", "x": "G3c1b4d11", "sku": "G1561d2a8", "tier": 1, "quoted": 14140}
+{"ts": 1794131127.3, "task": "4d88a198-bbff-4568-82c0-53d1fcd8663e", "arm": "A", "event": "receipt", "sku": "G1561d2a8", "unit": "u-84561d601775", "price": 16344, "item": "김치"}
+{"ts": 1794131135.8, "task": "d4c744d0-84f4-4eec-b916-4382adf6d813", "arm": "A", "event": "offer", "x": "G3e0d6c67", "offered": [["G03d0199f", 2, 1118147]]}
+{"ts": 1794131139.6, "task": "606c54f6-ce3e-4458-bc10-9470dadeb7f9", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131151.5, "task": "fdb4da0a-47ac-4b5c-8d8c-908709c0bd7b", "arm": "A", "event": "offer", "x": "G1561d2a8", "offered": [["G66ded25b", 1, 11224]]}
+{"ts": 1794131153.2, "task": "24969b51-1e94-4fa6-8eaf-61f1d197044c", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11224]]}
+{"ts": 1794131170.5, "task": "cfb5f900-00e3-4a22-92b0-1a79040f0e6f", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11224], ["G32bf9a8e", 1, 16344], ["Gac0c1622", 2, 12982]]}
+{"ts": 1794131185.5, "task": "5b5d30e4-ba9b-42c2-a53c-dca70687255a", "arm": "A", "event": "no_offer", "x": "G147ae4e7", "n": 3}
+{"ts": 1794131227.1, "task": "385a64a4-6d1d-4736-bc2b-0d45c0210839", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131252.9, "task": "a04e2cdc-69dc-40ad-b3b4-792941bb8d84", "arm": "control", "event": "offer", "x": "G1561d2a8", "offered": [["G66ded25b", 1, 11224], ["G32bf9a8e", 1, 16344], ["G37da7a5c", 3, 7114]]}
+{"ts": 1794131253.6, "task": "dd42c1e4-8304-47db-aefa-9f49de1aa6c8", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11224], ["G32bf9a8e", 1, 16344]]}
+{"ts": 1794131268.0, "task": "ca23a567-5848-4f8e-84ec-0babec149031", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 32963], ["G0415d680", 3, 35559]]}
+{"ts": 1794131272.4, "task": "c83bbe06-bc41-41d8-ae1b-4dd46fb28611", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 32963], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832]]}
+{"ts": 1794131296.7, "task": "a351e1db-dd8d-4fc1-8f33-4608274ab99a", "arm": "A", "event": "no_offer", "x": "G147ae4e7", "n": 3}
+{"ts": 1794131380.4, "task": "afc8f2f0-16e7-4349-93b5-f460327442c0", "arm": "control", "event": "offer", "x": "Gb67975ff", "offered": [["G2f0b69a8", 2, 50162], ["G757bdfb4", 2, 45799], ["G1cccaaa2", 2, 47417]]}
+{"ts": 1794131415.4, "task": "4838b6d0-3253-4669-bb2c-d5026c95fc49", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36671], ["G482c1f4c", 1, 29740], ["G2f0b69a8", 1, 50162]]}
+{"ts": 1794131418.6, "task": "8ecadf21-229a-4dec-ab3c-912a9b2a9941", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11224], ["G32bf9a8e", 1, 16358]]}
+{"ts": 1794131543.8, "task": "570c3de7-7241-4727-8543-03671a40a467", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794131550.0, "task": "094a5b18-a889-43e2-af2f-9f20f3ed69bb", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131551.0, "task": "ac33d895-8b48-42ae-bb70-07f3057adcad", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G200e39a3", 3, 29377], ["G9843067b", 3, 23725]]}
+{"ts": 1794131678.2, "task": "8ae60175-08ff-433d-bd60-2c645838b4bd", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10587], ["G4dda300c", 2, 16135], ["G2b11f53d", 3, 8194]]}
+{"ts": 1794131701.3, "task": "4251e13b-f6bd-4be7-972f-e1137d51ee4f", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794131703.2, "task": "7b7c8319-bc77-4e0f-ad6c-d5ffd64d9a9d", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 32963], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832]]}
+{"ts": 1794131705.4, "task": "6fdaf4ab-9f68-4763-a52d-345194bf5c7b", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131756.9, "task": "1dfa84c5-f702-4d2e-b98a-8265df9d4206", "arm": "A", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 749832], ["G374f8060", 2, 505212], ["G754bf0ca", 2, 472500]]}
+{"ts": 1794131823.3, "task": "261c57ee-b42a-4076-9f2a-91567fac8480", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 32963], ["G0415d680", 3, 35559]]}
+{"ts": 1794131824.2, "task": "748fcd4b-c9ca-4397-a953-52287b3ecc3e", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 32963], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832]]}
+{"ts": 1794131830.2, "task": "1213c967-7483-4277-9f53-8260e661bdc6", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131839.1, "task": "3247dc39-6382-46da-8354-608799a3c4fa", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 32963], ["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832]]}
+{"ts": 1794131839.2, "task": "3247dc39-6382-46da-8354-608799a3c4fa", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0d2e767d", "offer": 26895}
+{"ts": 1794131839.2, "task": "3247dc39-6382-46da-8354-608799a3c4fa", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0d2e767d", "tier": 1, "quoted": 32963}
+{"ts": 1794131839.5, "task": "3247dc39-6382-46da-8354-608799a3c4fa", "arm": "A", "event": "receipt", "sku": "G0d2e767d", "unit": "u-a560efffa70d", "price": 32084, "item": "김치"}
+{"ts": 1794131841.8, "task": "a3fa9027-d21d-41fe-91e9-3e646d50473c", "arm": "A", "event": "no_offer", "x": "G9a240832", "n": 3}
+{"ts": 1794131864.6, "task": "3f3aea5c-9c7f-4434-b128-1354e0aaef69", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11223], ["G32bf9a8e", 1, 16364]]}
+{"ts": 1794131936.7, "task": "70670577-54e0-4c73-8a1d-924350a6065c", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794131943.3, "task": "01cf7917-5963-4694-b387-7215e112e396", "arm": "A", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794131943.3, "task": "01cf7917-5963-4694-b387-7215e112e396", "arm": "A", "event": "number_reply", "x": "G4a998429", "sku": "G0415d680", "offer": 26895}
+{"ts": 1794131943.3, "task": "01cf7917-5963-4694-b387-7215e112e396", "arm": "A", "event": "chosen", "x": "G4a998429", "sku": "G0415d680", "tier": 1, "quoted": 35559}
+{"ts": 1794131943.5, "task": "01cf7917-5963-4694-b387-7215e112e396", "arm": "A", "event": "receipt", "sku": "G0415d680", "unit": "u-4b5404c369c3", "price": 34611, "item": "김치"}
+{"ts": 1794131949.8, "task": "14a59e97-7a64-44a5-8fe3-792674aacb03", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11223], ["G55c364cb", 3, 22194], ["G0102056d", 3, 21949]]}
+{"ts": 1794132056.5, "task": "a2e0dec6-87d7-4234-a4ee-525d15660dcc", "arm": "control", "event": "offer", "x": "G06f2c594", "offered": [["G117d7562", 3, 10587], ["Gc90705c9", 3, 21089], ["G2b11f53d", 3, 8190]]}
+{"ts": 1794132062.4, "task": "416bc74e-33af-4f7f-ba47-d7c726c39f22", "arm": "A", "event": "offer", "x": "G85a1a856", "offered": [["G374f8060", 2, 505212], ["G754bf0ca", 2, 472540]]}
+{"ts": 1794132105.4, "task": "e475552b-73dd-4a5a-95e7-f42b230600d2", "arm": "A", "event": "no_offer", "x": "G022ce883", "n": 1}
+{"ts": 1794132107.9, "task": "e043b7be-8793-4735-89fe-d5d5d9326b38", "arm": "A", "event": "no_offer", "x": "G7c9163a5", "n": 3}
+{"ts": 1794132130.3, "task": "54d6ac84-b299-4fb8-a608-fffe312d3741", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0415d680", 1, 35559], ["Ga6784f77", 1, 31832], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794132133.4, "task": "1c09c6c3-bc12-4e05-8fd9-70cddfbf47f6", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G200e39a3", 1, 26530], ["Gc4681038", 1, 42630], ["G9843067b", 3, 23725]]}
+{"ts": 1794132137.4, "task": "2b3f8a7b-e26d-4936-8687-df6786a0b47c", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794132190.9, "task": "4f438710-1665-44d3-b384-46bdcd126316", "arm": "control", "event": "offer", "x": "Gb67975ff", "offered": [["G2f0b69a8", 2, 50111], ["G757bdfb4", 2, 45799], ["G1cccaaa2", 2, 47417]]}
+{"ts": 1794132236.3, "task": "1366d13c-2d81-4998-8c20-7088c6e14de4", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794132269.0, "task": "e9a80f47-eda1-4b84-a051-e20cfe401564", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 34151], ["G0d2e767d", 3, 35722]]}
+{"ts": 1794132319.4, "task": "05f7c560-e78b-44f0-a423-f7a14bf40afd", "arm": "A", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10587]]}
+{"ts": 1794132319.6, "task": "05f7c560-e78b-44f0-a423-f7a14bf40afd", "arm": "A", "event": "number_reply", "x": "G53e73f8c", "sku": "G117d7562", "offer": 8525}
+{"ts": 1794132319.6, "task": "05f7c560-e78b-44f0-a423-f7a14bf40afd", "arm": "A", "event": "chosen", "x": "G53e73f8c", "sku": "G117d7562", "tier": 2, "quoted": 10587}
+{"ts": 1794132333.4, "task": "d047b5db-be9a-4b16-bad0-1feb119dbce0", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10587], ["G2b11f53d", 3, 8190], ["G05e3e5db", 3, 14996]]}
+{"ts": 1794132376.4, "task": "854ef91c-0935-4b9e-8df5-4ea864816683", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794132376.5, "task": "854ef91c-0935-4b9e-8df5-4ea864816683", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 23221}
+{"ts": 1794132376.5, "task": "854ef91c-0935-4b9e-8df5-4ea864816683", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794132376.6, "task": "854ef91c-0935-4b9e-8df5-4ea864816683", "arm": "A", "event": "receipt", "sku": "G9843067b", "unit": "u-b9c0ccaebd6c", "price": 23725, "item": "김치"}
+{"ts": 1794132422.9, "task": "7ab65d44-68d0-463e-a12d-48f06cce1945", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11223], ["G37da7a5c", 3, 7114], ["G294b0ce8", 3, 24322]]}
+{"ts": 1794132455.9, "task": "cf8c109b-af16-40e6-9a35-2a53c88ec609", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794132546.7, "task": "106fae7c-cc1b-4deb-ab4e-f053c9defb3f", "arm": "A", "event": "no_offer", "x": "G7c9163a5", "n": 3}
+{"ts": 1794132683.7, "task": "5c020111-5e75-410b-8711-1b7bf869c621", "arm": "A", "event": "offer", "x": "G06f2c594", "offered": [["G12b895c1", 1, 16730], ["G05e3e5db", 2, 14996]]}
+{"ts": 1794132685.6, "task": "5c020111-5e75-410b-8711-1b7bf869c621", "arm": "A", "event": "number_reply", "x": "G06f2c594", "sku": "G12b895c1", "offer": 9945}
+{"ts": 1794132685.7, "task": "5c020111-5e75-410b-8711-1b7bf869c621", "arm": "A", "event": "chosen", "x": "G06f2c594", "sku": "G12b895c1", "tier": 1, "quoted": 16730}
+{"ts": 1794132687.1, "task": "f238de7f-932f-44f5-9573-c4bf31e6ebc3", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794132712.1, "task": "9ecacc63-c9e5-4362-af7c-03ec3539a9ad", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11223], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794132712.1, "task": "9ecacc63-c9e5-4362-af7c-03ec3539a9ad", "arm": "A", "event": "number_reply", "x": "G3c1b4d11", "sku": "G1561d2a8", "offer": 12987}
+{"ts": 1794132712.2, "task": "9ecacc63-c9e5-4362-af7c-03ec3539a9ad", "arm": "A", "event": "chosen", "x": "G3c1b4d11", "sku": "G1561d2a8", "tier": 1, "quoted": 14140}
+{"ts": 1794132712.3, "task": "9ecacc63-c9e5-4362-af7c-03ec3539a9ad", "arm": "A", "event": "receipt", "sku": "G1561d2a8", "unit": "u-84561d601775", "price": 14140, "item": "김치"}
+{"ts": 1794132734.9, "task": "03a606f5-35ee-4eb6-91a7-33a7ca259821", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11223], ["Gac0c1622", 2, 12987], ["G37da7a5c", 3, 7114]]}
+{"ts": 1794132742.9, "task": "cbb26090-17d0-4d68-9b81-a14222939932", "arm": "A", "event": "offer", "x": "G1561d2a8", "offered": [["G66ded25b", 1, 11223], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794132845.8, "task": "c81e89cb-3263-45db-b62b-264bc9f3444d", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794132868.0, "task": "36b4968a-0dac-410b-af1d-13ded000869d", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9685], ["G7fa48eaa", 3, 4155]]}
+{"ts": 1794132904.3, "task": "e3401202-acdf-4736-aab7-9b4ea81f2bf1", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11223]]}
+{"ts": 1794132915.5, "task": "2ede90f6-d6ea-4c26-86fa-b1e69109cf97", "arm": "A", "event": "offer", "x": "G2b11f53d", "offered": [["G117d7562", 1, 10587], ["G054ff120", 2, 5859]]}
+{"ts": 1794132917.6, "task": "2ede90f6-d6ea-4c26-86fa-b1e69109cf97", "arm": "A", "event": "number_reply", "x": "G2b11f53d", "sku": "G117d7562", "offer": 5184}
+{"ts": 1794132917.6, "task": "2ede90f6-d6ea-4c26-86fa-b1e69109cf97", "arm": "A", "event": "chosen", "x": "G2b11f53d", "sku": "G117d7562", "tier": 1, "quoted": 10587}
+{"ts": 1794132966.6, "task": "0d363f3a-40f8-4c64-86ce-347a9744748c", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14140], ["G66ded25b", 1, 11223], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794132966.6, "task": "0d363f3a-40f8-4c64-86ce-347a9744748c", "arm": "A", "event": "number_reply", "x": "G3c1b4d11", "sku": "G1561d2a8", "offer": 12987}
+{"ts": 1794132966.6, "task": "0d363f3a-40f8-4c64-86ce-347a9744748c", "arm": "A", "event": "chosen", "x": "G3c1b4d11", "sku": "G1561d2a8", "tier": 1, "quoted": 14140}
+{"ts": 1794132966.7, "task": "0d363f3a-40f8-4c64-86ce-347a9744748c", "arm": "A", "event": "receipt", "sku": "G1561d2a8", "unit": "u-84561d601775", "price": 14140, "item": "김치"}
+{"ts": 1794132990.6, "task": "705cddff-fe47-444e-b33f-2113478ff46f", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794133001.0, "task": "af9ace27-b117-449e-a284-b04bdbfd5a19", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794133010.4, "task": "cc259db3-b6b9-41a5-ace2-361463588315", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11223], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794133060.7, "task": "a1e68c29-fe75-4a94-89a7-1e81ce58d04e", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794133091.2, "task": "b4318ac0-56ed-4abf-9e17-fb0fcd683562", "arm": "control", "event": "offer", "x": "Gb67975ff", "offered": [["G757bdfb4", 2, 45799], ["G1cccaaa2", 2, 47417], ["G16822d88", 2, 50057]]}
+{"ts": 1794133113.3, "task": "69290630-1e83-4f28-abd1-02a0f5783149", "arm": "A", "event": "offer", "x": "G416971dc", "offered": [["G5e75d91d", 1, 87487], ["G03c2d98f", 1, 90708], ["G9c02e68e", 1, 93030]]}
+{"ts": 1794133114.9, "task": "0ed2ff73-ca9d-4cb5-9c26-44de1ec075c3", "arm": "A", "event": "offer", "x": "G2f0b69a8", "offered": [["G757bdfb4", 1, 45799], ["G1cccaaa2", 1, 47417], ["G16822d88", 1, 50057]]}
+{"ts": 1794133117.3, "task": "0ed2ff73-ca9d-4cb5-9c26-44de1ec075c3", "arm": "A", "event": "number_reply", "x": "G2f0b69a8", "sku": "G757bdfb4", "offer": 31632}
+{"ts": 1794133117.3, "task": "0ed2ff73-ca9d-4cb5-9c26-44de1ec075c3", "arm": "A", "event": "chosen", "x": "G2f0b69a8", "sku": "G757bdfb4", "tier": 1, "quoted": 45799}
+{"ts": 1794133134.7, "task": "be3db579-baa2-4e97-b566-1ee28fab9f5d", "arm": "A", "event": "offer", "x": "G53e73f8c", "offered": [["G117d7562", 2, 10587]]}
+{"ts": 1794133134.7, "task": "be3db579-baa2-4e97-b566-1ee28fab9f5d", "arm": "A", "event": "number_reply", "x": "G53e73f8c", "sku": "G117d7562", "offer": 7285}
+{"ts": 1794133134.7, "task": "be3db579-baa2-4e97-b566-1ee28fab9f5d", "arm": "A", "event": "chosen", "x": "G53e73f8c", "sku": "G117d7562", "tier": 2, "quoted": 10587}
+{"ts": 1794133134.9, "task": "be3db579-baa2-4e97-b566-1ee28fab9f5d", "arm": "A", "event": "receipt", "sku": "G117d7562", "unit": "u-f83e63b9e536", "price": 10305, "item": "침구"}
+{"ts": 1794133157.6, "task": "98bb214c-af16-42a4-a74e-3bcd6dae115b", "arm": "A", "event": "no_offer", "x": "G74e686be", "n": 0}
+{"ts": 1794133210.1, "task": "be5e5196-1fe4-463e-b574-fd6f2e03969c", "arm": "control", "event": "offer", "x": "G9508712b", "offered": [["G7e580db7", 2, 37445], ["G757bdfb4", 2, 45799], ["G1cccaaa2", 2, 47417]]}
+{"ts": 1794133219.9, "task": "50c9cb01-2efd-4d2b-970e-2a663dddda5b", "arm": "A", "event": "no_offer", "x": "G74e686be", "n": 0}
+{"ts": 1794133236.0, "task": "cfe7e4ea-8ca9-4341-97d4-d770e2721dab", "arm": "A", "event": "no_offer", "x": "G147ae4e7", "n": 3}
+{"ts": 1794133236.4, "task": "f317dbf9-5528-489b-b85c-c0de7ea441c0", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 37445], ["G835cb76c", 1, 27760], ["G0be9ed07", 2, 30174]]}
+{"ts": 1794133236.5, "task": "f317dbf9-5528-489b-b85c-c0de7ea441c0", "arm": "A", "event": "number_reply", "x": "G998b9322", "sku": "G7e580db7", "offer": 30174}
+{"ts": 1794133236.5, "task": "f317dbf9-5528-489b-b85c-c0de7ea441c0", "arm": "A", "event": "chosen", "x": "G998b9322", "sku": "G7e580db7", "tier": 1, "quoted": 37445}
+{"ts": 1794133236.6, "task": "f317dbf9-5528-489b-b85c-c0de7ea441c0", "arm": "A", "event": "receipt", "sku": "G7e580db7", "unit": "u-60f19ed2fc59", "price": 37445, "item": "침구"}
+{"ts": 1794133242.5, "task": "1d6329c8-7900-4956-a85d-bfca14073a52", "arm": "control", "event": "offer", "x": "G6380fc73", "offered": [["G835cb76c", 2, 27760], ["G0be9ed07", 2, 30174], ["G12b895c1", 3, 16721]]}
+{"ts": 1794133243.8, "task": "0ce35a9f-4b1b-4ccd-95ba-51f830037c16", "arm": "A", "event": "offer", "x": "Gc90705c9", "offered": [["G12b895c1", 2, 16721]]}
+{"ts": 1794133260.0, "task": "9fd2be66-5f0d-441f-8323-6abe8671f847", "arm": "control", "event": "offer", "x": "G7c9163a5", "offered": [["G03aae7ca", 3, 11761], ["Gce0a6c84", 3, 11456], ["Ga789dfa1", 3, 11323]]}
+{"ts": 1794133262.1, "task": "232bd79a-ccd1-4750-aad5-0180ab12b390", "arm": "A", "event": "offer", "x": "G575cddb8", "offered": [["G12b895c1", 2, 16721]]}
+{"ts": 1794133264.9, "task": "b2515e13-8b83-41db-a0fe-5e437fcc105a", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G0be9ed07", 2, 30174], ["G835cb76c", 2, 27760]]}
+{"ts": 1794133265.2, "task": "b2515e13-8b83-41db-a0fe-5e437fcc105a", "arm": "A", "event": "number_reply", "x": "G1957829c", "sku": "G0be9ed07", "offer": 16360}
+{"ts": 1794133265.3, "task": "b2515e13-8b83-41db-a0fe-5e437fcc105a", "arm": "A", "event": "chosen", "x": "G1957829c", "sku": "G0be9ed07", "tier": 2, "quoted": 30174}
+{"ts": 1794133265.9, "task": "b2515e13-8b83-41db-a0fe-5e437fcc105a", "arm": "A", "event": "receipt", "sku": "G0be9ed07", "unit": "u-a5121dcf05db", "price": 27760, "item": "침구"}
+{"ts": 1794133269.1, "task": "2ad6b530-bcf9-423a-a05e-48ce9a81e427", "arm": "control", "event": "offer", "x": "G05e3e5db", "offered": [["G12b895c1", 2, 16721], ["Gd6b03f11", 3, 4281], ["G835cb76c", 3, 27760]]}
+{"ts": 1794133273.9, "task": "c2a579cc-cf92-45e3-afda-80fc2e37a8fe", "arm": "A", "event": "no_offer", "x": "G4dda300c", "n": 3}
+{"ts": 1794133273.9, "task": "f4e4f93f-af7e-45aa-a52e-02c1f40ce77f", "arm": "A", "event": "no_offer", "x": "G06f2c594", "n": 3}
+{"ts": 1794133276.7, "task": "01b27c78-884f-444b-9071-1c7d229ee4fc", "arm": "A", "event": "no_offer", "x": "G53e73f8c", "n": 3}
+{"ts": 1794133278.5, "task": "beac3baa-77a0-4a12-b092-32174830de02", "arm": "control", "event": "offer", "x": "Gc95a6511", "offered": [["G2111d113", 1, 54510], ["G1cccaaa2", 1, 47417], ["Ge62449c9", 1, 63288]]}
+{"ts": 1794133331.5, "task": "37d0385d-44f3-41f4-b84c-3c4cae1876b1", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794133337.0, "task": "4c4c5a07-b051-4608-afef-ec32722e9c89", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133417.4, "task": "230fe523-ed2c-4a66-b74a-8b5e6ac61029", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9682], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794133481.9, "task": "4807bb79-6afa-493c-a0db-b3c343e2491b", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133483.7, "task": "42e26c5a-fcf0-46bf-a815-bd88e34b5785", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133517.1, "task": "8e6ade76-da09-4b0c-bbc9-cf95cfa5b206", "arm": "A", "event": "offer", "x": "G05e3e5db", "offered": [["G12b895c1", 2, 16721]]}
+{"ts": 1794133518.3, "task": "db2171c5-24ca-42d9-8bbb-75246a64e98a", "arm": "control", "event": "offer", "x": "G06f2c594", "offered": [["G0e5c604f", 3, 25740], ["Gd6b03f11", 3, 4281], ["G835cb76c", 3, 27760]]}
+{"ts": 1794133518.4, "task": "70931ae9-2097-4062-a779-7dcf02be59e9", "arm": "control", "event": "offer", "x": "G4dda300c", "offered": [["Gd6b03f11", 3, 4281], ["G0e5c604f", 3, 25740], ["G835cb76c", 3, 27760]]}
+{"ts": 1794133519.4, "task": "19cce687-c3fa-4cf3-9847-fcbd2a9a5f92", "arm": "A", "event": "no_offer", "x": "G53e73f8c", "n": 3}
+{"ts": 1794133521.2, "task": "e462822d-0dd4-48cf-8c4c-eaea23480d5e", "arm": "A", "event": "no_offer", "x": "G117d7562", "n": 3}
+{"ts": 1794133522.6, "task": "1bc9be7d-5365-430a-acae-4cfab5023f8a", "arm": "A", "event": "no_offer", "x": "G2b11f53d", "n": 3}
+{"ts": 1794133545.2, "task": "6b173419-628b-40d3-bc4d-97282dd5fd15", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9682], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794133546.2, "task": "8d7b0575-dd44-43ef-a591-38a1bc16c594", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 1}
+{"ts": 1794133623.5, "task": "9bc6e669-b1de-4687-8a0b-1821edfabc72", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133649.5, "task": "c94e7ba5-f28e-43b1-aa60-9c671e72d77b", "arm": "control", "event": "offer", "x": "G77834f4a", "offered": [["G6b9db161", 1, 291487], ["G6841e8a3", 1, 308650], ["G021aae64", 2, 388871]]}
+{"ts": 1794133761.3, "task": "f45ee037-6ee8-44ad-aba8-da90ac13a0e4", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794133762.1, "task": "8bac303f-e25a-487b-88c5-93a4619a3900", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133861.8, "task": "1fbdcbd3-6e61-46ba-a16a-22d90658cb6c", "arm": "control", "event": "offer", "x": "Gc95a6511", "offered": [["G2111d113", 1, 54510], ["G1cccaaa2", 1, 47417], ["Ge62449c9", 1, 63288]]}
+{"ts": 1794133871.5, "task": "716b369a-6776-4227-95bb-d8b9398c59da", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133879.6, "task": "cb745933-3ad9-408b-9955-f7fc65f5a063", "arm": "control", "event": "offer", "x": "G054ff120", "offered": [["Gd6b03f11", 2, 4281], ["G12b895c1", 3, 16721], ["G0e5c604f", 3, 25740]]}
+{"ts": 1794133881.5, "task": "f65677ef-bcc4-40e9-9520-3d148643d54e", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794133894.6, "task": "86df242a-f11c-45df-ab14-52adc9c429ac", "arm": "control", "event": "offer", "x": "G7c9163a5", "offered": [["G03aae7ca", 3, 11761], ["Gce0a6c84", 3, 11456], ["Ga789dfa1", 3, 11323]]}
+{"ts": 1794133917.2, "task": "b11b1b10-f2c2-4ef9-828b-232c18a7c834", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23141]]}
+{"ts": 1794133940.1, "task": "063bf51b-62af-4006-8eee-744d32420ba8", "arm": "A", "event": "no_offer", "x": "G9a240832", "n": 3}
+{"ts": 1794133941.0, "task": "7fc14d08-1a2a-4857-baa7-6b637b4466e4", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794133949.8, "task": "2343ab63-cb12-477c-8c9a-1fc56b0f7fc3", "arm": "control", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 748856], ["G2607d1f6", 3, 466542], ["G021aae64", 3, 388842]]}
+{"ts": 1794133955.8, "task": "9da213dd-83ea-452f-9616-050ae360c540", "arm": "A", "event": "no_offer", "x": "G054ff120", "n": 3}
+{"ts": 1794134000.9, "task": "5e381c51-3a50-462a-8d68-8b6c35930ecf", "arm": "control", "event": "offer", "x": "G77834f4a", "offered": [["G6b9db161", 1, 291487], ["G6841e8a3", 1, 308650], ["G021aae64", 2, 388842]]}
+{"ts": 1794134043.7, "task": "d12245a4-28d4-4697-a14a-d041f77011a6", "arm": "control", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 748856], ["G2607d1f6", 3, 466542], ["G021aae64", 3, 388842]]}
+{"ts": 1794134045.4, "task": "053e5512-1cd9-4480-9ff8-76f2cd49f034", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794134072.5, "task": "d0c00676-b933-4457-b784-31a30baabfeb", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 34151], ["G0d2e767d", 3, 35722]]}
+{"ts": 1794134094.0, "task": "da2c094f-446b-42ac-a221-3ae9af0eff41", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794134100.7, "task": "c6437347-6ee4-4b34-80e1-0294364d647b", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794134117.1, "task": "7f3c6eb5-8902-4ced-96a9-f59b74833032", "arm": "control", "event": "offer", "x": "G117d7562", "offered": [["G12b895c1", 3, 16719], ["G0e5c604f", 3, 25740], ["G835cb76c", 3, 27761]]}
+{"ts": 1794134121.3, "task": "a0ad9e19-9a78-4e58-941f-efccb4285e86", "arm": "A", "event": "offer", "x": "G06f2c594", "offered": [["G12b895c1", 1, 16719]]}
+{"ts": 1794134121.6, "task": "a0ad9e19-9a78-4e58-941f-efccb4285e86", "arm": "A", "event": "number_reply", "x": "G06f2c594", "sku": "G12b895c1", "offer": 9945}
+{"ts": 1794134121.6, "task": "a0ad9e19-9a78-4e58-941f-efccb4285e86", "arm": "A", "event": "chosen", "x": "G06f2c594", "sku": "G12b895c1", "tier": 1, "quoted": 16719}
+{"ts": 1794134134.2, "task": "7eecd1e7-6ce5-4378-ae80-5c7ab6894833", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794134148.0, "task": "35421a40-8047-4a7a-bfae-c40d55e26b43", "arm": "control", "event": "offer", "x": "G32bf9a8e", "offered": [["G1561d2a8", 1, 14695], ["G55c364cb", 1, 22194], ["G0102056d", 1, 21788]]}
+{"ts": 1794134157.0, "task": "66bb4b93-90a7-40c9-b550-de57df9130c7", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 11223], ["G37da7a5c", 3, 7114], ["G55c364cb", 3, 22194]]}
+{"ts": 1794134157.1, "task": "f18bfcc0-b3c1-4c8d-9dca-e7d9a04d7735", "arm": "A", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630]]}
+{"ts": 1794134157.2, "task": "f18bfcc0-b3c1-4c8d-9dca-e7d9a04d7735", "arm": "A", "event": "number_reply", "x": "G16dcdc73", "sku": "Gc4681038", "offer": 42240}
+{"ts": 1794134157.2, "task": "f18bfcc0-b3c1-4c8d-9dca-e7d9a04d7735", "arm": "A", "event": "chosen", "x": "G16dcdc73", "sku": "Gc4681038", "tier": 1, "quoted": 42630}
+{"ts": 1794134157.3, "task": "f18bfcc0-b3c1-4c8d-9dca-e7d9a04d7735", "arm": "A", "event": "receipt", "sku": "Gc4681038", "unit": "u-c2c330b0c726", "price": 47616, "item": "김치"}
+{"ts": 1794134164.9, "task": "612aed42-d2b1-486e-a4f1-3d911b8888e9", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G66ded25b", 1, 12538], ["G37da7a5c", 3, 7114], ["G55c364cb", 3, 22194]]}
+{"ts": 1794134164.9, "task": "215ba86c-4be5-4c05-be57-ffae0a346a6f", "arm": "control", "event": "offer", "x": "G4a998429", "offered": [["G0d2e767d", 1, 35996], ["Gb27433e8", 1, 27273], ["G200e39a3", 1, 29377]]}
+{"ts": 1794134193.5, "task": "b8e4b2d0-e2ba-4954-8cb7-e10ed20be7e0", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G0d2e767d", 3, 35722], ["G0415d680", 3, 35559]]}
+{"ts": 1794134219.0, "task": "178edcce-9199-42b9-8b98-08ea485d6395", "arm": "control", "event": "offer", "x": "G05277ffe", "offered": [["G6b0fd5bc", 1, 414685], ["G7aac0d6f", 1, 360195], ["G72c86070", 3, 300000]]}
+{"ts": 1794134246.3, "task": "2c391233-9bc9-4c7c-917d-ebd9f384e289", "arm": "control", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14695], ["G66ded25b", 1, 11223], ["Gac0c1622", 2, 12987]]}
+{"ts": 1794134263.1, "task": "4102bc61-f319-4d56-af35-4e8ff59931c5", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794134264.1, "task": "916200bd-9748-4157-8b40-a38ea751cf81", "arm": "control", "event": "offer", "x": "Gb67975ff", "offered": [["G1cccaaa2", 2, 47417], ["G16822d88", 2, 50159], ["G2111d113", 2, 54510]]}
+{"ts": 1794134347.1, "task": "a2df344a-6557-4e8e-bb34-302a00a3303c", "arm": "A", "event": "offer", "x": "G9508712b", "offered": [["G7e580db7", 2, 36802], ["G1cccaaa2", 2, 47417], ["G16822d88", 2, 50159]]}
+{"ts": 1794134385.9, "task": "bc49557f-da86-400e-8bed-6d88051d0e40", "arm": "A", "event": "offer", "x": "G85a1a856", "offered": [["Gb5d0dde7", 1, 748856]]}
+{"ts": 1794134406.3, "task": "bc49557f-da86-400e-8bed-6d88051d0e40", "arm": "A", "event": "number_reply", "x": "G85a1a856", "sku": "Gb5d0dde7", "offer": 428345}
+{"ts": 1794134406.3, "task": "bc49557f-da86-400e-8bed-6d88051d0e40", "arm": "A", "event": "chosen", "x": "G85a1a856", "sku": "Gb5d0dde7", "tier": 1, "quoted": 748856}
+{"ts": 1794134406.4, "task": "bc49557f-da86-400e-8bed-6d88051d0e40", "arm": "A", "event": "receipt", "sku": "Gb5d0dde7", "unit": "u-5f44affba8d1", "price": 748856, "item": "침대/매트리스"}
+{"ts": 1794134413.3, "task": "3b841227-04d0-403a-af54-f1af89aa7c99", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794134413.4, "task": "3b841227-04d0-403a-af54-f1af89aa7c99", "arm": "A", "event": "number_reply", "x": "G0e64d348", "sku": "G9843067b", "offer": 19195}
+{"ts": 1794134413.4, "task": "3b841227-04d0-403a-af54-f1af89aa7c99", "arm": "A", "event": "chosen", "x": "G0e64d348", "sku": "G9843067b", "tier": 1, "quoted": 23725}
+{"ts": 1794134413.6, "task": "3b841227-04d0-403a-af54-f1af89aa7c99", "arm": "A", "event": "receipt", "sku": "G9843067b", "unit": "u-aebe6262c2d9", "price": 23093, "item": "김치"}
+{"ts": 1794134423.1, "task": "a3eb9b8d-0d8f-4a1b-a378-47397e950316", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9677], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794134436.4, "task": "722f8ddf-26c9-489c-8e89-76901c69d110", "arm": "control", "event": "offer", "x": "G9508712b", "offered": [["G7e580db7", 2, 36802], ["G1cccaaa2", 2, 47417], ["G16822d88", 2, 50159]]}
+{"ts": 1794134440.9, "task": "102100f9-48ff-4394-a7bc-16e936603b04", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794134468.1, "task": "e3bf0348-c0ae-4b77-b01d-a119cb7e67bc", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G482c1f4c", 1, 29740], ["G0e5c604f", 1, 25740], ["G7e580db7", 1, 36802]]}
+{"ts": 1794134492.7, "task": "49ff8378-6732-4a9f-bbef-15268a49f96e", "arm": "A", "event": "offer", "x": "G6380fc73", "offered": [["G0e5c604f", 2, 25740], ["G835cb76c", 2, 27741]]}
+{"ts": 1794134500.0, "task": "57448ba4-ee9b-43b7-9a55-a373c6f93678", "arm": "control", "event": "offer", "x": "Gc90705c9", "offered": [["G835cb76c", 3, 27741], ["G7e580db7", 3, 36802], ["G1cccaaa2", 3, 47417]]}
+{"ts": 1794134502.5, "task": "b4fb1ce8-fc64-4990-a316-3db8aa00d159", "arm": "A", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36802], ["G835cb76c", 1, 27741]]}
+{"ts": 1794134508.4, "task": "fa0aed1e-8359-4aba-99f3-4fb256fe1505", "arm": "control", "event": "offer", "x": "G575cddb8", "offered": [["G835cb76c", 3, 27741], ["G7e580db7", 3, 36802], ["G1cccaaa2", 3, 47417]]}
+{"ts": 1794134519.9, "task": "e309fbeb-1cb4-450d-94b7-e0869797a52f", "arm": "A", "event": "no_offer", "x": "G05e3e5db", "n": 3}
+{"ts": 1794134520.1, "task": "bcd3a0de-fe3c-4cd2-b80c-6828b8843acc", "arm": "A", "event": "no_offer", "x": "G12b895c1", "n": 3}
+{"ts": 1794134524.0, "task": "6dc60979-c716-4fde-a76a-5a3eeabd7f63", "arm": "A", "event": "no_offer", "x": "G4dda300c", "n": 3}
+{"ts": 1794134524.0, "task": "e9e2d501-8376-4152-8b66-c1032590af1c", "arm": "A", "event": "no_offer", "x": "G06f2c594", "n": 3}
+{"ts": 1794134529.0, "task": "8992289c-97a6-4e45-9876-e0acd2f75149", "arm": "A", "event": "no_offer", "x": "G53e73f8c", "n": 3}
+{"ts": 1794134561.4, "task": "5eec972f-ea81-4ef2-9a47-46e71113ba75", "arm": "control", "event": "offer", "x": "G998b9322", "offered": [["G7e580db7", 1, 36802], ["G482c1f4c", 1, 29740], ["G835cb76c", 1, 27741]]}
+{"ts": 1794134664.9, "task": "95394855-841b-40f0-b9ec-988da52a1ee3", "arm": "control", "event": "offer", "x": "G054ff120", "offered": [["G0e5c604f", 3, 25740], ["G835cb76c", 3, 27741], ["Gacd42643", 3, 29007]]}
+{"ts": 1794134677.7, "task": "27e56193-b697-4910-9abc-0e5f5aa04d8f", "arm": "A", "event": "no_offer", "x": "G85a1a856", "n": 3}
+{"ts": 1794134703.2, "task": "4989016f-f47c-4cef-8090-665506ac12c8", "arm": "A", "event": "no_offer", "x": "G147ae4e7", "n": 3}
+{"ts": 1794134741.1, "task": "e0a53e13-a55b-414d-ae5d-c54aca4923e3", "arm": "control", "event": "offer", "x": "G117d7562", "offered": [["Gd6b03f11", 3, 4281], ["G0e5c604f", 3, 25740], ["G03cab593", 3, 28376]]}
+{"ts": 1794134755.8, "task": "e3dd6cac-776e-430c-b6e6-64bfdaaba86c", "arm": "A", "event": "offer", "x": "G3c1b4d11", "offered": [["G1561d2a8", 1, 14695], ["G66ded25b", 1, 11223], ["G32bf9a8e", 1, 16344]]}
+{"ts": 1794134765.5, "task": "2214473b-6590-4d27-a969-57d2c24d0aed", "arm": "A", "event": "offer", "x": "Gb67975ff", "offered": [["G1cccaaa2", 2, 47417], ["G16822d88", 2, 50911], ["G2111d113", 2, 54510]]}
+{"ts": 1794134765.5, "task": "2214473b-6590-4d27-a969-57d2c24d0aed", "arm": "A", "event": "number_reply", "x": "Gb67975ff", "sku": "G1cccaaa2", "offer": 44893}
+{"ts": 1794134765.5, "task": "2214473b-6590-4d27-a969-57d2c24d0aed", "arm": "A", "event": "chosen", "x": "Gb67975ff", "sku": "G1cccaaa2", "tier": 2, "quoted": 47417}
+{"ts": 1794134773.7, "task": "2214473b-6590-4d27-a969-57d2c24d0aed", "arm": "A", "event": "receipt", "sku": "G1cccaaa2", "unit": "u-874f6f1134a9", "price": 46500, "item": "침구"}
+{"ts": 1794134783.3, "task": "e6f5c267-6b7a-497e-9e49-ec2b540c03a8", "arm": "control", "event": "offer", "x": "G117d7562", "offered": [["Gd6b03f11", 3, 4281], ["G0e5c604f", 3, 25740], ["G03cab593", 3, 28376]]}
+{"ts": 1794134818.2, "task": "61498984-5cc2-4e4a-814b-0e01cabcb1fc", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794134850.2, "task": "80e20505-c56f-4174-9583-521ff908e022", "arm": "A", "event": "no_offer", "x": "G74e686be", "n": 0}
+{"ts": 1794134966.6, "task": "e4704614-5259-4b0c-a4e0-a50d59469bc6", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794134977.9, "task": "69ff2b33-1686-4c38-b774-2b62c59a4cba", "arm": "A", "event": "no_offer", "x": "G85a1a856", "n": 3}
+{"ts": 1794135004.3, "task": "7bb7f48d-9a14-4bc0-b9f9-1bdc7d91f996", "arm": "control", "event": "offer", "x": "G054ff120", "offered": [["Gd6b03f11", 2, 4281], ["G0e5c604f", 3, 25740], ["G03cab593", 3, 28376]]}
+{"ts": 1794135031.4, "task": "adb8fb87-712f-408f-b24f-99b6ef0a2499", "arm": "A", "event": "no_offer", "x": "G9a240832", "n": 3}
+{"ts": 1794135066.5, "task": "64103ba1-e261-4647-9c35-30a4525d8522", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9682], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794135086.0, "task": "dc7cef2c-ca8e-473a-a74f-123c017fdd08", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23221]]}
+{"ts": 1794135110.6, "task": "48bac534-5681-4666-a997-9449b886d304", "arm": "control", "event": "offer", "x": "G77834f4a", "offered": [["G6841e8a3", 1, 308650], ["G021aae64", 2, 388586], ["G9357d6c2", 2, 349474]]}
+{"ts": 1794135174.3, "task": "9c090b84-c679-4dbb-b6a1-e9a2792f8ca7", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794135221.5, "task": "8b5094e2-80ea-4795-bbb0-a93e36bea0cd", "arm": "control", "event": "offer", "x": "G05277ffe", "offered": [["G6b0fd5bc", 1, 415500], ["G7aac0d6f", 1, 360195], ["G72c86070", 3, 300000]]}
+{"ts": 1794135260.5, "task": "bac6b233-b175-47a9-aeef-990d9898eb89", "arm": "A", "event": "no_offer", "x": "Gea0cca52", "n": 3}
+{"ts": 1794135359.3, "task": "58f66ed6-c5fd-4f30-a7f4-de15b8124d99", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 34151], ["G0d2e767d", 3, 35722]]}
+{"ts": 1794135367.1, "task": "d214331e-5d3d-484b-9d24-2b3cf1d868c1", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["Ga6784f77", 1, 31832], ["G0d2e767d", 1, 35722], ["Gb27433e8", 1, 27273]]}
+{"ts": 1794135373.6, "task": "cc426b43-a43b-47c5-9108-ead522c18a5a", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23062]]}
+{"ts": 1794135483.4, "task": "6010b5cf-0700-4dfd-957e-82c9069a1bf4", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794135543.2, "task": "db62f89c-cfc7-45d3-97cc-3dfe235cee29", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 24374], ["G8202c6b5", 1, 23062]]}
+{"ts": 1794135651.3, "task": "d23ab168-7534-4e1b-a583-d9625b9dbfde", "arm": "A", "event": "offer", "x": "G32bf9a8e", "offered": [["G3c1b4d11", 1, 14058], ["G1561d2a8", 1, 14695], ["G55c364cb", 1, 23324]]}
+{"ts": 1794135667.9, "task": "521ec3b8-c053-42e5-b520-2c4cc345f5ad", "arm": "A", "event": "no_offer", "x": "Gef4d3036", "n": 0}
+{"ts": 1794135679.3, "task": "929cf938-b6c4-42a6-adb5-31d6e7f9761d", "arm": "control", "event": "offer", "x": "G16dcdc73", "offered": [["Gc4681038", 1, 42630], ["G4a998429", 3, 34151], ["G0d2e767d", 3, 35722]]}
+{"ts": 1794135695.4, "task": "c979770a-fad5-4d6a-affd-83daaa847520", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23062]]}
+{"ts": 1794135707.9, "task": "4185bc66-49c1-4fcf-9d16-8872d878759e", "arm": "A", "event": "no_offer", "x": "G85a1a856", "n": 3}
+{"ts": 1794135730.9, "task": "82aa3d06-23f4-466d-828d-751c2d21b041", "arm": "control", "event": "offer", "x": "G9a240832", "offered": [["G16968ba0", 3, 10176], ["Gdf79cd07", 3, 9677], ["G7fa48eaa", 3, 3438]]}
+{"ts": 1794135770.0, "task": "edae359a-b7a7-4415-885b-6937269430ba", "arm": "control", "event": "offer", "x": "G77834f4a", "offered": [["G6841e8a3", 1, 308650], ["G021aae64", 2, 388673], ["G9357d6c2", 2, 349164]]}
+{"ts": 1794135776.5, "task": "6b67d6e6-4e6f-433e-a048-ace92184af7c", "arm": "A", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23062]]}
+{"ts": 1794135788.8, "task": "26dba57e-b0d4-4744-b0d0-f5fab9e8b6f6", "arm": "control", "event": "offer", "x": "G0e64d348", "offered": [["G9843067b", 1, 23725], ["G35a6e5ca", 1, 22968], ["G8202c6b5", 1, 23062]]}
+{"ts": 1794135821.9, "task": "ee638a05-8e86-413a-b109-1db1a0977058", "arm": "A", "event": "no_offer", "x": "Gea0b0c3f", "n": 0}
+{"ts": 1794136119.3, "task": "19a450ab-deca-410a-9412-1d0279e41187", "arm": "control", "event": "offer", "x": "G0e7161d7", "offered": [["G8074a394", 2, 11400]]}
+{"ts": 1794136681.3, "task": "e719686b-6cdb-44c6-a2f2-39e06023d2ba", "arm": "A", "event": "offer", "x": "Gacd42643", "offered": [["G0e5c604f", 1, 25740], ["G6380fc73", 1, 24544], ["G575cddb8", 1, 19646]]}
+{"ts": 1794136682.6, "task": "e719686b-6cdb-44c6-a2f2-39e06023d2ba", "arm": "A", "event": "number_reply", "x": "Gacd42643", "sku": "G0e5c604f", "offer": 18672}
+{"ts": 1794136682.7, "task": "e719686b-6cdb-44c6-a2f2-39e06023d2ba", "arm": "A", "event": "chosen", "x": "Gacd42643", "sku": "G0e5c604f", "tier": 1, "quoted": 25740}
+{"ts": 1794136683.3, "task": "e719686b-6cdb-44c6-a2f2-39e06023d2ba", "arm": "A", "event": "receipt", "sku": "G0e5c604f", "unit": "u-f2d5d45af40d", "price": 24734, "item": "침구"}
+{"ts": 1794136714.2, "task": "9eb3cdce-53aa-41a5-8218-fc302989ceab", "arm": "A", "event": "offer", "x": "G0d2e767d", "offered": [["G4a998429", 1, 34151], ["Ga6784f77", 1, 31832], ["Gb27433e8", 1, 27273]]}
+{"ts": 1794136714.3, "task": "ddf69af1-96e6-45a7-905b-728acddc7207", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["Ga6784f77", 1, 31832], ["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794136816.4, "task": "ebc1d71a-fa73-4bc9-93bf-4248bc4f9245", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["Ga6784f77", 1, 31832], ["Gb27433e8", 1, 27273], ["G4a998429", 1, 34151]]}
+{"ts": 1794137035.9, "task": "8d3820b9-38da-4015-96a3-5e5e1fc1a34e", "arm": "A", "event": "no_offer", "x": "G2607d1f6", "n": 3}
+{"ts": 1794137082.9, "task": "c5df6460-7f42-499e-8ed3-17dc80281603", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["Gb27433e8", 1, 27273], ["G4a998429", 1, 34151], ["G200e39a3", 1, 26530]]}
+{"ts": 1794137160.7, "task": "713e1cf6-d279-445a-b29b-f30681835765", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["Ga6784f77", 1, 31832], ["G0d2e767d", 1, 35996], ["Gb27433e8", 1, 27273]]}
+{"ts": 1794137388.3, "task": "bc1b5214-2c4c-484c-9c6f-b5fda97b2189", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["Gb27433e8", 1, 27273], ["G4a998429", 1, 34151], ["G200e39a3", 1, 26530]]}
+{"ts": 1794137417.8, "task": "60887dc0-816a-4632-b40c-9cf53a7aabcd", "arm": "A", "event": "offer", "x": "G482c1f4c", "offered": [["G1957829c", 1, 31964], ["G835cb76c", 1, 27610], ["G03cab593", 1, 28376]]}
+{"ts": 1794137419.8, "task": "60887dc0-816a-4632-b40c-9cf53a7aabcd", "arm": "A", "event": "number_reply", "x": "G482c1f4c", "sku": "G1957829c", "offer": 18964}
+{"ts": 1794137419.8, "task": "60887dc0-816a-4632-b40c-9cf53a7aabcd", "arm": "A", "event": "chosen", "x": "G482c1f4c", "sku": "G1957829c", "tier": 1, "quoted": 31964}
+{"ts": 1794137607.7, "task": "27d5c23e-3914-4e1d-9ad8-7cc0cd3cd220", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["Ga6784f77", 1, 31832], ["G0d2e767d", 1, 35996], ["Gb27433e8", 1, 27273]]}
+{"ts": 1794137696.8, "task": "49a5aea8-4967-4c75-8e5c-c0f4e8e6b2a3", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["G0d2e767d", 1, 35996], ["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794137734.7, "task": "f3885615-4e9b-4a41-9fb7-8ff27e983e7c", "arm": "A", "event": "no_offer", "x": "G74e686be", "n": 0}
+{"ts": 1794137878.1, "task": "476a77de-4172-47b2-a0e2-5071ad6f23b0", "arm": "A", "event": "no_offer", "x": "G74e686be", "n": 0}
+{"ts": 1794137899.3, "task": "8f10bbca-73eb-4285-8a0e-e6d2446cbc58", "arm": "A", "event": "offer", "x": "G6380fc73", "offered": [["G575cddb8", 1, 19643], ["G03cab593", 2, 28376], ["G835cb76c", 2, 27665]]}
+{"ts": 1794137950.4, "task": "26ca5121-2086-4281-9be7-2de88d73d765", "arm": "A", "event": "offer", "x": "G796e9122", "offered": [["G2111d113", 1, 54510], ["G16822d88", 1, 51675], ["G1cccaaa2", 1, 47417]]}
+{"ts": 1794138062.5, "task": "26555584-d565-457d-bf2f-6fc39909eacd", "arm": "A", "event": "offer", "x": "G1957829c", "offered": [["G03cab593", 1, 28376], ["G0e5c604f", 1, 25654], ["G0be9ed07", 2, 30068]]}
+{"ts": 1794138074.5, "task": "46bf4fbf-0c24-43ff-930c-e7f529b6eeb1", "arm": "A", "event": "offer", "x": "G482c1f4c", "offered": [["G835cb76c", 1, 27665], ["G03cab593", 1, 28376], ["G0e5c604f", 1, 25654]]}
+{"ts": 1794138074.6, "task": "c477be8c-18a5-4330-b0b6-7e5a50e8b220", "arm": "control", "event": "offer", "x": "Gacd42643", "offered": [["G0e5c604f", 1, 25654], ["G575cddb8", 1, 19643], ["G835cb76c", 2, 27665]]}
+{"ts": 1794138121.3, "task": "f55a4396-56e3-4e77-8cad-21d1e04a58b5", "arm": "control", "event": "offer", "x": "G6380fc73", "offered": [["G575cddb8", 1, 19643], ["G03cab593", 2, 28376], ["G835cb76c", 2, 27665]]}
+{"ts": 1794138133.1, "task": "386d5358-a266-48a3-9cbe-14d861d2bf04", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["Gb27433e8", 1, 27273], ["G4a998429", 1, 34151], ["G200e39a3", 1, 34893]]}
+{"ts": 1794138398.6, "task": "42017e2d-eaa4-46fb-b9ce-f86b77ab7b93", "arm": "A", "event": "offer", "x": "G06f2c594", "offered": [["G4dda300c", 2, 16135], ["G53e73f8c", 2, 11625]]}
+{"ts": 1794138428.8, "task": "82e99b42-a73a-4101-85f0-b040bfd3a94e", "arm": "control", "event": "offer", "x": "G53e73f8c", "offered": [["G054ff120", 3, 5651], ["Gd6b03f11", 3, 4281], ["G575cddb8", 3, 21782]]}
+{"ts": 1794138432.3, "task": "43c9ff2f-9f81-4a34-a97a-85a752583c20", "arm": "control", "event": "offer", "x": "G0415d680", "offered": [["G0d2e767d", 1, 35996], ["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794138611.3, "task": "3a1b32b7-0aca-482a-8f30-ada63e3e99dd", "arm": "A", "event": "offer", "x": "G0415d680", "offered": [["G0d2e767d", 1, 35996], ["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794138611.4, "task": "3a1b32b7-0aca-482a-8f30-ada63e3e99dd", "arm": "A", "event": "number_reply", "x": "G0415d680", "sku": "G0d2e767d", "offer": 26110}
+{"ts": 1794138611.4, "task": "3a1b32b7-0aca-482a-8f30-ada63e3e99dd", "arm": "A", "event": "chosen", "x": "G0415d680", "sku": "G0d2e767d", "tier": 1, "quoted": 35996}
+{"ts": 1794138943.0, "task": "43bee9cf-a7ec-4b4d-9179-f40875a5ffb6", "arm": "control", "event": "offer", "x": "G12b895c1", "offered": [["G05e3e5db", 2, 14996], ["G4dda300c", 2, 16135], ["G575cddb8", 2, 19631]]}
+{"ts": 1794139073.9, "task": "c270136e-6ef3-4e6b-83e5-45e3af016bd2", "arm": "A", "event": "offer", "x": "G2b11f53d", "offered": [["G117d7562", 1, 10595], ["G054ff120", 2, 5651]]}
+{"ts": 1794139184.1, "task": "c03d2831-1f93-4cfd-a8e4-0b7a26feff7f", "arm": "A", "event": "offer", "x": "G12b895c1", "offered": [["G05e3e5db", 2, 14996], ["G4dda300c", 2, 16135], ["G575cddb8", 2, 19631]]}
+{"ts": 1794139187.5, "task": "efb86970-003f-4199-b867-1ba267d652f3", "arm": "A", "event": "offer", "x": "G0d2e767d", "offered": [["G4a998429", 1, 34151], ["Gb27433e8", 1, 27273], ["Gd732ef75", 1, 26110]]}
+{"ts": 1794139187.6, "task": "efb86970-003f-4199-b867-1ba267d652f3", "arm": "A", "event": "number_reply", "x": "G0d2e767d", "sku": "G4a998429", "offer": 25795}
+{"ts": 1794139187.6, "task": "efb86970-003f-4199-b867-1ba267d652f3", "arm": "A", "event": "chosen", "x": "G0d2e767d", "sku": "G4a998429", "tier": 1, "quoted": 34151}
+{"ts": 1794139187.9, "task": "efb86970-003f-4199-b867-1ba267d652f3", "arm": "A", "event": "receipt", "sku": "G4a998429", "unit": "u-a0cf132f8b55", "price": 33240, "item": "김치"}

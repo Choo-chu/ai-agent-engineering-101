@@ -1,17 +1,17 @@
 {
  "metrics": {
-  "sales": 599,
-  "revenue": 21251569,
-  "profit": 4216098,
-  "negotiations": 3145,
-  "receipts": 840,
-  "conversion": 0.267,
-  "first_asks": 3145
+  "sales": 549,
+  "revenue": 25932960,
+  "profit": 4555466,
+  "negotiations": 3943,
+  "receipts": 722,
+  "conversion": 0.183,
+  "first_asks": 3943
  },
  "issues": [],
  "dept": "sales",
- "ts": 1794063367,
- "policy_version": 7,
+ "ts": 1794149931,
+ "policy_version": 14,
  "window_h": 6,
  "requests": []
 }
