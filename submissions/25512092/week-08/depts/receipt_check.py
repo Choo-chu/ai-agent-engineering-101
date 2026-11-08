@@ -21,12 +21,15 @@ OFFER = re.compile(r"(?:i can do|i can pay|i(?:'ll| will)? (?:offer|pay)|my (?:f
 NUM = re.compile(r"(?<![\w.])\d[\d,]*(?![A-Za-z0-9_.,%])(?!\s*(?:hours?\b|hrs?\b|h\b|units?\b|pcs\b|pieces\b|days?\b|minutes?\b|mins?\b|%|시간|개|일|분))", re.I)
 
 
-FIRST = re.compile(r"\d{1,3}(?:,\d{3})+(?!\d)|\d+")
+UNITS = (r"(?!\s*(?:hours?|hrs?|h|units?|pcs|pieces|days?|minutes?|mins?|items?|packs?|kg|g|ml|l|cm|x)\b)"
+         r"(?!\s*(?:%|시간|개|팩|박스|병|봉|kg))")   # not 입 / 일 / 분: "6732입니다", "...일까요" are prices
+FIRST = re.compile(r"(?<![\d,.])(?:\d{1,3}(?:,\d{3})+|\d+)(?!\d)(?![.,]\d)" + UNITS, re.I)
 
 
 def first_number(text):
-    """The first number of a message, thousands separators read (11/08: "27,000" is 27000, it was read as 27);
-    the seller's offer parse (SKUs stripped before)."""
+    """The first number of a message that is a price: thousands separators read (11/08: "27,000" is 27000, it was
+    read as 27), and a number with a unit after it is skipped (11/08: "540 hours", "1 unit", "360.5 hours", "20%"
+    were read as offers); the seller's offer parse (SKUs stripped before)."""
     m = FIRST.search(text or "")
     return int(m.group().replace(",", "")) if m else None
 

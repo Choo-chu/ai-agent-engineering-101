@@ -51,6 +51,24 @@ def test_first_number_thousands():
     assert first_number("27000") == 27000
     assert first_number("10,400 then") == 10400
     assert first_number("1,234,567") == 1234567
-    assert first_number("27,0000") == 27           # not a thousands group: as before
-    assert first_number("3 units, 9000") == 3      # the first number, as before (receipt_check.agreed checks it)
+    assert first_number("27,0000") is None         # not a thousands group and not a plain number: no offer
+    assert first_number("3 units, 9000") == 9000   # 11/08: a number with a unit is not the offer
     assert first_number("no number") is None
+
+
+def test_first_number_units():
+    from depts.receipt_check import first_number
+    assert first_number("Need at least 540 hours of shelf life. I can pay 12000") == 12000
+    assert first_number("I need it to last 360.5 hours. 8000?") == 8000
+    assert first_number("1 unit please, 15000") == 15000
+    assert first_number("20% off? 9000") == 9000
+    assert first_number("2개 3000") == 3000
+    assert first_number("Need 180.0 hours") is None
+    assert first_number("9000 hmm") == 9000 and first_number("8257 how about") == 8257
+
+
+def test_korean_price_sentences():
+    from depts.receipt_check import first_number
+    assert first_number("제가 가능한 금액은 6732입니다.") == 6732
+    assert first_number("제가 드릴 수 있는 금액은 63942입니다.") == 63942
+    assert first_number("Need at least 360.25 h remaining") is None

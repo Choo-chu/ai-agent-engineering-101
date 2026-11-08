@@ -121,7 +121,7 @@ def split_rule(inv, catalog, now):
         return {"high_share": max(0.2, round(share - 0.1, 2)), "high_max": cap}, \
             f"{today - __import__('datetime').timedelta(days=1):%m-%d}: {len(stale)} high-price units unsold > 24 h, {refunds} high-price refunds"
     if hr is not None and (lr is None or hr >= lr):
-        return {"high_share": min(0.6, round(share + 0.1, 2)), "high_max": min(30, cap + 1)}, \
+        return {"high_share": min(0.6, round(share + 0.1, 2)), "high_max": min(60, cap + 1)}, \
             f"high profit/cost {sales_report.pct(hr)} >= low {sales_report.pct(lr)}"
     return None, f"no change (high {sales_report.pct(hr)}, low {sales_report.pct(lr)})"
 
