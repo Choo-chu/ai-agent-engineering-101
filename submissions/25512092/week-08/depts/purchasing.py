@@ -165,6 +165,12 @@ def make_plan(inv, units, catalog, budget, log):
         log(f"[low] {(c.get('name') or sku)[:40]}: request-based ({why}), held {held.get(sku, 0)} -> buy {qty}")
     if reqc:
         request_buy.bought([s for s, _, _, _ in reqc if s in line_of])
+    try:                                         # 11/08 ~20:35: hot SKUs that turn in <= 1 h get my_share 0.8
+        from depts import hot_fast
+        fast_share = hot_fast.shares(hot, MY_SHARE, log=log)
+    except Exception as e:
+        log(f"[hot fast] failed: {type(e).__name__}: {e}")
+        fast_share = {}
     for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}
@@ -215,7 +221,7 @@ def make_plan(inv, units, catalog, budget, log):
         else:                                     # low price: as before, hot or wanted on the forum
             if sku not in hot and not forum or (s["sold_30m"] < MIN_SOLD_30M and not forum):
                 continue
-            target = max(math.ceil(s["sold_30m"] * (20 / 30) * MY_SHARE), WANTED_QTY if forum else 0)
+            target = max(math.ceil(s["sold_30m"] * (20 / 30) * fast_share.get(sku, MY_SHARE)), WANTED_QTY if forum else 0)
             tier, qty = "low", min(MAX_QTY, target - held.get(sku, 0))
         if wide and tier == "low":                # bundle 2 (13): spread, at most BREADTH_MAX held per SKU
             qty = min(qty, BREADTH_MAX - held.get(sku, 0))

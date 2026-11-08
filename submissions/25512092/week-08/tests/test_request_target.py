@@ -44,9 +44,9 @@ def test_fast_and_slow():
 def test_fast():
     d = db()
     st = {"F": {"first_buy": NOW - 20 * 3600}}
-    add(d, "f1", "F", 10, 0.5); add(d, "f2", "F", 8, 0.8); add(d, "f3", "F", 5, 3)     # median 0.8 h -> 5
+    add(d, "f1", "F", 10, 0.5); add(d, "f2", "F", 8, 0.8); add(d, "f3", "F", 5, 3)     # median 0.8 h -> 8 (5 until 11/08 ~20:35)
     t = rb.turnover(d, st, NOW)
-    assert abs(t["F"] - 0.8) < 1e-6 and rb.target("F", t) == 5, t
+    assert abs(t["F"] - 0.8) < 1e-6 and rb.target("F", t) == rb.FAST_TARGET == 8, t
 
 
 def test_fast_exactly():
@@ -54,7 +54,7 @@ def test_fast_exactly():
     st = {"F": {"first_buy": NOW - 20 * 3600}}
     add(d, "f1", "F", 10, 0.5); add(d, "f2", "F", 8, 1.0); add(d, "f3", "F", 5, 0.9)
     t = rb.turnover(d, st, NOW)
-    assert abs(t["F"] - 0.9) < 1e-6 and rb.target("F", t) == 5, t
+    assert abs(t["F"] - 0.9) < 1e-6 and rb.target("F", t) == rb.FAST_TARGET == 8, t
 
 
 if __name__ == "__main__":

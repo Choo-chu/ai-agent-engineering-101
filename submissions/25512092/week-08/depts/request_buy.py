@@ -7,7 +7,7 @@ becomes a buy candidate whatever its place on the hot list, when it passes the b
            list x purchasing.COST_SHARE x live surge
   food     shelf life >= FOOD_SHELF_H (72 h), and not perishable (부패주의)
   price    expected cost <= qc.HIGH_MIN (high-price units keep their own rules)
-Target: TARGET units held per SKU, FAST_TARGET (5) for a SKU whose request-based units of the last 24 h went from
+Target: TARGET units held per SKU, FAST_TARGET (8; 5 until 11/08 ~20:35) for a SKU whose request-based units of the last 24 h went from
 supply to sale in FAST_H (1 h) or less at the median (person's decision 11/08 ~16:50; an unsold unit counts with its
 age so far); at most MAX_LINES lines a run (the run has 10 lines in all).
 Drop: a SKU first bought this way that sold none of its units in the 24 h after (my settles) leaves the list for good
@@ -25,10 +25,10 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(HERE, "logs", "request_buy.json")
 MIN_REQUESTS = 50
 TARGET = 2
-FAST_TARGET = 5
+FAST_TARGET = 8                 # 11/08 ~20:35 person: 5 -> 8
 FAST_H = 1.0
 FOOD_SHELF_H = 72
-MAX_LINES = 3
+MAX_LINES = 4                   # 11/08 ~20:35 person: 3 -> 4
 DROP_AFTER_S = 86400
 ME = "choo-chu"
 
