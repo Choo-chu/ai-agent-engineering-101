@@ -4,6 +4,9 @@ commit + push, no b0 check: a lower cap may change the shop case on purpose) and
   1. median supply -> sale time of my units sold in the last WINDOW_H is over MEDIAN_H (needs MIN_SALES sales)
   2. unsold units held longer than OLD_H: cost over OLD_COST (scope "all": every held unit; "since": only units
      supplied after the cap was raised)
+     From 11/08 ~11:00 (person), with "old_share" in cap_brake.json instead: of the units supplied after the raise
+     that are at least OLD_H old, the share of their cost still unsold is over OLD_SHARE (needs MIN_OLD_N of them;
+     the 11/08 07:29 trip was 19.6% on this measure)
   3. cash (inventory balance, as the shop case reads it) under CASH_MIN
 Rules in cap_brake.json; the latest numbers in logs/cap_brake_state.json (read by the 3 h report). The brake fires
 once; raising the cap again is the person's decision.
@@ -41,12 +44,19 @@ def measure(r, now=None):
         ages = [x[0] for x in db.execute(
             "SELECT s.ts - m.supplied_at FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.ts>=? "
             "AND m.supplied_at IS NOT NULL", (ME, now - r["window_h"] * 3600))]
+        el = db.execute("SELECT m.cost, EXISTS(SELECT 1 FROM settles s WHERE s.unit=m.unit AND s.shop=? AND s.ts<=?) "
+                        "FROM my_stock m WHERE m.supplied_at>=? AND m.supplied_at<=?",
+                        (ME, now, r.get("since") or 0, now - r["old_h"] * 3600)).fetchall()
     finally:
         db.close()
     since = r.get("since") or 0
     old = [u for u in held if now - (u.get("supplied_at") or now) > r["old_h"] * 3600
            and (r.get("old_scope", "all") == "all" or (u.get("supplied_at") or 0) >= since)]
+    el_cost = sum(c or 0 for c, _ in el)
+    un_cost = sum(c or 0 for c, sold in el if not sold)
     m = {"ts": round(now), "sales": len(ages),
+         "old_share": round(un_cost / el_cost, 4) if el_cost else None, "old_eligible_n": len(el),
+         "old_eligible_cost": el_cost, "old_unsold_cost": un_cost,
          "median_h": round(statistics.median(ages) / 3600, 2) if ages else None,
          "old_units": len(old), "old_cost": sum(u.get("cost", 0) for u in old),
          "cash": inv.get("balance", 0), "stock": sum(u.get("cost", 0) for u in held)}
@@ -54,7 +64,11 @@ def measure(r, now=None):
     if m["sales"] >= r.get("min_sales", 10) and m["median_h"] > r["median_h"]:
         trips.append(f"입고→판매 중앙값 {m['median_h']:.1f}시간 > {r['median_h']}시간 (최근 {r['window_h']}시간 판매 "
                      f"{m['sales']}개)")
-    if m["old_cost"] > r["old_cost"]:
+    if r.get("old_share") is not None:              # 11/08 ~11:00 (person): a share instead of a cost
+        if m["old_eligible_n"] >= r.get("min_old_n", 20) and m["old_share"] > r["old_share"]:
+            trips.append(f"상향 후 입고분 중 {r['old_h']}시간+ 미판매 비율 {m['old_share']:.1%} > {r['old_share']:.0%} "
+                         f"(원가 {m['old_unsold_cost']:,} / {m['old_eligible_cost']:,}, {m['old_eligible_n']}개 중)")
+    elif m["old_cost"] > r["old_cost"]:
         trips.append(f"{r['old_h']}시간 넘게 안 팔린 재고 원가 {m['old_cost']:,} > {r['old_cost']:,} ({m['old_units']}개"
                      + (", 상향 후 입고분만" if r.get("old_scope") == "since" else "") + ")")
     if m["cash"] < r["cash_min"]:
@@ -86,7 +100,8 @@ def fire(r, m, trips, log=print):
     alerts.send("urgent", f"cap_brake:{int(now)}",
                 f"STOCK_CAP 자동 브레이크: {old:,} -> {r['low']:,} (커밋 {head}).\n걸린 조건: " + "; ".join(trips)
                 + f"\n현재: 재고 원가 {m['stock']:,}, 현금 {m['cash']:,}, 최근 {r['window_h']}시간 판매 {m['sales']}개 "
-                f"(중앙값 {m['median_h']}시간), {r['old_h']}시간+ 재고 {m['old_units']}개 {m['old_cost']:,}.\n"
+                f"(중앙값 {m['median_h']}시간), {r['old_h']}시간+ 재고 {m['old_units']}개 {m['old_cost']:,}, "
+                f"상향 후 입고분 {r['old_h']}시간+ 미판매 비율 {m['old_share']}.\n"
                 "다시 올리는 건 사람 결정.", log=log)
     log(f"cap brake fired: {old:,} -> {r['low']:,}: {trips}")
 
