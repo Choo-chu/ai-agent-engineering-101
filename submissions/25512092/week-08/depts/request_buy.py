@@ -7,7 +7,9 @@ becomes a buy candidate whatever its place on the hot list, when it passes the b
            list x purchasing.COST_SHARE x live surge
   food     shelf life >= FOOD_SHELF_H (72 h), and not perishable (부패주의)
   price    expected cost <= qc.HIGH_MIN (high-price units keep their own rules)
-Target: TARGET units held per SKU; at most MAX_LINES lines a run (the run has 10 lines in all).
+Target: TARGET units held per SKU, FAST_TARGET (5) for a SKU whose request-based units of the last 24 h went from
+supply to sale in FAST_H (1 h) or less at the median (person's decision 11/08 ~16:50; an unsold unit counts with its
+age so far); at most MAX_LINES lines a run (the run has 10 lines in all).
 Drop: a SKU first bought this way that sold none of its units in the 24 h after (my settles) leaves the list for good
 (logs/request_buy.json, decision request_buy_drop).
 """
@@ -15,6 +17,7 @@ import json
 import math
 import os
 import sqlite3
+import statistics
 import time
 from collections import Counter
 
@@ -22,6 +25,8 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(HERE, "logs", "request_buy.json")
 MIN_REQUESTS = 50
 TARGET = 2
+FAST_TARGET = 5
+FAST_H = 1.0
 FOOD_SHELF_H = 72
 MAX_LINES = 3
 DROP_AFTER_S = 86400
@@ -59,6 +64,27 @@ def requests(db, now):
     return c
 
 
+def turnover(db, st, now):
+    """{sku: median hours supply -> sale} of the units of request-based SKUs supplied in the last 24 h (after the
+    SKU's first request-based buy); an unsold unit counts with its age so far."""
+    out = {}
+    for sku, s in st.items():
+        if not s.get("first_buy"):
+            continue
+        rows = db.execute("SELECT m.supplied_at, (SELECT MIN(x.ts) FROM settles x WHERE x.unit=m.unit AND x.shop=? AND "
+                          "x.ts>=m.supplied_at) FROM my_stock m WHERE m.sku=? AND m.supplied_at>=? AND m.supplied_at>=?",
+                          (ME, sku, now - 86400, s["first_buy"] - 600)).fetchall()
+        h = sorted(((sold or now) - sup) / 3600 for sup, sold in rows if sup)
+        if h:
+            out[sku] = statistics.median(h)
+    return out
+
+
+def target(sku, turn):
+    t = turn.get(sku)
+    return FAST_TARGET if t is not None and t <= FAST_H else TARGET
+
+
 def candidates(catalog, held, surge, log=print, now=None):
     """[(sku, qty, avg, why)] for this run, best-requested first, at most MAX_LINES. Drops and records SKUs that sold
     nothing in the 24 h after their first request-based buy."""
@@ -84,6 +110,7 @@ def candidates(catalog, held, surge, log=print, now=None):
                                  f"request-based SKU sold none in the 24 h after its first buy "
                                  f"({time.strftime('%m-%d %H:%M', time.localtime(s['first_buy']))}): no longer a candidate")
                 log(f"[request] {sku}: no sale in 24 h after the first buy -> dropped")
+        turn = turnover(db, st, now)
         out = []
         for sku, n in req.most_common():
             if n < MIN_REQUESTS:
@@ -103,10 +130,12 @@ def candidates(catalog, held, surge, log=print, now=None):
             avg, k = sku_avg(db, sku, now)
             if avg is None or avg < cost * (1 + mm):
                 continue
-            qty = TARGET - held.get(sku, 0)
+            tgt = target(sku, turn)
+            qty = tgt - held.get(sku, 0)
             if qty <= 0:
                 continue
-            out.append((sku, qty, round(avg), f"{n} requests in 24 h, avg {round(avg):,} (n {k}), est. cost {int(cost):,}"))
+            tt = f", target {tgt} (supply->sale median {turn[sku]:.2f} h)" if sku in turn else ""
+            out.append((sku, qty, round(avg), f"{n} requests in 24 h, avg {round(avg):,} (n {k}), est. cost {int(cost):,}{tt}"))
             if len(out) >= MAX_LINES:
                 break
     finally:

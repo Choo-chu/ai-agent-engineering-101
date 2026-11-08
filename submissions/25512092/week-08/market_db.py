@@ -40,7 +40,7 @@ ME = "choo-chu"
 REFRESH_S = 300          # refresh at most every 5 minutes
 AVG_WINDOW_S = 2 * 3600  # the average price uses deals of the last 2 hours ...
 MIN_N = 3                # ... and needs at least this many deals, else all deals of that SKU
-HOT_N = 60          # buy-plan hot list: the SKUs most sold in 5 / 30 min (11/08 ~13:45 person: 30 -> 60)
+HOT_N = 30          # buy-plan hot list: the SKUs most sold in 5 / 30 min (11/08 ~13:45 person: 30 -> 60; ~16:50 back to 30)
 BOOTSTRAP = 20000        # ledger entries read back on the first refresh
 
 
