@@ -8,8 +8,8 @@
   floor    (person's decision 11/08 ~17:30, ~17:40: on from the 20:02 check: high_ask.json floor_rule.enabled) a
            high-price unit's floor is max(cost x 1.05, the 48 h market median (depts/sofa.market) x 0.80); without a
            market median: cost x 1.05. Sofas keep their own rules (depts/sofa.applies), the endgame keeps its markdown,
-           and a floor already lowered by a markdown (aging, stoploss, food clearance) is never raised: the lower one
-           stays. The first-ask cap above stays (the ask is never under the floor)
+           and a floor computed by an old markdown (aging, stoploss, food clearance, endgame, cash_low, overstock)
+           that is lower than the new floor stays (one principle, 11/08 ~17:50). The first-ask cap above stays (the ask is never under the floor)
   buy      depts/purchasing: a high-price SKU whose expected first ask (the same floor / first-ask code on a unit at
            the expected cost, then the cap) is above the market average is not bought (decision high_price_above_avg)
 """
@@ -47,12 +47,13 @@ def high_floor(u, now=None, fr=None):
     return max(int(u["cost"] * fr.get("cost", 1.05)), int(med * fr.get("median", 0.80)) if med else 0)
 
 
-MARKDOWNS = ("aging", "stoploss", "clearance", "endgame")
+MARKDOWNS = ("aging", "stoploss", "clearance", "endgame", "cash_low", "overstock")   # the old markdowns (depts/sales
+#   floor rule names); 11/08 ~17:50 (person): one principle, a markdown floor lower than the new floor is kept
 
 
 def floor(u, avg, reserve, case=None, now=None, rule=None):
     """The floor for this unit: the high-price floor rule when on (not sofas, not in the endgame; a markdown floor
-    (rule aging / stoploss / clearance / endgame) is kept when lower); then a cleared SKU's floor is lowered to its
+    (rule in MARKDOWNS) is kept when lower); then a cleared SKU's floor is lowered to its
     clearance ask, never under cost."""
     r = rules()
     if not r.get("enabled"):

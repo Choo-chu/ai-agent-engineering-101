@@ -78,6 +78,9 @@ def test_floor_rule():
         assert ha.floor(u("GLOW", 449_244), 420_011, 420_011, "normal", rule="aging step 0") == 420_011
         assert ha.floor(u("GLOW", 449_244), 420_011, 420_000, "normal", rule="stoploss") == 420_000
         assert ha.floor(u("GLOW", 449_244), 420_011, 400_000, "normal", rule="clearance") == 400_000
+        assert ha.floor(u("GM", 600_000), 900_000, 600_000, "cash_low", rule="cash_low") == 600_000      # cash low
+        assert ha.floor(u("GM", 600_000), 900_000, 540_000, "overstock", rule="overstock") == 540_000    # overstock
+        assert ha.floor(u("GM", 600_000), 900_000, 900_000, "normal", rule="normal") == 800_000          # not a markdown
         # a markdown floor higher than the new one: the new (lower) one
         assert ha.floor(u("GM", 600_000), 900_000, 950_000, "normal", rule="aging step 0") == 800_000
         assert ha.floor(u("GSOFA", 600_000), 900_000, 830_000, "normal", rule="sofa") == 830_000   # sofa: unchanged
