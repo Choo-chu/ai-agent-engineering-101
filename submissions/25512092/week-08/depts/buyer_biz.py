@@ -26,6 +26,7 @@ from buyer import (A2AClient, DEADLINE, MAX_TURNS, ask_harness,  # noqa: E402
                    last_number, log, state, status_text)
 import strategy  # noqa: E402
 from market_db import connect, load_stats, price_of  # noqa: E402
+from depts import accept_rule  # noqa: E402  11/08: accept the last ask instead of a walk (24 h experiment)
 
 MEMORY_PATH = os.path.join(HERE, "memory.jsonl")
 NEW_SHOP_SCORE = 3.0   # score for a shop nobody has reviewed yet
@@ -343,6 +344,15 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             res["ended"] = "seller_ended"
             return res
         if time.time() - start > DEADLINE:
+            p = None if res.get("accept_rule") else accept_rule.price(ask_price(text, budget) or res["last_ask"], budget,
+                                                                      market_avg, res["injection"])
+            if p is not None:                         # 11/08 accept_rule_95: accept the last ask instead of the walk
+                res.update(accept_rule="time_limit", accept_price=p)
+                log(f"[{accept_rule.TAG}] time limit: accept the last ask {p} (market avg {market_avg}, cap {budget})")
+                last, n_offers = p, n_offers + 1
+                history.append(f"you: {p}")
+                task = client.send(str(p), tid)
+                continue
             log("time limit: walking away")
             res["ended"] = "time_limit"
             client.cancel(tid)
@@ -399,6 +409,13 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             d = {"action": "offer", "price": counter}
             res["guard_last"] = True
         if d is None or d["action"] == "walk" or (d["action"] == "accept" and ask is None):
+            p = None if res.get("accept_rule") else accept_rule.price(ask if ask is not None else res["last_ask"],
+                                                                      budget, market_avg, res["injection"])
+            if p is not None:                         # 11/08 accept_rule_95: accept the last ask instead of the walk
+                res.update(accept_rule="walk", accept_price=p)
+                log(f"[{accept_rule.TAG}] walk -> accept the last ask {p} (market avg {market_avg}, cap {budget})")
+                d, ask = {"action": "accept"}, p
+        if d is None or d["action"] == "walk" or (d["action"] == "accept" and ask is None):
             log(f"WALK ({'harness' if d else 'no usable answer'})")
             res["ended"] = "walk"
             client.cancel(tid)
@@ -438,6 +455,16 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             log(f"[tactic] sent with the offer: {tactic_line}")
         task = client.send(msg, tid)
 
+    p = None if res.get("accept_rule") else accept_rule.price(res["last_ask"], budget, market_avg, res["injection"])
+    if p is not None and state(task) == "TASK_STATE_INPUT_REQUIRED":   # 11/08 accept_rule_95 at the turn limit
+        res.update(accept_rule="turn_limit", accept_price=p)
+        log(f"[{accept_rule.TAG}] turn limit: accept the last ask {p} (market avg {market_avg}, cap {budget})")
+        task = client.send(str(p), tid)
+        res["offers"] = n_offers + 1
+        if state(task) == "TASK_STATE_COMPLETED":
+            res["deal"], res["receipt"], res["agreed"] = True, get_receipt(task), p
+            log(f"DEAL {item}: agreed {p}, receipt {res['receipt']}")
+            return res
     log("turn limit: walking away")
     res["ended"] = "turn_limit"
     client.cancel(tid)
@@ -647,6 +674,12 @@ def record_deal(c, sku, lp, case, variant_key, variant, min_offers, res, flag, w
     price = (res["receipt"] or {}).get("price") if res["deal"] else None
     __import__("decisions").record("buyer", outcome, sku, price, f"shop {c['name']}, case {case}, {variant_key} "
                                    f"{variant}, min offers {min_offers}, offers {res.get('offers', 0)}, {reason}")
+    if res.get("accept_rule"):                        # 11/08 accept_rule_95: one decision and one log line each
+        __import__("decisions").record("buyer", accept_rule.TAG, sku, res.get("accept_price"),
+                                       f"shop {c['name']}: instead of {res['accept_rule']}, accepted the last ask "
+                                       f"{res.get('accept_price')}; outcome {outcome}, receipt {price}, check {flag}")
+        accept_rule.log(sku=sku, list_price=lp, shop=c["name"], shop_url=c["url"], instead_of=res["accept_rule"],
+                        price=res.get("accept_price"), deal=bool(res["deal"]), receipt_price=price, flag=flag)
     try:
         db = connect()
         have = {r[1] for r in db.execute("PRAGMA table_info(buyer_deals)")}
