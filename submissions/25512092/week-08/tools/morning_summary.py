@@ -22,6 +22,8 @@ sys.path.insert(0, os.path.join(HERE, "tools"))
 os.chdir(HERE)
 
 AT = datetime(2026, 11, 8, 8, 0).timestamp()
+if "--at" in sys.argv:                            # e.g. --at 2026-11-09T08:00 (the 11/09 summary, with 8. below)
+    AT = datetime.fromisoformat(sys.argv[sys.argv.index("--at") + 1]).timestamp()
 NIGHT_H = 12
 
 
@@ -98,6 +100,12 @@ def summary(t0, t1):
     lines.append(f"7. LLM 호출 (최근 24시간): seller {llm['seller']:,}, buyer {llm['buyer']:,}, 분석관 "
                  + ", ".join(f"{d[4:6]}/{d[6:]} {n}" for d, n in llm["analyst_by_day"].items())
                  + f", 포럼 요약 {llm['forum_summary_days']}회 (모두 haiku)")
+    if t1 >= datetime(2026, 11, 9).timestamp():   # 11/08 ~11:20 (person): from the 11/09 summary
+        from depts import review_link
+        try:
+            lines.append("8. " + review_link.line(review_link.high_sofa_reasons(t1 - 86400, t1)) + " (최근 24시간)")
+        except Exception as e:
+            lines.append(f"8. 고가·소파 취소 사유: 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 
@@ -109,7 +117,7 @@ def main():
     while time.time() < AT:
         time.sleep(min(60, max(1, AT - time.time())))
     import alerts
-    alerts.send("daily", "morning_summary:20261108", summary(AT - NIGHT_H * 3600, AT))
+    alerts.send("daily", f"morning_summary:{datetime.fromtimestamp(AT):%Y%m%d}", summary(AT - NIGHT_H * 3600, AT))
 
 
 if __name__ == "__main__":
