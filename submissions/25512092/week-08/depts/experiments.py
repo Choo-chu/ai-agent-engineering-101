@@ -12,6 +12,8 @@ VARIANTS = {
     "buyer_normal_first": ["0.50", "0.60", "0.70"],   # first offer = ask x variant (buyer normal case)
     "buyer_min_offers": ["1", "3"],                   # counteroffers before the buyer may accept or walk
 }
+# keys fixed by the person: pick() returns the value, adjust() leaves the key alone
+FROZEN = {"buyer_min_offers": "1"}                # 11/08 ~11:10: plain | min offers 1, the experiment ended
 BUYER_COLUMN = {"buyer_normal_first": "variant", "buyer_min_offers": "mo_variant"}
 ADJUST_EVERY_S = 3 * 3600
 MIN_SAMPLES = 10        # every variant of a key needs this many negotiations before its weights move
@@ -35,6 +37,8 @@ def weights(db, key):
 
 def pick(key):
     import random
+    if key in FROZEN:
+        return FROZEN[key], {FROZEN[key]: 1.0}
     db = connect()
     try:
         w = weights(db, key)
@@ -93,6 +97,8 @@ def adjust(log=print, force=False):
             return
         db.execute("INSERT OR REPLACE INTO meta VALUES ('variant_adjust_ts', ?)", (str(now),))
         for key in VARIANTS:
+            if key in FROZEN:
+                continue
             w, perf = weights(db, key), performance(db, key, now)
             short = {v: n for v, (n, _) in perf.items() if n < MIN_SAMPLES}
             if short:
