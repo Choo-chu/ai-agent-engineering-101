@@ -137,8 +137,10 @@ def question_to_llm(text):
     return bool(since) and time.time() >= since and bool(QUESTION.search(text or ""))
 
 
-def haggle_pick():
-    """'code' with the flag's share, else 'harness'; None while the experiment is off (read per negotiation)."""
+def haggle_pick(unit=None):
+    """'code' with the flag's share, else 'harness'; None while the experiment is off (read per negotiation).
+    11/08 ~11:10 (person): with 'share_low' / 'share_high' in the flag, a unit whose cost is over qc.HIGH_MIN (100,000)
+    uses share_high (0.3: the experiment goes on for high-price units), every other unit share_low (1.0: all code)."""
     try:
         j = json.loads(HAGGLE_FLAG.read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -146,7 +148,11 @@ def haggle_pick():
     if not j.get("enabled") or time.time() < (j.get("since") or 0):
         return None
     import random
-    return "code" if random.random() < float(j.get("share", 0.3)) else "harness"
+    share = j.get("share", 0.3)
+    if unit is not None and "share_low" in j:
+        from depts.qc import HIGH_MIN
+        share = j.get("share_high", share) if (unit.get("cost") or 0) > HIGH_MIN else j["share_low"]
+    return "code" if random.random() < float(share) else "harness"
 
 
 def haggle_log(task, deal, rule):
@@ -314,7 +320,7 @@ class Seller(AgentExecutor):
             deal = self.open[task.id] = {"unit": unit, "ask": None, "offer": None, "lines": [f"buyer: {text}"],
                                          "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats()),
                                          "key": None, "variant": None, "mult": 1.0,
-                                         "haggle": haggle_pick(), "calls": 0,      # 11/07: code vs harness arm
+                                         "haggle": haggle_pick(unit), "calls": 0,      # 11/07: code vs harness arm
                                          "quoted": quoted, "subst_tier": tier}
             deal["receipt_item"] = None if quoted else receipt_exp.category_item(text, unit, substitute.named_sku(text))
             deal["claim_arm"] = receipt_exp.claim_arm(unit)
