@@ -62,27 +62,33 @@ def test_buy_ok():
 
 def test_floor_rule():
     from depts import sofa
-    real = sofa.market
-    med = {"GM": 1_000_000, "GLOW": 300_000, "GCLR": 1_438_000}
+    real, real_app = sofa.market, sofa.applies
+    med = {"GM": 1_000_000, "GLOW": 300_000, "GCLR": 1_438_000, "GSOFA": 900_000}
     sofa.market = lambda sku, now=None: (med.get(sku), 10, 0, 0)
+    sofa.applies = lambda x: x.get("sku") == "GSOFA"
     keep = dict(R)
     try:
-        R["floor_rule"] = {"enabled": False, "cost": 1.10, "median": 0.80}
-        assert ha.floor(u("GM", 600_000), 900_000, 920_000, "normal") == 920_000         # off: unchanged
+        R["floor_rule"] = {"enabled": False, "cost": 1.05, "median": 0.80}
+        assert ha.floor(u("GM", 600_000), 900_000, 920_000, "normal", rule="volume") == 920_000    # off: unchanged
         R["floor_rule"]["enabled"] = True
-        assert ha.floor(u("GM", 600_000), 900_000, 920_000, "normal") == 800_000         # median x 0.8 > cost x 1.1
-        assert ha.floor(u("GM", 800_000), 900_000, 920_000, "normal") == 880_000         # cost x 1.1 > median x 0.8
-        assert ha.floor(u("GLOW", 500_000), 600_000, 300_000, "cash_low") == 550_000     # raised over an old markdown
-        assert ha.floor(u("GNONE", 200_000), 250_000, 230_000, "normal") == 220_000      # no median: cost x 1.1
-        assert ha.floor(u("GM", 600_000), 900_000, 500_000, "endgame") == 500_000        # endgame: unchanged
-        assert ha.floor(u("GM", 50_000), 90_000, 70_000, "normal") == 70_000             # not high price: unchanged
-        # cleared SKU: new floor max(1,346,000, 1,150,400) = 1,346,000 < 98% ask 1,382,394 -> 1,346,000
-        assert ha.floor(u("GCLR", 1_223_636), 1_410_607, 1_321_611, "normal") == 1_345_999
-        # first ask: never under the new floor, capped at the average above it
-        assert ha.first_ask(u("GM", 600_000), 900_000, 800_000, 1_000_000)[0] == 900_000
-        assert ha.first_ask(u("GM", 850_000), 900_000, 935_000, 1_000_000)[0] == 935_000
+        assert ha.floor(u("GM", 600_000), 900_000, 920_000, "normal", rule="volume") == 800_000    # median x 0.8
+        assert ha.floor(u("GM", 800_000), 900_000, 920_000, "normal", rule="volume") == 840_000    # cost x 1.05
+        assert ha.floor(u("GNONE", 200_000), 250_000, 230_000, "normal", rule="normal") == 210_000  # no median
+        # a markdown floor lower than the new one stays (the Samsung TV: aging 420,011 < cost x 1.05)
+        assert ha.floor(u("GLOW", 449_244), 420_011, 420_011, "normal", rule="aging step 0") == 420_011
+        assert ha.floor(u("GLOW", 449_244), 420_011, 420_000, "normal", rule="stoploss") == 420_000
+        assert ha.floor(u("GLOW", 449_244), 420_011, 400_000, "normal", rule="clearance") == 400_000
+        # a markdown floor higher than the new one: the new (lower) one
+        assert ha.floor(u("GM", 600_000), 900_000, 950_000, "normal", rule="aging step 0") == 800_000
+        assert ha.floor(u("GSOFA", 600_000), 900_000, 830_000, "normal", rule="sofa") == 830_000   # sofa: unchanged
+        assert ha.floor(u("GM", 600_000), 900_000, 500_000, "endgame", rule="endgame step 1") == 500_000
+        assert ha.floor(u("GM", 50_000), 90_000, 70_000, "normal", rule="volume") == 70_000        # not high price
+        # cleared SKU: new floor max(1,284,817, 1,150,400) = 1,284,817 < 98% ask
+        assert ha.floor(u("GCLR", 1_223_636), 1_410_607, 1_321_611, "normal", rule="volume") == 1_284_817
+        assert ha.first_ask(u("GM", 600_000), 900_000, 800_000, 1_000_000)[0] == 900_000            # cap at avg
+        assert ha.first_ask(u("GM", 880_000), 900_000, 924_000, 1_000_000)[0] == 924_000            # floor wins
     finally:
-        sofa.market = real
+        sofa.market, sofa.applies = real, real_app
         R.clear(); R.update(keep)
 
 

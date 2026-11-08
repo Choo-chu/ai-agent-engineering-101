@@ -387,8 +387,8 @@ class Seller(AgentExecutor):
         msg_log(task.id, "buyer", text, u["sku"])
         avg, n = price_of(u["sku"])                     # market average, refreshed every 5 min by restock.py
         reserve, rule = floor(u, avg, deal["case"], overstock_mult=deal["mult"])   # pricing.py, the case's rules
-        reserve = high_ask.floor(u, avg, reserve, deal["case"])   # 11/08: cleared SKUs (never under cost), and
-        #                                                 from 20:02 the high-price floor max(cost x 1.1, median x 0.8)
+        reserve = high_ask.floor(u, avg, reserve, deal["case"], rule=rule)   # 11/08: cleared SKUs (never under
+        #   cost), and from 20:02 the high-price floor max(cost x 1.05, median x 0.8) (not sofas; lower markdowns kept)
         deal["rule"] = rule
         q_llm = deal.get("haggle") == "code" and len(deal["lines"]) > 1 and question_to_llm(text)
         if q_llm:                                       # 11/07: a question in the code arm goes to the harness
