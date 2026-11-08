@@ -31,6 +31,7 @@ import decisions
 from depts import sofa
 from depts import receipt_exp  # 11/07: category receipt item, grade claim experiment
 from depts import receipt_check  # 11/08: the receipt amount = the price the buyer agreed to
+from depts import receipt_hold  # 11/08: how long a unit with a receipt stays held (receipt_hold.json)
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
@@ -261,7 +262,8 @@ class Seller(AgentExecutor):
 
         if deal is None or deal.get("subst"):
             now = time.time()
-            self.sold = {k: t for k, t in self.sold.items() if now - t < 900}
+            hold = receipt_hold.hold_s(now)         # 11/08 ~13:00: p99 of receipt -> payment, 3-15 min (was 15 min)
+            self.sold = {k: t for k, t in self.sold.items() if now - t < hold}
             taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit") and d["unit"]["unit"]} \
                 | set(self.sold)
             quoted = tier = None
