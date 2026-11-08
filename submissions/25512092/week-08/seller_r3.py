@@ -32,6 +32,7 @@ from depts import sofa
 from depts import receipt_exp  # 11/07: category receipt item, grade claim experiment
 from depts import receipt_check  # 11/08: the receipt amount = the price the buyer agreed to
 from depts import receipt_hold  # 11/08: how long a unit with a receipt stays held (receipt_hold.json)
+from depts import subst_exp  # 11/08: substitute offers, option A experiment (subst_exp.json)
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
@@ -66,6 +67,20 @@ def sign(receipt):
     key = serialization.load_pem_private_key(Path("shop_key.pem").read_bytes(), password=None)
     body = {k: receipt[k] for k in ("shop", "item", "price", "task")}
     return dict(receipt, sig_seller=base64.b64encode(key.sign(canon(body))).decode())
+
+
+def build_receipt(deal, u, price, task_id):
+    """The receipt before signing (11/08: a function so tests can check the category-name receipt): item = the
+    deal's receipt item (the order's category name in the category experiment and substitute arm A) or the SKU,
+    the unit, the grade claim (claim arm, goods with a grade), the warranty."""
+    receipt = {"shop": NAME, "item": deal.get("receipt_item") or u["sku"], "price": price, "task": task_id}
+    if u["unit"]:
+        receipt["unit"] = u["unit"]
+    if deal.get("claim_arm") == "claim" and u.get("grade") in ("A", "B", "C"):   # goods only (receipt_exp)
+        receipt["claim"] = u["grade"]
+    if deal.get("warranty"):                        # [16] not under sig_seller; the kit puts it in the checkout
+        receipt["warranty_hours"] = deal["warranty"]
+    return receipt
 
 
 def find_unit(text, taken=()):
@@ -266,9 +281,15 @@ class Seller(AgentExecutor):
             self.sold = {k: t for k, t in self.sold.items() if now - t < hold}
             taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit") and d["unit"]["unit"]} \
                 | set(self.sold)
-            quoted = tier = None
+            quoted = tier = subst_arm = n_off = None
             if deal is not None:                        # 11/07: waiting for the buyer to name one of my candidates
                 pick = substitute.chosen(text, deal["subst"])
+                if pick is None and deal.get("subst_arm") == "A":      # 11/08 experiment A: a number = an offer
+                    n_off = subst_exp.number_offer(text)              # for the first candidate
+                    if n_off is not None:
+                        pick = next(iter(deal["subst"]))
+                        subst_exp.log(task.id, "A", "number_reply", x=deal["x"], sku=pick, offer=n_off)
+                        print(f"[subst A] {deal['x']}: number {n_off} -> offer for {pick}", flush=True)
                 if pick is None:
                     msg_log(task.id, "buyer", text, deal["x"])
                     deal["tries"] += 1
@@ -289,10 +310,21 @@ class Seller(AgentExecutor):
                     await up.reject(say(f"Sorry, {pick} has just sold out."))
                     return
                 substitute.log_choice(connect, task.id, pick, tier)
+                subst_arm = deal.get("subst_arm")
+                subst_exp.log(task.id, subst_arm, "chosen", x=deal["x"], sku=pick, tier=tier, quoted=quoted)
                 print(f"[subst] buyer chose {pick} (tier {tier}) instead of {deal['x']}, quoted {quoted}", flush=True)
             else:
                 x = substitute.named_sku(text) if substitute.on() else None
                 cands = substitute.candidates(x, inventory_units(), taken) if x else None
+                subst_arm = subst_exp.arm() if cands is not None else None
+                if subst_arm == "B" or (subst_arm == "A" and not subst_exp.near(cands or [])):
+                    subst_exp.log(task.id, subst_arm, "no_offer", x=x, n=len(cands or []))
+                    msg_log(task.id, "buyer", text, x)
+                    msg_log(task.id, "shop", f"subst {subst_arm}: not in stock", x)
+                    await up.reject(say(f"Sorry, {x} is not in stock."))
+                    return
+                if subst_arm == "A":
+                    cands = subst_exp.near(cands)
                 if cands is not None:                   # a named SKU I do not hold: offer candidates, no receipt yet
                     if not cands:
                         await up.reject(say(f"Sorry, we have no {x} and nothing else in its category in stock."))
@@ -306,8 +338,11 @@ class Seller(AgentExecutor):
                                                            {"key": None, "variant": None, "case": case, "mult": 1.0})))
                         offer[c["sku"]] = (t, price)
                         lines.append(f"{len(lines) + 1}) {c['sku']} {c['name']}: {price}")
-                    self.open[task.id] = {"subst": offer, "x": x, "tries": 0, "lines": [f"buyer: {text}"]}
+                    self.open[task.id] = {"subst": offer, "x": x, "tries": 0, "lines": [f"buyer: {text}"],
+                                          "subst_arm": subst_arm}
                     substitute.log_offer(connect, task.id, x, [[k, v[0]] for k, v in offer.items()])
+                    if subst_arm:
+                        subst_exp.log(task.id, subst_arm, "offer", x=x, offered=[[k, v[0], v[1]] for k, v in offer.items()])
                     msg_log(task.id, "buyer", text, x)
                     msg_log(task.id, "shop", "subst " + ", ".join(f"{k} t{v[0]} {v[1]}" for k, v in offer.items()), x)
                     print(f"[subst] {x} not in stock -> offered {offer}", flush=True)
@@ -326,11 +361,18 @@ class Seller(AgentExecutor):
                                          "haggle": haggle_pick(unit), "calls": 0,      # 11/07: code vs harness arm
                                          "quoted": quoted, "subst_tier": tier}
             deal["receipt_item"] = None if quoted else receipt_exp.category_item(text, unit, substitute.named_sku(text))
+            if quoted and subst_arm == "A":             # 11/08 experiment A: the order's category name on the receipt
+                deal["receipt_item"] = subst_exp.category_name(unit)
+                deal["subst_arm"] = "A"
+            elif quoted and subst_arm:
+                deal["subst_arm"] = subst_arm
             deal["claim_arm"] = receipt_exp.claim_arm(unit)
             receipt_exp.log(connect, task.id, unit, deal["receipt_item"], deal["claim_arm"])
             if quoted:                                  # an offer in the choosing message counts (SKUs left out)
                 m = re.search(r"\d+", substitute.strip_skus(text))
                 deal["offer"] = int(m.group()) if m else None
+                if n_off is not None:                   # 11/08 A: the number reply, read whole ("10,400")
+                    deal["offer"] = n_off
             if case in ("normal", "overstock"):         # stage 2: one variant per negotiation, by weight
                 key = "shop_normal_ask" if case == "normal" else "shop_overstock_floor"
                 v, w = strategy.pick(key)
@@ -407,14 +449,10 @@ class Seller(AgentExecutor):
                     deal["offer"] = agreed
         if action == "accept":
             price = deal["offer"]
-            receipt = {"shop": NAME, "item": deal.get("receipt_item") or u["sku"], "price": price, "task": task.id}
-            if u["unit"]:
-                receipt["unit"] = u["unit"]
-            if deal.get("claim_arm") == "claim" and u.get("grade") in ("A", "B", "C"):   # goods only (receipt_exp)
-                receipt["claim"] = u["grade"]
-            if deal["warranty"]:                        # [16] not under sig_seller; the kit puts it in the checkout
-                receipt["warranty_hours"] = deal["warranty"]
-            receipt = sign(receipt)
+            receipt = sign(build_receipt(deal, u, price, task.id))
+            if deal.get("subst_arm"):
+                subst_exp.log(task.id, deal["subst_arm"], "receipt", sku=u["sku"], unit=u["unit"], price=price,
+                              item=receipt["item"])
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             finish(task.id, "receipt", price)
