@@ -32,6 +32,7 @@ STORIES = [
     "Someone in my family needs surgery soon and I am saving every won I can, so could you go a little lower?",
 ]
 FORUM_DROP = 0.01
+MIN_GROUP = 20          # metrics(): groups under this are left out of the common size (shown, marked small)
 
 
 def rules():
@@ -133,10 +134,13 @@ def metrics(since, until=None):
         db.close()
 
     def summary(groups):
-        m = min((len(v) for v in groups.values()), default=0)
+        # 11/08 fix: the common size M is the smallest group with at least MIN_GROUP negotiations; a smaller group
+        # (facts v1 ran ~11 min: 1 negotiation) used to set M = 1 for every group. Small groups: all their rows, "small"
+        m = min((len(v) for v in groups.values() if len(v) >= MIN_GROUP), default=0)
         out = {}
         for k, x in groups.items():
-            y = x[:m]
+            small = len(x) < MIN_GROUP
+            y = x if small else x[:m]
             if not y:
                 out[k] = {"n_all": len(x)}
                 continue
@@ -148,6 +152,8 @@ def metrics(since, until=None):
                       "secs": round(sum(r[6] or 0 for r in y) / len(y), 1),
                       "timeouts": sum(1 for r in y if (r[4] or "") in ("time_limit", "error")),
                       "harness_calls": round(sum(r[7] or 0 for r in y) / len(y), 2)}
+            if small:
+                out[k]["small"] = True
         return out
     by_t, by_c = {t: [] for t in TACTICS}, {}
     for r in rows:
@@ -166,7 +172,8 @@ def interim(send, log=print):
     save(r)
     names = {"facts": "facts_v1(한도 포함)", "facts2": "facts2"}
     fmt = lambda k, v: (f"{names.get(k.split('|')[0], k.split('|')[0])}{'|' + k.split('|')[1] if '|' in k else ''}: n {v.get('n', 0)}/{v['n_all']}, saved {v.get('saved')}, 성사 {v.get('deal_rate')}, "
-                        f"흥정 {v.get('offers')}, {v.get('secs')}s, timeout {v.get('timeouts')}, 하네스 {v.get('harness_calls')}")
+                        f"흥정 {v.get('offers')}, {v.get('secs')}s, timeout {v.get('timeouts')}, 하네스 {v.get('harness_calls')}"
+                        + (" (표본 부족: 전체 사용, 비교 제외)" if v.get("small") else ""))
     text = ("buyer 협상 실험 24시간 중간 결과 (같은 협상 수 기준)\n" + "\n".join(fmt(k, v) for k, v in m["tactic"].items())
             + "\n조합별:\n" + "\n".join(fmt(k, v) for k, v in sorted(m["combo"].items()))
             + (f"\n사정 호소 중단됨: {r.get('appeal_stop_reason')}" if r.get("appeal_stopped") else ""))
