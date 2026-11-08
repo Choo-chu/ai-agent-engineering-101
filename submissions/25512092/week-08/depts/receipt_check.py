@@ -21,6 +21,16 @@ OFFER = re.compile(r"(?:i can do|i can pay|i(?:'ll| will)? (?:offer|pay)|my (?:f
 NUM = re.compile(r"(?<![\w.])\d[\d,]*(?![A-Za-z0-9_.,%])(?!\s*(?:hours?\b|hrs?\b|h\b|units?\b|pcs\b|pieces\b|days?\b|minutes?\b|mins?\b|%|시간|개|일|분))", re.I)
 
 
+FIRST = re.compile(r"\d{1,3}(?:,\d{3})+(?!\d)|\d+")
+
+
+def first_number(text):
+    """The first number of a message, thousands separators read (11/08: "27,000" is 27000, it was read as 27);
+    the seller's offer parse (SKUs stripped before)."""
+    m = FIRST.search(text or "")
+    return int(m.group().replace(",", "")) if m else None
+
+
 def _int(s):
     s = s.replace(",", "")
     return int(s) if s.isdigit() else None

@@ -43,3 +43,14 @@ def test_number_before_words():
 def test_korean():
     assert buyer_offer("540시간 필요, 8000원") == 8000
     assert buyer_offer("3개 9000") == 9000
+
+
+def test_first_number_thousands():
+    from depts.receipt_check import first_number
+    assert first_number("I can do 27,000.") == 27000
+    assert first_number("27000") == 27000
+    assert first_number("10,400 then") == 10400
+    assert first_number("1,234,567") == 1234567
+    assert first_number("27,0000") == 27           # not a thousands group: as before
+    assert first_number("3 units, 9000") == 3      # the first number, as before (receipt_check.agreed checks it)
+    assert first_number("no number") is None

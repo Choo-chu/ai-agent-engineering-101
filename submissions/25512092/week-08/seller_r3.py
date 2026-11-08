@@ -369,8 +369,7 @@ class Seller(AgentExecutor):
             deal["claim_arm"] = receipt_exp.claim_arm(unit)
             receipt_exp.log(connect, task.id, unit, deal["receipt_item"], deal["claim_arm"])
             if quoted:                                  # an offer in the choosing message counts (SKUs left out)
-                m = re.search(r"\d+", substitute.strip_skus(text))
-                deal["offer"] = int(m.group()) if m else None
+                deal["offer"] = receipt_check.first_number(substitute.strip_skus(text))   # 11/08: "27,000" -> 27000
                 if n_off is not None:                   # 11/08 A: the number reply, read whole ("10,400")
                     deal["offer"] = n_off
             if case in ("normal", "overstock"):         # stage 2: one variant per negotiation, by weight
@@ -380,8 +379,8 @@ class Seller(AgentExecutor):
                 print(f"[variant] {key} -> {v} (weights {w})", flush=True)
         else:
             deal["lines"].append(f"buyer: {text}")
-            m = re.search(r"\d+", substitute.strip_skus(text))     # a SKU like G200e39a3 is not an offer of 200
-            deal["offer"] = int(m.group()) if m else deal["offer"]
+            n = receipt_check.first_number(substitute.strip_skus(text))   # SKUs out: G200e39a3 is not 200;
+            deal["offer"] = n if n is not None else deal["offer"]          # 11/08: "27,000" -> 27000 (was 27)
 
         u = deal["unit"]
         msg_log(task.id, "buyer", text, u["sku"])
