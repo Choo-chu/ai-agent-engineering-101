@@ -64,6 +64,22 @@ def causes(t0, t1):
     return c
 
 
+def spend_history(t0, t1):
+    """purchasing.spend_share changes in [t0, t1) (person 11/08 ~11:15: shown in the 3 h check), and the pin."""
+    from depts import policy_notify
+    out = []
+    with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
+        for ln in f:
+            if "purchasing.spend_share" not in ln:
+                continue
+            d = json.loads(ln)
+            if t0 <= d["ts"] < t1 and d.get("action") in ("policy", "approved", "spend_share_pin", "pinned", "held"):
+                out.append(f"{datetime.fromtimestamp(d['ts']):%H:%M} {d['dept']} {d['action']} {d.get('value')}"
+                           f" ({(d.get('reason') or '')[:60]})")
+    until = policy_notify._pins().get("purchasing.spend_share")
+    return out, until
+
+
 def report(t, now=None):
     t1 = min(t + H * 3600, now or time.time())
     db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
@@ -79,6 +95,7 @@ def report(t, now=None):
     br = json.load(open(os.path.join(HERE, "cap_brake.json"), encoding="utf-8"))
     fired = br.get("fired") and br["fired"] >= t
     share = st.get("old_share")
+    sh = spend_history(t - (t1 - t), t1)
     return "\n".join([
         f"STOCK_CAP 20M 재상향 {(t1 - t) / 3600:.1f}시간 점검 ({datetime.fromtimestamp(t):%H:%M} ~ {datetime.fromtimestamp(t1):%H:%M}), "
         "후 vs 전 같은 길이",
@@ -91,10 +108,19 @@ def report(t, now=None):
         f"- 브레이크: {'걸림 ' + datetime.fromtimestamp(br['fired']).strftime('%H:%M') + ' ' + '; '.join(br.get('fired_why', [])) if fired else '안 걸림'}"
         f"; 6시간+ 미판매 비율 {('%.1f%%' % (100 * share)) if share is not None else '- (상향 후 6시간 지난 입고분 없음)'}"
         f" (기준 25%, {st.get('old_eligible_n', 0)}개 / 원가 {st.get('old_eligible_cost', 0):,} 중 {st.get('old_unsold_cost', 0):,}),"
-        f" 중앙값 {st.get('median_h')}시간, 현금 {st.get('cash', 0):,}"])
+        f" 중앙값 {st.get('median_h')}시간, 현금 {st.get('cash', 0):,}",
+        "- spend_share 이력: " + ("; ".join(sh[0]) or "변경 없음")
+        + (f" | 고정(CEO 변경 금지) {datetime.fromtimestamp(float(sh[1])):%m-%d %H:%M}까지" if sh[1] else "")])
 
 
 def main():
+    if "--report-at" in sys.argv:                 # 11/08 ~11:20: the waiting report restarted with the spend_share line
+        t = float(sys.argv[sys.argv.index("--report-at") + 1])
+        while time.time() < t + H * 3600 + 60:
+            time.sleep(60)
+        alerts.send("daily", f"cap20_again_report:{int(t)}", report(t), log=log)
+        log("again report sent")
+        return
     if "--report-dry" in sys.argv:
         print(report(time.time() - 3600))
         return
