@@ -25,6 +25,8 @@ import decisions  # noqa: E402
 LOG = os.path.join(HERE, "logs", "cap30_rollout.log")
 WHY = "person's decision 11/08 ~20:35: STOCK_CAP 20M -> 30M, brake back to 20M, hot fast my_share 0.8, request 4 lines / 8"
 NEW, LOW = 30_000_000, 20_000_000
+WHEN = "11/08 ~20:35"
+EXTRA = "요청 기반 4줄/목표 8, hot 상위 30 중 회전 1시간 이하 my_share 0.8. "
 ME = "choo-chu"
 H = 3
 
@@ -106,7 +108,7 @@ def main():
     finally:
         d.close()
     try:
-        res = analyst_apply.apply_limit("limits.STOCK_CAP", NEW, pid, why="person's decision 11/08 ~20:35")
+        res = analyst_apply.apply_limit("limits.STOCK_CAP", NEW, pid, why=f"person's decision {WHEN}")
     except Exception as e:
         d = analyst.db()
         d.execute("UPDATE proposals SET status='failed', result=? WHERE id=?", (str(e)[:300], pid))
@@ -125,7 +127,7 @@ def main():
     br = json.load(open(path, encoding="utf-8"))
     prev = {k: br.pop(k) for k in ("fired", "fired_why") if k in br}
     br.update(enabled=True, since=round(t), pid=pid, low=LOW, history=br.get("history", []) + [prev],
-              why=br.get("why", "") + "; 11/08 ~20:35 cap 30M, a trip goes back to 20M")
+              why=br.get("why", "") + f"; {WHEN} cap 30M, a trip goes back to 20M")
     json.dump(br, open(path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     json.dump({"t": t, "start": held()}, open(STATE, "w", encoding="utf-8"))
     hp = os.path.join(HERE, "hot_fast.json")
@@ -135,9 +137,9 @@ def main():
     decisions.record("analyst", "approved_by_person", "limits.STOCK_CAP", NEW, f"#{pid}: {WHY} | {res['text']}")
     decisions.record("purchasing", "hot_fast_on", "hot_fast", hf, WHY)
     log(f"#{pid}: {res['text']}; brake low {LOW:,} since {t:.0f}; hot_fast on")
-    alerts.send("info", "cap30_on", f"STOCK_CAP 20M -> 30M {datetime.now():%H:%M} (#{pid}, {res['text'][:140]}). high_max 30, "
-                "고가 비중 그대로 (늘어난 자리는 일반 품목). 브레이크 3개 그대로, 걸리면 20M으로 복귀. 요청 기반 4줄/목표 8, "
-                "hot 상위 30 중 회전 1시간 이하 my_share 0.8. 3시간 점검 예정", log=log)
+    alerts.send("info", "cap30_on", f"STOCK_CAP 20M -> 30M {datetime.now():%H:%M} (#{pid}, {res['text'][:140]}). high_max {__import__('policy').get('purchasing', 'high_max')}, "
+                "고가 비중 그대로. 브레이크 3개 그대로, 걸리면 20M으로 복귀. " + EXTRA
+                + "3시간 점검 예정 (분석관 3시간 점검은 시장 보정 기준)", log=log)
     while time.time() < t + H * 3600 + 60:
         time.sleep(60)
     alerts.send("daily", f"cap30_report:{int(t)}", report(t), log=log)
