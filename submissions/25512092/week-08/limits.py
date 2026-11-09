@@ -8,8 +8,8 @@ from datetime import datetime
 # money and stock
 CASH_RESERVE = 1_000_000      # restock spends only cash above this; under it the shop case is cash_low
 CASH_WARN = 1_000_000         # under this: warning in the log and an urgent alert
-STOCK_CAP = 20_000_000         # stock at cost at or over this: overstock, no restock (11/06 16:46: was 5.0M; 15:54: 4.0M -> 5.0M)
-STOCK_EXIT = 17_600_000        # overstock ends only under this (hysteresis; 88% of the cap, was 4.4M)
+STOCK_CAP = 40_000_000         # stock at cost at or over this: overstock, no restock (11/06 16:46: was 5.0M; 15:54: 4.0M -> 5.0M)
+STOCK_EXIT = 35_200_000        # overstock ends only under this (hysteresis; 88% of the cap, was 4.4M)
 # every change of STOCK_CAP: (epoch seconds, new cap). Comparisons that span a change (the CEO guard, the
 # daily before/after section, the 24 h review alert) read it so a cap change is not taken for a policy effect.
 STOCK_CAP_CHANGES = [(1793948058, 5_000_000),   # 11/06 15:54 KST, 4.0M -> 5.0M
@@ -88,3 +88,4 @@ STOCK_CAP_CHANGES.append((1794138017, 30_000_000))   # 11/08 20:40 analyst #18, 
 STOCK_CAP_CHANGES.append((1794149013, 20_000_000))   # 11/08 23:43 analyst #18, approved
 STOCK_CAP_CHANGES.append((1794193505, 30_000_000))   # 11/09 12:05 analyst #33, approved
 STOCK_CAP_CHANGES.append((1794217635, 20_000_000))   # 11/09 18:47 analyst #brake, approved
+STOCK_CAP_CHANGES.append((1794219768, 40_000_000))   # 11/09 19:22 analyst #38, approved
