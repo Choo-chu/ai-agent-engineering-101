@@ -54,18 +54,36 @@ def test_brake():
     d.execute("CREATE TABLE my_stock (unit TEXT, sku TEXT, cost INTEGER, supplied_at REAL)")
     d.execute("CREATE TABLE shop_deals (ts REAL, outcome TEXT, cost INTEGER)")
     now = time.time()
-    for i in range(4):                               # sold after 8 h each
-        d.execute("INSERT INTO my_stock VALUES (?,?,?,?)", (f"u{i}", "S", 300000, now - 9 * 3600))
-        d.execute("INSERT INTO settles VALUES (?,?,?,?,?)", (now - 3600, F.ME, "S", 400000, f"u{i}"))
+    since = now - 20 * 3600
+    for i in range(4):                               # sold after 8 h each (condition a)
+        d.execute("INSERT INTO my_stock VALUES (?,?,?,?)", (f"s{i}", "S", 300000, now - 9 * 3600))
+        d.execute("INSERT INTO settles VALUES (?,?,?,?,?)", (now - 3600, F.ME, "S", 400000, f"s{i}"))
+    for i in range(12):                              # bought after the switch, 13 h old (condition b)
+        d.execute("INSERT INTO my_stock VALUES (?,?,?,?)", (f"a{i}", "A", 300000, now - 13 * 3600))
+    d.execute("INSERT INTO my_stock VALUES (?,?,?,?)", ("old", "O", 900000, since - 3600))   # held before: left out
     for i in range(20):
         d.execute("INSERT INTO shop_deals VALUES (?,?,?)", (now - 600, "receipt" if i < 2 else "fail", 300000))
     d.commit()
-    F.held_units = lambda: [{"cost": 600000, "supplied_at": now - 13 * 3600}] * 9
-    st = {n: x for n, x, _ in F.brake_state(d, now, 0.4)}
+    held = lambda ids: (lambda: [{"unit": u, "cost": 300000, "supplied_at": now - 13 * 3600} for u in ids])
+    F.held_units = held(["old", "a0", "a1", "a2", "a3"])            # 4 of 12 unsold = 33% > 30%
+    st = {n: x for n, x, _ in F.brake_state(d, now, 0.4, since)}
     assert st == {"sell_median": True, "stale_cost": True, "receipt_ratio": True}
-    F.held_units = lambda: [{"cost": 600000, "supplied_at": now - 13 * 3600}] * 8
-    st = {n: x for n, x, _ in F.brake_state(d, now, 0.15)}
+    F.held_units = held(["old", "a0", "a1", "a2"])                  # 25%
+    st = {n: x for n, x, _ in F.brake_state(d, now, 0.15, since)}
     assert st == {"sell_median": True, "stale_cost": False, "receipt_ratio": False}
+    d.execute("DELETE FROM my_stock WHERE unit IN ('a9','a10','a11')")   # 9 aged units: no judgement
+    F.held_units = held(["a0", "a1", "a2", "a3", "a4", "a5"])
+    st = F.brake_state(d, now, 0.15, since)
+    assert st[1][1] is False and "판단 보류" in st[1][2]
+    assert F.brake_state(d, now, 0.15, None)[1][1] is False       # before the switch: nothing to judge
+
+
+def test_old_stale_text():
+    import high_focus_rollout as F
+    t = F.old_stale_text([{"unit": "u", "sku": "G1", "name": "x", "grade": "B", "age_h": 30.2, "cost": 200000,
+                           "floor": 210000, "avg": 300000}, {"unit": "v", "sku": "G2", "name": "y", "grade": "A",
+                                                             "age_h": 13, "cost": 150000, "floor": None, "avg": None}])
+    assert "2개 (원가 350,000)" in t and "하한 210,000, 평균 300,000 (70%)" in t and "하한 -, 평균 - (-)" in t
 
 
 if __name__ == "__main__":

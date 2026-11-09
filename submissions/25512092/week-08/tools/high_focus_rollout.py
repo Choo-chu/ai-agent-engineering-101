@@ -11,7 +11,8 @@ Unchanged: the high-price buy guard, first ask <= market avg, floor max(cost x 1
 analyst's 3 h check (market-adjusted).
 High-price brake, every 15 min: any of
   a. median time from supply to sale of the high-price units sold in the last 6 h > 6 h (at least 3 sales)
-  b. high-price units unsold for more than 12 h, at cost, > 5M
+  b. (11/09 ~14:45, was "12 h+ unsold > 5M") of the high-price units supplied after the switch and older than 12 h,
+     the share of their cost still unsold > 30% (judged from 10 such units; the units held before are left out)
   c. high-price receipts / negotiations in the last 3 h (at least 10) <= half of the 24 h before the switch
 -> high_max 40, high_share 0.6 (policy, QC table, ceilings 0.6 / 40) at once and an urgent Telegram.
 3 h later one Telegram, 3 h after vs 3 h before.
@@ -35,7 +36,7 @@ STATE = os.path.join(HERE, "logs", "high_focus_state.json")
 LATEST = datetime(2026, 11, 9, 15, 40).timestamp()
 FROM = datetime(2026, 11, 9, 15, 0).timestamp()
 CHECK_S, H = 900, 3
-SELL_MEDIAN_H, STALE_H, STALE_COST, REC_DROP = 6, 12, 5_000_000, 0.5
+SELL_MEDIAN_H, STALE_H, STALE_SHARE, STALE_MIN_N, REC_DROP = 6, 12, 0.30, 10, 0.5   # 11/09 ~14:45: was 5M unsold
 SOFA_CAT = "소파/의자/스툴"
 ME = "choo-chu"
 
@@ -81,7 +82,7 @@ def rec_ratio(d, t0, t1):
     return (r / n if n else None), n
 
 
-def brake_state(d, now, base_ratio):
+def brake_state(d, now, base_ratio, since=None):
     """[(name, tripped, text)] for the three conditions."""
     hm = high_min()
     sold = d.execute("SELECT s.ts - m.supplied_at FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND "
@@ -91,14 +92,24 @@ def brake_state(d, now, base_ratio):
     a = (len(secs) >= 3 and med > SELL_MEDIAN_H,
          f"고가 입고->판매 중앙값(최근 6시간 판매 {len(secs)}건) {'-' if med is None else f'{med:.1f}시간'} (기준 {SELL_MEDIAN_H}시간 초과"
          f"{', 3건 미만이면 판단 보류' if len(secs) < 3 else ''})")
-    stale = d.execute("SELECT COALESCE(SUM(m.cost),0), COUNT(*) FROM my_stock m WHERE m.cost>? AND m.supplied_at<? AND NOT "
-                      "EXISTS (SELECT 1 FROM settles x WHERE x.unit=m.unit AND x.shop=?) AND m.unit IN "
-                      "(SELECT unit FROM my_stock)", (hm, now - STALE_H * 3600, ME)).fetchone()
+    # 11/09 ~14:45 (person): of the high-price units supplied after the switch that are older than 12 h, the share of
+    # their cost still unsold > 30% (at least 10 such units); the units held before the switch are left out
+    if since:
+        aged = d.execute("SELECT unit, cost FROM my_stock WHERE cost>? AND supplied_at>=? AND supplied_at<=?",
+                         (hm, since, now - STALE_H * 3600)).fetchall()
+    else:
+        aged = []
     held = held_units()
-    if held is not None:                         # the kit's inventory is the truth for what is still held
-        st = [u for u in held if u.get("cost", 0) > hm and now - (u.get("supplied_at") or now) > STALE_H * 3600]
-        stale = (sum(u.get("cost", 0) for u in st), len(st))
-    b = (stale[0] > STALE_COST, f"12시간 넘게 안 팔린 고가 재고 원가 {int(stale[0]):,} ({stale[1]}개, 기준 {STALE_COST:,} 초과)")
+    held_ids = {u.get("unit") for u in held} if held is not None else None
+    if held_ids is None:                         # no inventory file: unsold = no sale of the unit by my shop
+        held_ids = {u for u, _ in aged if not d.execute("SELECT 1 FROM settles WHERE unit=? AND shop=?", (u, ME)).fetchone()}
+    tot = sum(c or 0 for _, c in aged)
+    left = sum(c or 0 for u, c in aged if u in held_ids)
+    share = left / tot if tot else None
+    b = (len(aged) >= STALE_MIN_N and share is not None and share > STALE_SHARE,
+         f"적용 후 입고 고가 중 12시간 지난 {len(aged)}개 원가 {tot:,} 가운데 미판매 {left:,} "
+         f"({'-' if share is None else f'{share:.0%}'}, 기준 {STALE_SHARE:.0%} 초과"
+         f"{f', {STALE_MIN_N}개 미만이면 판단 보류' if len(aged) < STALE_MIN_N else ''})")
     r, n = rec_ratio(d, now - 3 * 3600, now)
     c = (n >= 10 and base_ratio and r is not None and r <= REC_DROP * base_ratio,
          f"고가 협상 대비 영수증 최근 3시간 {'-' if r is None else f'{r:.1%}'} ({n}건) vs 적용 전 24시간 "
@@ -154,7 +165,7 @@ def report(t, now=None, state=None):
     d = db()
     try:
         a, b = window(d, t, t1, cat), window(d, t - (t1 - t), t, cat)
-        st = brake_state(d, now, (state or load_state()).get("base_ratio"))
+        st = brake_state(d, now, (state or load_state()).get("base_ratio"), (state or load_state()).get("since"))
     finally:
         d.close()
     hm = high_min()
@@ -234,6 +245,41 @@ def apply(rank):
     return t, base, base_n, old, v
 
 
+def old_stale(now=None):
+    """(11/09 ~14:45) the high-price units held > 12 h unsold before the switch: left out of the brake; for the 15:05
+    report: SKU, name, age, floor (the high-price floor rule; sofas their own), market average and floor / average."""
+    from depts import high_ask, sofa
+    from market_db import load_stats, price_of
+    now = now or time.time()
+    hm = high_min()
+    stats = load_stats()
+    rows = []
+    for u in held_units() or []:
+        age = (now - (u.get("supplied_at") or now)) / 3600
+        if u.get("cost", 0) <= hm or age <= STALE_H:
+            continue
+        avg, n = price_of(u["sku"], stats)
+        if sofa.applies(u):
+            fl = (sofa.floor(u, now) or (None,))[0]
+        else:
+            fl = high_ask.high_floor(u, now)
+        rows.append({"unit": u.get("unit"), "sku": u["sku"], "name": (u.get("name") or "")[:24], "grade": u.get("grade"),
+                     "age_h": round(age, 1), "cost": u.get("cost"), "floor": fl, "avg": int(avg) if avg else None})
+    return sorted(rows, key=lambda r: -r["age_h"])
+
+
+def old_stale_text(rows):
+    tot = sum(r["cost"] or 0 for r in rows)
+    L = [f"브레이크 계산에서 뺀 기존 12시간+ 미판매 고가 {len(rows)}개 (원가 {tot:,}): SKU / 나이 / 원가 / 하한 / 시장 평균 (하한÷평균)"]
+    for r in rows:
+        ratio = f"{r['floor'] / r['avg']:.0%}" if r["floor"] and r["avg"] else "-"
+        fl = "-" if r["floor"] is None else f"{r['floor']:,}"
+        av = "-" if r["avg"] is None else f"{r['avg']:,}"
+        L.append(f"- {r['sku']} {r['name']} ({r['grade']}): {r['age_h']:.0f}시간, 원가 {r['cost']:,}, 하한 {fl}, "
+                 f"평균 {av} ({ratio})")
+    return "\n".join(L)
+
+
 def trip(why):
     import alerts
     import decisions
@@ -262,15 +308,21 @@ def main():
                 + f"(2) high_max {old[1]} -> 60, high_share {old[0]} -> 0.7 (policy v{v}, CEO·QC 자동 상한 0.7/60) "
                 f"(3) 소파 한도 2배: 20분 창당 1 -> 2개, 미판매 10 -> 20개, 줄 1 -> 2, 단위 원가 50만 -> 100만 (수요 조건·G5e3784e6 제외·C등급 보증 없음 그대로). "
                 f"고가 가드·첫 호가·하한·1.0M·B 보증·STOCK_CAP 브레이크·분석관 점검 그대로. 고가 브레이크 15분마다 (입고->판매 중앙값 6시간, "
-                f"12시간+ 미판매 고가 5M, 영수증 비율 절반; 기준 {'-' if base is None else f'{base:.1%}'} / {base_n}건). 3시간 점검 예정",
+                f"적용 후 입고 고가 중 12시간 지난 것의 미판매 원가 30% 초과(10개 이상일 때), 영수증 비율 절반; 기준 {'-' if base is None else f'{base:.1%}'} / {base_n}건). 3시간 점검 예정",
                 log=log)
+    try:
+        rows = old_stale()
+        save_state(excluded=[r["unit"] for r in rows])
+        alerts.send("info", "high_focus_old_stale", old_stale_text(rows), log=log)
+    except Exception as e:
+        log(f"old stale list failed: {type(e).__name__}: {e}")
     reported = False
     while True:
         now = time.time()
         if not load_state().get("tripped"):
             d = db()
             try:
-                st = brake_state(d, now, base)
+                st = brake_state(d, now, base, t)
             finally:
                 d.close()
             hit = [txt for _, x, txt in st if x]
