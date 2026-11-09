@@ -35,6 +35,8 @@ from depts import receipt_hold  # 11/08: how long a unit with a receipt stays he
 from depts import high_ask  # 11/08 ~17:00: high-price first ask <= market average
 from depts import subst_exp  # 11/08: substitute offers, option A experiment (subst_exp.json)
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
+from depts import open_expiry  # 11/09 ~11:30: a negotiation quiet for 10 min is closed as expired, its unit freed
+from depts import b_warranty  # 11/09 ~11:30: B grade high-price warranty (TV / 냉방 on, 침대/매트리스 50% trial)
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
 from market_db import connect, load_stats, price_of
@@ -274,7 +276,17 @@ class Seller(AgentExecutor):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
+        now0 = time.time()
+        for tid in open_expiry.stale(self.open, now0):  # 11/09: quiet > 10 min -> expired, the unit is free again
+            d = self.open.pop(tid)
+            if d.get("unit"):
+                finish(tid, "expired")
+            msg_log(tid, "shop", f"expired: no message for {open_expiry.EXPIRE_S // 60} min", open_expiry.unit_of(d)[1])
+            open_expiry.log_expired(tid, d, now0)
+            print(f"[expired] {tid[:8]} {open_expiry.unit_of(d)}", flush=True)
+        open_expiry.write_state(self.open, now0)
         deal = self.open.get(task.id)
+        open_expiry.touch(deal, now0)
 
         if deal is None or deal.get("subst"):
             now = time.time()
@@ -368,6 +380,11 @@ class Seller(AgentExecutor):
             elif quoted and subst_arm:
                 deal["subst_arm"] = subst_arm
             deal["claim_arm"] = receipt_exp.claim_arm(unit)
+            deal["t"] = time.time()
+            b_arm = b_warranty.arm(unit, case)          # 11/09: B grade high-price warranty, trial tag
+            if b_arm:
+                deal["b_warranty"] = b_arm
+                b_warranty.log_deal(task.id, unit, b_arm, deal["warranty"])
             receipt_exp.log(connect, task.id, unit, deal["receipt_item"], deal["claim_arm"])
             if quoted:                                  # an offer in the choosing message counts (SKUs left out)
                 deal["offer"] = receipt_check.first_number(substitute.strip_skus(text))   # 11/08: "27,000" -> 27000

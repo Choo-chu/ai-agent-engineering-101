@@ -26,6 +26,7 @@ LOG = os.path.join(HERE, "logs", "cap30_rollout.log")
 WHY = "person's decision 11/08 ~20:35: STOCK_CAP 20M -> 30M, brake back to 20M, hot fast my_share 0.8, request 4 lines / 8"
 NEW, LOW = 30_000_000, 20_000_000
 WHEN = "11/08 ~20:35"
+NOTE = ""                          # one more line in the 3 h report (11/09: the lock release came with it)
 EXTRA = "요청 기반 4줄/목표 8, hot 상위 30 중 회전 1시간 이하 my_share 0.8. "
 ME = "choo-chu"
 H = 3
@@ -73,7 +74,7 @@ def report(t, now=None):
     fired = br.get("fired") and br["fired"] >= t
     share = st.get("old_share")
     f = lambda p: f"{p[0]:,} -> {p[1]:,}" if p else "-"
-    return "\n".join([
+    return (NOTE + "\n" if NOTE else "") + "\n".join([
         f"STOCK_CAP 30M {(t1 - t) / 3600:.1f}시간 점검 ({datetime.fromtimestamp(t):%H:%M} ~ {datetime.fromtimestamp(t1):%H:%M}, "
         "후 vs 전 같은 길이)",
         f"- 현금 {hb[4]:,} -> {ha[4]:,} (cash 표: 후 {f(a['cash'])}, 전 {f(b['cash'])})",

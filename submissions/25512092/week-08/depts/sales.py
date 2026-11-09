@@ -151,6 +151,10 @@ def warranty_hours(u, case, stats):
         return sofa.warranty_for(u)                  # 11/09: none on a C grade sofa
     if not policy.get("sales", "warranty_enabled"):
         return 0
+    from depts import b_warranty                     # 11/09 ~11:30: B grade high-price (TV / 냉방, 침대/매트리스 trial)
+    h = b_warranty.hours(u, case, WARRANTY_H)
+    if h is not None:
+        return h
     if case != "normal" or u.get("kind") == "food" or u.get("grade") != "A":
         return 0
     if (stats.get("sku_n") or {}).get(u["sku"], 0) < WARRANTY_MIN_N:
