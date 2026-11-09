@@ -190,22 +190,31 @@ def test_high_cost_exclude():
     p = tmp_path("hce.db")
     db = sqlite3.connect(p)
     db.execute("CREATE TABLE my_stock (unit TEXT, sku TEXT, name TEXT, cost INTEGER, supplied_at REAL)")
-    db.execute("CREATE TABLE settles (sku TEXT, amount INTEGER, ts REAL)")
-    for sku, cost, avg in (("HI", 500_000, 510_000), ("OK", 400_000, 500_000), ("LOW", 50_000, 50_000)):
-        db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", (sku + "u", sku, sku, cost, now - 3600))
-        db.executemany("INSERT INTO settles VALUES (?,?,?)", [(sku, avg, now - 600)] * 10)
+    db.execute("CREATE TABLE settles (sku TEXT, amount INTEGER, ts REAL, unit TEXT, shop TEXT)")
+    # 11/09 ~23:50: cost rule needs 3+ units bought in 48 h; or the 48 h sales profit adds up below zero
+    for sku, cost, avg, n in (("HI", 500_000, 510_000, 3), ("HI1", 500_000, 510_000, 1), ("OK", 400_000, 500_000, 3),
+                              ("LOW", 50_000, 50_000, 5)):
+        for i in range(n):
+            db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", (f"{sku}u{i}", sku, sku, cost, now - 3600))
+        db.executemany("INSERT INTO settles VALUES (?,?,?,?,?)", [(sku, avg, now - 600, None, "x")] * 10)
     db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", ("OLDu", "OLD", "OLD", 600_000, now - 50 * 3600))
-    db.executemany("INSERT INTO settles VALUES (?,?,?)", [("OLD", 500_000, now - 600)] * 10)
+    db.executemany("INSERT INTO settles VALUES (?,?,?,?,?)", [("OLD", 500_000, now - 600, None, "x")] * 10)
+    db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", ("LSu1", "LS", "LS", 300_000, now - 50 * 3600))
+    db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", ("LSu2", "LS", "LS", 300_000, now - 50 * 3600))
+    db.execute("INSERT INTO settles VALUES (?,?,?,?,?)", ("LS", 250_000, now - 3600, "LSu1", H.ME))      # -50k
+    db.execute("INSERT INTO settles VALUES (?,?,?,?,?)", ("LS", 320_000, now - 3600, "LSu2", H.ME))      # +20k
+    db.execute("INSERT INTO settles VALUES (?,?,?,?,?)", ("LS", 900_000, now - 3600, "LSu2", "other"))   # not mine
     db.commit()
     db.close()
     r = dict(H.DEFAULT, enabled=True, force=["FX"])
     ex = H.compute(now, r, p)
-    assert set(ex) == {"HI", "FX"} and ex["HI"]["ratio"] == 0.98 and ex["FX"]["why"] == "force", ex   # 98% > 95%
+    assert set(ex) == {"HI", "LS", "FX"} and ex["HI"]["ratio"] == 0.98 and ex["FX"]["why"] == "force", ex
+    assert ex["LS"] == {"profit": -30_000, "sold": 2, "name": "LS", "why": "loss"}, ex["LS"]
     assert H.compute(now, dict(r, enabled=False), p) == {}
     H.OUT, H.RULES = tmp_path("hce_out.json"), tmp_json(r, "hce_rules")
     with mock.patch.object(H, "compute", lambda now=None: ex):
         H.current()
-    assert "2개" in H.line() and "HI" in H.line()
+    assert "3개" in H.line() and "HI" in H.line() and "손실 -30,000" in H.line()
 
 
 def test_revert_confirm():
@@ -234,6 +243,24 @@ def test_revert_confirm():
             mock.patch.object(A, "_finish", lambda p, s, r, c: ran.append(s)):
         assert A.handle_callback(cq("revert_ok:5")) == "revert"
     assert ran[-1] == "reverted"
+
+
+def test_revert_attribution_and_brake():
+    """11/09 ~23:50: an automatic 3 h check revert is recorded as the check's, not "by the person"; a STOCK_CAP raise
+    the cap brake governs is only recorded by the generic check."""
+    from depts import analyst_apply as AA, cap_brake as CB2
+    seen = []
+    p = {"id": 7, "key": "limits.STOCK_CAP", "value": "40000000", "undo": json.dumps({"limits.STOCK_CAP": 20_000_000})}
+    with mock.patch.object(AA, "apply_limit", lambda k, v, pid, why="": seen.append(why) or {"text": "t"}), \
+            mock.patch("decisions.record", lambda *a, **k: None):
+        AA.revert(p)
+        AA.revert(p, by="the 3 h check (automatic)")
+    assert seen == ["reverted by the person", "reverted by the 3 h check (automatic)"]
+    with mock.patch.object(CB2, "RULES", tmp_json({"enabled": True, "pid": 7}, "cbg")):
+        assert AA._brake_governs(p) and not AA._brake_governs(dict(p, id=8))
+        assert not AA._brake_governs(dict(p, key="limits.HIGH_MAX"))
+    with mock.patch.object(CB2, "RULES", tmp_json({"enabled": False, "pid": 7}, "cbg2")):
+        assert not AA._brake_governs(p)
 
 
 if __name__ == "__main__":

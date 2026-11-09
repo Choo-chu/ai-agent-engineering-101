@@ -59,7 +59,7 @@ def apply_policy(key, value, pid):
     return {"undo": {key: old}, "text": f"{key} {old} -> {value}, policy v{new['version']}"}
 
 
-def undo_policy(undo, pid):
+def undo_policy(undo, pid, by="the person"):
     import policy
     cur = policy.load()
     sections = {}
@@ -73,7 +73,8 @@ def undo_policy(undo, pid):
                 new[sec].pop(k, None)
             else:
                 new[sec][k] = old
-    v = policy.write({s: new[s] for s in sections}, f"analyst #{pid} reverted by the person", by="person",
+    v = policy.write({s: new[s] for s in sections}, f"analyst #{pid} reverted by {by}",
+                     by="person" if by == "the person" else "analyst_check",
                      replace=True)
     return f"되돌림: {undo}, policy v{v['version']}"
 
@@ -212,17 +213,18 @@ def handle_limit(p):
     return res["text"]
 
 
-def revert(p):
-    """Undo an applied approval (the 되돌리기 button)."""
+def revert(p, by="the person"):
+    """Undo an applied approval (the 되돌리기 button; by: who undid it, for the commit / policy history: 11/09 ~23:50
+    the automatic 3 h check and CEO guard reverts were recorded as "by the person")."""
     undo = json.loads(p.get("undo") or "{}")
     if not undo:
         return "되돌릴 내용 없음"
     out = []
     for key, old in undo.items():
         if key.startswith("limits."):
-            out.append(apply_limit(key, old, p["id"], why="reverted by the person")["text"])
+            out.append(apply_limit(key, old, p["id"], why=f"reverted by {by}")["text"])
         else:
-            out.append(undo_policy({key: old}, p["id"]))
+            out.append(undo_policy({key: old}, p["id"], by=by))
     decisions.record("analyst", "reverted", p["key"], undo, f"#{p['id']}")
     return "; ".join(out)
 
@@ -262,7 +264,7 @@ def _auto_revert(p, why):
         analyst.log(f"proposal #{p['id']} not reverted: {p['key']} pinned")
         return
     try:
-        text = revert(p)
+        text = revert(p, by="the CEO guard (automatic)" if why.startswith("CEO") else f"the {CHECK_H} h check (automatic)")
     except Exception as e:
         alerts.send("urgent", f"analyst_autorevert:{p['id']}", f"승인 #{p['id']} 자동 되돌리기 실패: {type(e).__name__}: {str(e)[:120]}")
         return
@@ -281,6 +283,16 @@ def _auto_revert(p, why):
                          version=("승인 값", "되돌린 값"), next_at="없음 ([되돌리기] = 다시 적용)",
                          extra={"pid": p["id"]}, log=analyst.log)
     analyst.log(f"proposal #{p['id']} auto-reverted: {why}")
+
+
+def _brake_governs(p):
+    """True for a STOCK_CAP approval the cap brake watches (cap_brake.json enabled with its pid): its stop rules are the
+    person's (median / unsold / cash), so the generic 3 h revenue check only records (person 11/09 ~23:50)."""
+    if p.get("key") != "limits.STOCK_CAP":
+        return False
+    from depts import cap_brake
+    r = cap_brake.rules()
+    return bool(r.get("enabled")) and r.get("pid") == p.get("id")
 
 
 def reapply(p):
@@ -356,6 +368,11 @@ def check_approvals(now=None):
         if not buyer:
             summary["buyer_saved"] = "information only (limits key)"
         decisions.record("analyst", "approval_check", p["key"], summary, f"#{p['id']}: " + ("; ".join(bad) or "not worse"))
+        if bad and _brake_governs(p):                # 11/09 ~23:50: the person's own brake rules decide this raise
+            decisions.record("analyst", "check_no_revert", p["key"], json.loads(p["value"]), f"#{p['id']}: "
+                             + "; ".join(bad) + " - not reverted: the STOCK_CAP brake (cap_brake.json) governs this raise")
+            analyst.log(f"proposal #{p['id']} worse but not reverted: the cap brake governs it")
+            continue
         if bad:
             _auto_revert(p, f"반영 전후 {CHECK_H}시간 비교에서 나빠짐: {'; '.join(bad)}")
         else:
