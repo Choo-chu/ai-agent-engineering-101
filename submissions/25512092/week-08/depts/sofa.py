@@ -127,10 +127,20 @@ def next_counter(deal, reserve):
     return max(reserve, min(first, deal["ask"] - step))
 
 
+def limits_now(r=None):
+    """(units per 20-min window, unsold trial sofas max, lines per run, max cost per unit). 11/09 ~14:35 (person, high
+    focus): sofa_rules.json "x2" doubles them all: 1 -> 2, 10 -> 20, 1 -> 2, 500,000 -> 1,000,000 (the high-price
+    unit cost cap); the demand rules (>= 30 market sales / 48 h, >= 2 an hour), G5e3784e6 out and C grade without a
+    warranty stay."""
+    r = r if r is not None else rules()
+    return (2, 20, 2, 2 * BUY_MAX_COST) if r.get("x2") else (1, 10, 1, BUY_MAX_COST)
+
+
 def buy_ok(sku, cost, now=None):
     """E: (ok, why) for buying one sofa SKU."""
-    if cost > BUY_MAX_COST:
-        return False, f"cost {int(cost):,} > {BUY_MAX_COST:,}"
+    max_cost = limits_now()[3]
+    if cost > max_cost:
+        return False, f"cost {int(cost):,} > {max_cost:,}"
     med, n, _, last2h = market(sku, now)
     if n < BUY_MIN_N:
         return False, f"{n} market sales in 48 h < {BUY_MIN_N}"

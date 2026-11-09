@@ -44,8 +44,8 @@ MAX_LINES = 10
 # the range each CEO policy value may take (policy.py clips into it); keys not listed have no range
 POLICY_RANGES = {
     "purchasing.spend_share": (0.2, 0.5),
-    "purchasing.high_share": (0.2, 0.6),          # 11/07 ~16:05: max 0.5 -> 0.6 (share 0.4 -> 0.6)
-    "purchasing.high_max": (0, 40),               # 11/09 ~11:00 person: 30 -> 40; 11/06: 5 -> 10; 11/07 ~14:45: 10 -> 20 (units 8 -> 18); ~16:05: -> 30 (units 28); 11/08 ~13:30: -> 60; ~17:00: back to 30
+    "purchasing.high_share": (0.2, 0.7),          # 11/09 ~14:35 person: max 0.6 -> 0.7 (high focus); 11/07 ~16:05: max 0.5 -> 0.6 (share 0.4 -> 0.6)
+    "purchasing.high_max": (0, 60),               # 11/09 ~14:35 person: 40 -> 60 (high focus); 11/09 ~11:00 person: 30 -> 40; 11/06: 5 -> 10; 11/07 ~14:45: 10 -> 20 (units 8 -> 18); ~16:05: -> 30 (units 28); 11/08 ~13:30: -> 60; ~17:00: back to 30
     "purchasing.min_margin": (0.05, 0.5),
     "purchasing.my_share": (0.1, 0.5),
     "purchasing.wanted_qty": (0, 5),

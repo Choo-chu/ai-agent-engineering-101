@@ -317,7 +317,9 @@ def daily(db, inv, catalog, log):
         reason = (f"{len(stale_high)} of {len(held_high)} high-price units unsold > 24 h, "
                   f"{len(high_refund)} high-price refunds")
     elif hr is not None and (lr is None or hr >= lr):
-        share, cap = min(SHARE_CAP, round(share + SHARE_STEP, 2)), min(MAX_CAP, cap + 1)
+        from depts import high_caps                # 11/09 ~14:35: the ceilings live in high_caps.json (0.6/40 or 0.7/60)
+        sc, mc = high_caps.get()
+        share, cap = min(sc, round(share + SHARE_STEP, 2)), min(mc, cap + 1)
         reason = f"high profit/cost {pct(hr)} >= low {pct(lr)}"
     else:
         reason = f"no change (high {pct(hr)}, low {pct(lr)})"

@@ -186,6 +186,12 @@ def make_plan(inv, units, catalog, budget, log):
         log(f"[hot fast] failed: {type(e).__name__}: {e}")
         fast_share = {}
     no_buy = excluded()
+    from depts import line_rank                   # 11/09 ~14:35: lines after the request lines by expected profit
+    rank = line_rank.on()
+    if rank:
+        k0, real_left, real_room = len(plan), dict(left), high_room
+        left, high_room = {"high": 1e15, "low": 1e15}, 10 ** 6
+        m24, cands = line_rank.market_24h(), {}
     for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}
@@ -254,6 +260,12 @@ def make_plan(inv, units, catalog, budget, log):
                 log(f"[{tier}] {s['name'] or sku}: est. cost {int(cost)}{rot} -> skip")
         if qty <= 0:
             continue
+        if rank:                                  # collect; the ranking below decides the lines and the qty
+            c0 = cands.get(sku)
+            if c0 is None or qty > c0["qty"]:
+                sc = line_rank.score(avg, cost, qty, m24.get(sku, 0), fast_share.get(sku, MY_SHARE))
+                cands[sku] = {"sku": sku, "qty": qty, "tier": tier, "cost": cost, "score": sc, "src": src}
+            continue
         if sku in line_of:                        # second time this run: keep one line, the larger qty
             i, first = line_of[sku]
             q1 = plan[i]["qty"]
@@ -274,13 +286,18 @@ def make_plan(inv, units, catalog, budget, log):
             f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''}{rot} -> buy {qty}")
         if len(plan) == MAX_LINES:
             break
+    if rank:
+        req = {p["sku"] for p in plan[:k0]}
+        left, high_room = real_left, real_room
+        plan += line_rank.pick([c for c in cands.values() if c["sku"] not in req], left, high_room, MAX_LINES - k0, log=log)
     try:
         sofa = sofa_trial(inv, units, catalog, stats, held, surge, plan, log)
     except Exception as e:                         # the trial must never cost the run its plan
         log(f"[sofa trial] failed: {type(e).__name__}: {e}")
         sofa = None
-    if sofa:
-        plan = [sofa] + [p for p in plan if p["sku"] != sofa["sku"]][:MAX_LINES - 1]
+    if sofa:                                       # 11/09: a list (1, or 2 with sofa x2)
+        sk = {x["sku"] for x in sofa}
+        plan = sofa + [p for p in plan if p["sku"] not in sk][:MAX_LINES - len(sofa)]
     return plan
 
 
@@ -301,19 +318,21 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     if not (t0 and t0 <= now < t1):
         return None
     leaf = lambda k: ((catalog.get(k) or {}).get("category") or "").split(">")[-1]
+    per_win, unsold_max, n_lines, _ = sofa_rules.limits_now()     # 11/09 ~14:35: x2 -> 2 / 20 / 2 / 1.0M
     unsold = [u for u in units if leaf(u["sku"]) == SOFA_CAT and (u.get("supplied_at") or 0) >= t0
               and u.get("kind") != "food" and (u.get("cost") or 0) >= sofa_rules.MIN_COST]
-    if len(unsold) >= SOFA_UNSOLD_MAX:              # person's decision 11/07: stop adding while trial sofas pile up
-        log(f"[sofa trial] skip: {len(unsold)} trial sofas unsold (>= {SOFA_UNSOLD_MAX}), no more buying")
+    if len(unsold) >= unsold_max:                   # person's decision 11/07: stop adding while trial sofas pile up
+        log(f"[sofa trial] skip: {len(unsold)} trial sofas unsold (>= {unsold_max}), no more buying")
         return None
     recent = [u for u in units if leaf(u["sku"]) == SOFA_CAT and now - (u.get("supplied_at") or 0) < WINDOW_S]
-    if recent:
-        log(f"[sofa trial] skip: bought one this window ({recent[0]['name'][:30]})")
+    if len(recent) >= per_win:
+        log(f"[sofa trial] skip: bought {len(recent)} this window ({recent[0]['name'][:30]}; at most {per_win})")
         return None
+    room = min(n_lines, per_win - len(recent), unsold_max - len(unsold))
     held_cost = sum(u.get("cost", 0) for u in units if u.get("grade") != "expired")
     cash = inv.get("balance", 0)
     min_margin, max_break = policy.values("purchasing", "min_margin", "max_break")
-    best = None
+    found = []
     for sku, s in stats["skus"].items():
         c = catalog.get(sku) or {}
         if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 or sku in excluded() \
@@ -327,19 +346,22 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
             continue
         if sofa_rules.on() and not sofa_rules.buy_ok(sku, cost)[0]:   # E: >= 30 market sales/48 h, >= 2/h, cost <= 500k
             continue
-        if best is None or s["sold_30m"] > best[2]:
-            best = (sku, cost, s["sold_30m"], avg, s.get("name") or c.get("name"))
-    if best is None:
+        found.append((sku, cost, s["sold_30m"], avg, s.get("name") or c.get("name")))
+    found.sort(key=lambda b: -b[2])
+    if not found:
         log("[sofa trial] skip: no sofa SKU fits (cost <= 1.0M, margin, selling, not held; rule E: >= 30 sales/48 h, "
-            ">= 2/h, cost <= 500k)")
+            f">= 2/h, cost <= {sofa_rules.limits_now()[3]:,})")
         return None
-    sku, cost, sold, avg, name = best
-    if held_cost + cost > STOCK_CAP or cash - cost < CASH_RESERVE:
-        log(f"[sofa trial] skip {name[:30]}: est. cost {int(cost):,} would pass STOCK_CAP or the cash reserve")
-        return None
-    log(f"[sofa trial] {name[:40]} ({sku}): sold {sold}/30m, avg {avg}, est. cost {int(cost):,} -> buy 1 "
-        f"(trial {datetime.fromtimestamp(t0):%m-%d %H:%M} - {datetime.fromtimestamp(t1):%m-%d %H:%M})")
-    return {"sku": sku, "qty": 1}
+    out = []
+    for sku, cost, sold, avg, name in found[:room]:
+        if held_cost + cost > STOCK_CAP or cash - cost < CASH_RESERVE:
+            log(f"[sofa trial] skip {name[:30]}: est. cost {int(cost):,} would pass STOCK_CAP or the cash reserve")
+            break
+        held_cost, cash = held_cost + cost, cash - cost
+        log(f"[sofa trial] {name[:40]} ({sku}): sold {sold}/30m, avg {avg}, est. cost {int(cost):,} -> buy 1 "
+            f"(trial {datetime.fromtimestamp(t0):%m-%d %H:%M} - {datetime.fromtimestamp(t1):%m-%d %H:%M})")
+        out.append({"sku": sku, "qty": 1})
+    return out or None
 
 
 def cap_record(inv, units, catalog, budget, plan, case):

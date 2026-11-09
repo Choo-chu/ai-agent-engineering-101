@@ -1,0 +1,292 @@
+"""High-price focus (person's decision 11/09 ~14:35), applied right after the 15:05 checks (the STOCK_CAP 30M 3 h report,
+"report sent" in logs/cap30_rollout.log, and the lock-release 3 h report, "lock report sent" in logs/restart_1400.log;
+at the latest 15:40):
+  1. restock lines after the 4 request-based lines by expected profit (line_rank.json; only with --rank, i.e. when
+     the simulation sent before was positive)
+  2. high_max 40 -> 60, high_share 0.6 -> 0.7 (policy.json + the QC policy table; the QC / CEO automatic rules'
+     ceilings 0.7 / 60 in high_caps.json)
+  3. sofa limits x2 (sofa_rules.json "x2": 2 a window, 20 unsold, 2 lines, 1.0M a unit)
+Unchanged: the high-price buy guard, first ask <= market avg, floor max(cost x 1.05, median x 0.8), unit cost cap
+1.0M, the B grade warranty rule, G5e3784e6 out, C grade sofas without a warranty, the STOCK_CAP brakes and the
+analyst's 3 h check (market-adjusted).
+High-price brake, every 15 min: any of
+  a. median time from supply to sale of the high-price units sold in the last 6 h > 6 h (at least 3 sales)
+  b. high-price units unsold for more than 12 h, at cost, > 5M
+  c. high-price receipts / negotiations in the last 3 h (at least 10) <= half of the 24 h before the switch
+-> high_max 40, high_share 0.6 (policy, QC table, ceilings 0.6 / 40) at once and an urgent Telegram.
+3 h later one Telegram, 3 h after vs 3 h before.
+    python tools/high_focus_rollout.py [--rank] [--now] [--report-dry]      (log in logs/high_focus_rollout.log)
+"""
+import json
+import os
+import sqlite3
+import statistics
+import sys
+import time
+from datetime import datetime
+
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(HERE, "tools"))
+os.chdir(HERE)
+
+LOG = os.path.join(HERE, "logs", "high_focus_rollout.log")
+STATE = os.path.join(HERE, "logs", "high_focus_state.json")
+LATEST = datetime(2026, 11, 9, 15, 40).timestamp()
+FROM = datetime(2026, 11, 9, 15, 0).timestamp()
+CHECK_S, H = 900, 3
+SELL_MEDIAN_H, STALE_H, STALE_COST, REC_DROP = 6, 12, 5_000_000, 0.5
+SOFA_CAT = "소파/의자/스툴"
+ME = "choo-chu"
+
+
+def log(m):
+    with open(LOG, "a", encoding="utf-8") as f:
+        f.write(f"{datetime.now():%m-%d %H:%M:%S} {m}\n")
+
+
+def _sent(path, tag):
+    try:
+        with open(path, encoding="utf-8") as f:
+            for ln in f:
+                if tag in ln:
+                    try:
+                        t = datetime.strptime(f"2026-{ln[:14]}", "%Y-%m-%d %H:%M:%S").timestamp()
+                    except ValueError:
+                        continue
+                    if t >= FROM:
+                        return True
+    except OSError:
+        pass
+    return False
+
+
+def ready():
+    return (_sent(os.path.join(HERE, "logs", "cap30_rollout.log"), "report sent")
+            and _sent(os.path.join(HERE, "logs", "restart_1400.log"), "lock report sent"))
+
+
+def db():
+    return sqlite3.connect(os.path.join(HERE, "market.db"), timeout=60)
+
+
+def high_min():
+    from depts.qc import HIGH_MIN
+    return HIGH_MIN
+
+
+def rec_ratio(d, t0, t1):
+    n, r = d.execute("SELECT COUNT(*), COALESCE(SUM(outcome='receipt'),0) FROM shop_deals WHERE ts>=? AND ts<? AND cost>?",
+                     (t0, t1, high_min())).fetchone()
+    return (r / n if n else None), n
+
+
+def brake_state(d, now, base_ratio):
+    """[(name, tripped, text)] for the three conditions."""
+    hm = high_min()
+    sold = d.execute("SELECT s.ts - m.supplied_at FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND "
+                     "s.ts>=? AND m.cost>? AND m.supplied_at IS NOT NULL", (ME, now - SELL_MEDIAN_H * 3600, hm)).fetchall()
+    secs = [x for x, in sold if x is not None and x >= 0]
+    med = statistics.median(secs) / 3600 if secs else None
+    a = (len(secs) >= 3 and med > SELL_MEDIAN_H,
+         f"고가 입고->판매 중앙값(최근 6시간 판매 {len(secs)}건) {'-' if med is None else f'{med:.1f}시간'} (기준 {SELL_MEDIAN_H}시간 초과"
+         f"{', 3건 미만이면 판단 보류' if len(secs) < 3 else ''})")
+    stale = d.execute("SELECT COALESCE(SUM(m.cost),0), COUNT(*) FROM my_stock m WHERE m.cost>? AND m.supplied_at<? AND NOT "
+                      "EXISTS (SELECT 1 FROM settles x WHERE x.unit=m.unit AND x.shop=?) AND m.unit IN "
+                      "(SELECT unit FROM my_stock)", (hm, now - STALE_H * 3600, ME)).fetchone()
+    held = held_units()
+    if held is not None:                         # the kit's inventory is the truth for what is still held
+        st = [u for u in held if u.get("cost", 0) > hm and now - (u.get("supplied_at") or now) > STALE_H * 3600]
+        stale = (sum(u.get("cost", 0) for u in st), len(st))
+    b = (stale[0] > STALE_COST, f"12시간 넘게 안 팔린 고가 재고 원가 {int(stale[0]):,} ({stale[1]}개, 기준 {STALE_COST:,} 초과)")
+    r, n = rec_ratio(d, now - 3 * 3600, now)
+    c = (n >= 10 and base_ratio and r is not None and r <= REC_DROP * base_ratio,
+         f"고가 협상 대비 영수증 최근 3시간 {'-' if r is None else f'{r:.1%}'} ({n}건) vs 적용 전 24시간 "
+         f"{'-' if not base_ratio else f'{base_ratio:.1%}'} (절반 이하면 발동)")
+    return [("sell_median", *a), ("stale_cost", *b), ("receipt_ratio", *c)]
+
+
+def held_units():
+    try:
+        with open(os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8") as f:
+            return [u for u in json.load(f).get("units", []) if u.get("grade") != "expired"]
+    except (OSError, ValueError):
+        return None
+
+
+def catalog():
+    try:
+        with open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def window(d, t0, t1, cat):
+    """Numbers for the 3 h report in [t0, t1)."""
+    from depts import sofa
+    hm = high_min()
+    leaf = lambda k: ((cat.get(k) or {}).get("category") or "").split(">")[-1]
+    is_sofa = lambda sku, cost: leaf(sku) == SOFA_CAT and (cost or 0) >= sofa.MIN_COST
+    grp = lambda sku, cost: "sofa" if is_sofa(sku, cost) else "high" if (cost or 0) > hm else "low"
+    out = {g: {"buy_n": 0, "buy_cost": 0, "n": 0, "rev": 0, "cost": 0} for g in ("high", "sofa", "low")}
+    for sku, cost in d.execute("SELECT sku, cost FROM my_stock WHERE supplied_at>=? AND supplied_at<?", (t0, t1)):
+        g = out[grp(sku, cost)]
+        g["buy_n"] += 1
+        g["buy_cost"] += cost or 0
+    sales = d.execute("SELECT s.sku, s.amount, m.cost FROM settles s LEFT JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? "
+                      "AND s.ts>=? AND s.ts<?", (ME, t0, t1)).fetchall()
+    for sku, amt, cost in sales:
+        g = out[grp(sku, cost)]
+        g["n"] += 1
+        g["rev"] += amt or 0
+        g["cost"] += cost or 0
+    rev = sum(a or 0 for _, a, _ in sales)
+    out["all"] = {"n": len(sales), "rev": rev, "aov": rev / len(sales) if sales else 0,
+                  "big": sum(1 for _, a, _ in sales if (a or 0) >= 500_000) / len(sales) if sales else 0}
+    return out
+
+
+def report(t, now=None, state=None):
+    now = now or time.time()
+    t1 = min(t + H * 3600, now)
+    cat = catalog()
+    d = db()
+    try:
+        a, b = window(d, t, t1, cat), window(d, t - (t1 - t), t, cat)
+        st = brake_state(d, now, (state or load_state()).get("base_ratio"))
+    finally:
+        d.close()
+    hm = high_min()
+    held = held_units() or []
+    hh = [u for u in held if u.get("cost", 0) > hm]
+    pc = lambda g: f"{(g['rev'] - g['cost']) / g['cost']:+.1%}" if g["cost"] else "-"
+    L = [f"고가 집중 {(t1 - t) / 3600:.1f}시간 점검 ({datetime.fromtimestamp(t):%H:%M} ~ {datetime.fromtimestamp(t1):%H:%M}, 후 vs 전)"]
+    for g, name in (("high", "고가(소파 제외)"), ("sofa", "소파")):
+        x, y = a[g], b[g]
+        L.append(f"- {name}: 매입 {x['buy_n']}개 {x['buy_cost']:,} vs {y['buy_n']}개 {y['buy_cost']:,}; 판매 {x['n']} vs {y['n']}, "
+                 f"매출 {x['rev']:,} vs {y['rev']:,}, 원가 대비 이익 {pc(x)} vs {pc(y)}")
+    L.append(f"- 고가 재고(지금) 원가 {sum(u.get('cost', 0) for u in hh):,} {len(hh)}개")
+    L.append(f"- 객단가 {int(a['all']['aov']):,} vs {int(b['all']['aov']):,}, 50만 이상 판매 비중 {a['all']['big']:.1%} vs "
+             f"{b['all']['big']:.1%}, 전체 매출 {a['all']['rev']:,} ({a['all']['n']}건) vs {b['all']['rev']:,} ({b['all']['n']}건)")
+    s = load_state()
+    L.append("- 고가 브레이크: " + ("발동됨 " + s["tripped"] if s.get("tripped") else "정상") + "; "
+             + "; ".join(txt for _, _, txt in st))
+    return "\n".join(L)
+
+
+def load_state():
+    try:
+        with open(STATE, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(**kw):
+    s = load_state()
+    s.update(kw)
+    with open(STATE, "w", encoding="utf-8") as f:
+        json.dump(s, f, ensure_ascii=False)
+
+
+def set_high(share, cap, why):
+    import decisions
+    import policy
+    from depts import high_caps
+    from market_db import connect
+    old = (policy.get("purchasing", "high_share"), policy.get("purchasing", "high_max"))
+    v = policy.write({"purchasing": {"high_share": share, "high_max": cap}}, why, by="person")
+    high_caps.set_caps(share, cap, why)
+    c = connect()
+    try:
+        c.execute("INSERT INTO policy VALUES (?,?,?,?)", (time.time(), share, cap, why[:200]))
+        c.commit()
+    finally:
+        c.close()
+    decisions.record("purchasing", "high_split", "purchasing.high_share/high_max", [list(old), [share, cap]],
+                     f"{why}; policy v{v.get('version')}")
+    return old, v.get("version")
+
+
+def apply(rank):
+    import decisions
+    from depts import line_rank, sofa
+    d = db()
+    try:
+        base, base_n = rec_ratio(d, time.time() - 86400, time.time())
+    finally:
+        d.close()
+    if rank:
+        with open(line_rank.RULES, "w", encoding="utf-8") as f:
+            json.dump({"enabled": True, "since": round(time.time()), "horizon_h": line_rank.HORIZON_H,
+                       "note": "person 11/09 ~14:35: lines after the request lines by expected profit"}, f)
+        decisions.record("purchasing", "line_rank_on", "line_rank", True, "person 11/09 ~14:35, simulation positive")
+    r = sofa.rules()
+    r.update(x2=True, x2_since=round(time.time()))
+    with open(sofa.RULES, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False)
+    decisions.record("purchasing", "sofa_x2", "sofa_rules", sofa.limits_now(r), "person 11/09 ~14:35: sofa limits x2")
+    old, v = set_high(0.7, 60, "person 11/09 ~14:35 (high focus): high_share 0.6 -> 0.7, high_max 40 -> 60")
+    t = time.time()
+    save_state(since=round(t), base_ratio=base, base_n=base_n, rank=rank, tripped=None)
+    log(f"applied: rank {rank}, sofa x2 {sofa.limits_now(r)}, high {old} -> (0.7, 60) policy v{v}; base receipt ratio {base} ({base_n})")
+    return t, base, base_n, old, v
+
+
+def trip(why):
+    import alerts
+    import decisions
+    old, v = set_high(0.6, 40, f"high-price brake: {why}")
+    save_state(tripped=f"{datetime.now():%H:%M} {why}")
+    decisions.record("purchasing", "high_brake", "high_focus", why, "high_max 40, high_share 0.6 (ceilings 0.6 / 40)")
+    alerts.send("urgent", "high_brake", f"고가 브레이크 발동 {datetime.now():%H:%M}: {why}\nhigh_max {old[1]} -> 40, high_share {old[0]} -> 0.6 "
+                f"(policy v{v}, CEO·QC 자동 상한도 0.6/40). 줄 우선순위·소파 2배는 그대로", log=log)
+    log(f"brake: {why}")
+
+
+def main():
+    if "--report-dry" in sys.argv:
+        print(report(time.time() - 3600))
+        return
+    import alerts
+    rank = "--rank" in sys.argv
+    if "--now" not in sys.argv:
+        log("waiting for the 15:05 checks (cap30 report, lock report)")
+        while not ready() and time.time() < LATEST:
+            time.sleep(30)
+    t, base, base_n, old, v = apply(rank)
+    from depts import sofa
+    alerts.send("info", "high_focus_on", f"고가 집중 적용 {datetime.now():%H:%M}: "
+                + ("(1) restock 줄: 요청 기반 4줄 다음은 기대 이익 순 " if rank else "(1) 줄 우선순위는 적용 안 함 ")
+                + f"(2) high_max {old[1]} -> 60, high_share {old[0]} -> 0.7 (policy v{v}, CEO·QC 자동 상한 0.7/60) "
+                f"(3) 소파 한도 2배: 20분 창당 1 -> 2개, 미판매 10 -> 20개, 줄 1 -> 2, 단위 원가 50만 -> 100만 (수요 조건·G5e3784e6 제외·C등급 보증 없음 그대로). "
+                f"고가 가드·첫 호가·하한·1.0M·B 보증·STOCK_CAP 브레이크·분석관 점검 그대로. 고가 브레이크 15분마다 (입고->판매 중앙값 6시간, "
+                f"12시간+ 미판매 고가 5M, 영수증 비율 절반; 기준 {'-' if base is None else f'{base:.1%}'} / {base_n}건). 3시간 점검 예정",
+                log=log)
+    reported = False
+    while True:
+        now = time.time()
+        if not load_state().get("tripped"):
+            d = db()
+            try:
+                st = brake_state(d, now, base)
+            finally:
+                d.close()
+            hit = [txt for _, x, txt in st if x]
+            log("check " + " | ".join(f"{n}={'TRIP' if x else 'ok'}" for n, x, _ in st))
+            if hit:
+                trip("; ".join(hit))
+        if not reported and now >= t + H * 3600 + 60:
+            alerts.send("daily", f"high_focus_report:{int(t)}", report(t), log=log)
+            log("report sent")
+            reported = True
+        if reported and load_state().get("tripped"):
+            return
+        if now > datetime(2026, 11, 17, 23, 59).timestamp():
+            return
+        time.sleep(CHECK_S if not reported else CHECK_S)
+
+
+if __name__ == "__main__":
+    main()
