@@ -8,19 +8,23 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 import soft_neg_mid as m  # noqa: E402
 
 B = {"saved": 0.42, "saved_rank": 1}
-S = {"rate": 0.55, "save": 0.40}
-C = {"rate": 0.48, "save": 0.46}
+S = {"rate": 0.55, "save": 0.40, "kit": 23.0}
+C = {"rate": 0.48, "save": 0.46, "kit": 34.0}
 
 
 def test_decide():
     assert m.decide(S, C, B) == (True, [])
     assert m.decide(S, C, {"saved": 0.409, "saved_rank": 1})[0] is False
     assert m.decide(S, C, {"saved": 0.42, "saved_rank": 2})[0] is False
-    assert m.decide({"rate": 0.48, "save": 0.40}, C, B)[0] is False          # equal close rate: not higher
-    assert m.decide({"rate": 0.55, "save": 0.349}, C, B)[0] is False
-    assert m.decide({"rate": 0.55, "save": None}, C, B)[0] is False
+    k = {"kit": 23.0}
+    assert m.decide(dict(k, rate=0.46, save=0.40), C, B)[0] is True        # 2%p under: allowed (11/09 ~17:10)
+    assert m.decide(dict(k, rate=0.459, save=0.40), C, B)[0] is False      # more than 2%p under
+    assert m.decide(dict(k, rate=0.55, save=0.349), C, B)[0] is False
+    assert m.decide(dict(k, rate=0.55, save=None), C, B)[0] is False
+    assert m.decide(dict(S, kit=34.0), C, B)[0] is False                     # order time not shorter
+    assert m.decide(dict(S, kit=None), C, B)[0] is False
     assert m.decide(None, C, B) == (False, ["기록 부족"])
-    assert m.decide({"rate": 0.55, "save": 0.35}, C, {"saved": 0.41, "saved_rank": 1})[0] is True   # bounds inclusive
+    assert m.decide(dict(k, rate=0.55, save=0.35), C, {"saved": 0.41, "saved_rank": 1})[0] is True   # bounds inclusive
 
 
 if __name__ == "__main__":
