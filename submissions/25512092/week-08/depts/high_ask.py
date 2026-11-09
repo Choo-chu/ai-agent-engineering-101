@@ -50,14 +50,14 @@ def high_floor(u, now=None, fr=None):
 def c_step_floor(u, now=None, cs=None):
     """C grade high-price units (not sofas, not over-cost; checked by the caller) step down with their age (person's
     decision 11/09 ~15:05, high_ask.json c_step.enabled): > 12 h after supply max(cost x 1.10, 48 h market median x
-    0.6), > 24 h cost x 1.10; never under cost. None when it does not apply."""
+    0.6), > 24 h cost x 1.00 (11/09 ~15:15; was 1.10); never under cost. None when it does not apply."""
     cs = cs if cs is not None else (rules().get("c_step") or {})
     if not cs.get("enabled") or u.get("grade") != "C" or not u.get("supplied_at"):
         return None
     age = ((now or time.time()) - u["supplied_at"]) / 3600
     cost = int(u["cost"])
-    if age > cs.get("h2", 24):
-        return max(cost, int(cost * cs.get("cost", 1.10)))
+    if age > cs.get("h2", 24):                     # 11/09 ~15:15 (person): cost x 1.00 (was 1.10)
+        return max(cost, int(cost * cs.get("cost2", 1.00)))
     if age > cs.get("h1", 12):
         from depts import sofa
         med = sofa.market(u["sku"], now)[0]
@@ -82,8 +82,11 @@ def floor(u, avg, reserve, case=None, now=None, rule=None):
         oc = overcost.is_overcost(u, avg)
         new = high_floor(u, now, dict(fr, cost=overcost.COST_FACTOR) if oc else fr)
         reserve = min(reserve, new) if str(rule or "").startswith(MARKDOWNS) else new
-        if oc:
-            reserve = max(reserve, int(u["cost"]))
+        if oc:                                     # never under cost; 11/09 ~15:15: but the stoploss stays (cost
+            low = int(u["cost"])                   # at most STOPLOSS_SHARE above the average: sold at the average)
+            if avg and u["cost"] - avg <= overcost.STOPLOSS_SHARE * u["cost"]:
+                low = min(low, int(avg))       # cost under the average (a listed unit): cost stays the floor
+            reserve = max(reserve, low)
         else:
             step = c_step_floor(u, now, r.get("c_step") or {})
             if step is not None and step < reserve:  # 11/09 ~15:05: C grade steps down; lower markdowns kept

@@ -36,6 +36,7 @@ from depts import high_ask  # 11/08 ~17:00: high-price first ask <= market avera
 from depts import subst_exp  # 11/08: substitute offers, option A experiment (subst_exp.json)
 from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, receipt only after a choice
 from depts import open_expiry  # 11/09 ~11:30: a negotiation quiet for 10 min is closed as expired, its unit freed
+from depts import nostock_cause  # 11/09 ~15:15: why "not in stock" for a held SKU (lock / receipt / policy / other)
 from depts import b_warranty  # 11/09 ~11:30: B grade high-price warranty (TV / 냉방 on, 침대/매트리스 50% trial)
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
@@ -328,10 +329,17 @@ class Seller(AgentExecutor):
                 print(f"[subst] buyer chose {pick} (tier {tier}) instead of {deal['x']}, quoted {quoted}", flush=True)
             else:
                 x = substitute.named_sku(text) if substitute.on() else None
-                cands = substitute.candidates(x, inventory_units(), taken) if x else None
+                inv_units = inventory_units()
+                cands = substitute.candidates(x, inv_units, taken) if x else None
                 subst_arm = subst_exp.arm() if cands is not None else None
+                why_ns = None
+                if cands is not None:                   # 11/09 ~15:15: why "not in stock" for a SKU I may hold
+                    try:
+                        why_ns = nostock_cause.classify(x, inv_units, self.open, self.sold, now, open_expiry.expire_s())
+                    except Exception as e:
+                        print(f"[nostock] cause failed: {type(e).__name__}", flush=True)
                 if subst_arm == "B" or (subst_arm == "A" and not subst_exp.near(cands or [])):
-                    subst_exp.log(task.id, subst_arm, "no_offer", x=x, n=len(cands or []))
+                    subst_exp.log(task.id, subst_arm, "no_offer", x=x, n=len(cands or []), cause=why_ns)
                     msg_log(task.id, "buyer", text, x)
                     msg_log(task.id, "shop", f"subst {subst_arm}: not in stock", x)
                     await up.reject(say(f"Sorry, {x} is not in stock."))
@@ -355,7 +363,8 @@ class Seller(AgentExecutor):
                                           "subst_arm": subst_arm}
                     substitute.log_offer(connect, task.id, x, [[k, v[0]] for k, v in offer.items()])
                     if subst_arm:
-                        subst_exp.log(task.id, subst_arm, "offer", x=x, offered=[[k, v[0], v[1]] for k, v in offer.items()])
+                        subst_exp.log(task.id, subst_arm, "offer", x=x, offered=[[k, v[0], v[1]] for k, v in offer.items()],
+                                      cause=why_ns)
                     msg_log(task.id, "buyer", text, x)
                     msg_log(task.id, "shop", "subst " + ", ".join(f"{k} t{v[0]} {v[1]}" for k, v in offer.items()), x)
                     print(f"[subst] {x} not in stock -> offered {offer}", flush=True)

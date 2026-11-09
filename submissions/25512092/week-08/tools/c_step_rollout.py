@@ -2,7 +2,8 @@
 logs/high_focus_rollout.log after 18:00; at the latest 18:40), one seller restart for both:
   1. open negotiations quiet for 5 min (was 10) are closed as expired (open_expiry.json expire_s 300)
   2. C grade high-price units (not sofas, not over-cost) step down their floor (high_ask.json c_step):
-     > 12 h after supply max(cost x 1.10, 48 h market median x 0.6), > 24 h cost x 1.10, never under cost; a lower
+     > 12 h after supply max(cost x 1.10, 48 h market median x 0.6), > 24 h cost x 1.00 (11/09 ~15:15; was 1.10),
+     never under cost; a lower
      existing markdown floor stays; the overcost_high rule is unchanged
 Before: the target list (SKU, age, cost, floor now, new floor) by Telegram (--preview sends only that).
 3 h later one Telegram, 3 h after vs 3 h before: expired, locked share, "not in stock" answers for SKUs I held;
@@ -103,6 +104,36 @@ def c_window(db, t0, t1, now_units):
     return {"neg": neg, "n": len(s), "rev": sum(a for a, _ in s), "cost": sum(c for _, c in s)}
 
 
+CAUSES = (("lock", "다른 협상에 잡힘(5분 해제 대기 포함)"), ("receipt", "영수증 결제 대기"), ("policy", "정책 제한"), ("other", "기타"))
+
+
+def causes(db, t0, t1, now_units):
+    """(11/09 ~15:15) "not in stock" answers for a SKU I held, by the cause the seller logged (depts/nostock_cause; from
+    the 18:07 restart on): {cause: n}, plus lock answers whose negotiation was over half the expiry, and unlogged."""
+    from restart_1400 import held_at
+    out = {k: 0 for k, _ in CAUSES}
+    out.update(unlogged=0, near_expiry=0)
+    with open(os.path.join(HERE, "logs", "subst_exp.jsonl"), encoding="utf-8") as f:
+        for ln in f:
+            e = json.loads(ln)
+            if not (t0 <= e["ts"] < t1 and e.get("event") in ("offer", "no_offer") and e.get("x")):
+                continue
+            if not held_at(db, e["x"], e["ts"], now_units):
+                continue
+            c = e.get("cause")
+            if not c:
+                out["unlogged"] += 1
+                continue
+            out[c["cause"]] = out.get(c["cause"], 0) + 1
+            out["near_expiry"] += c["cause"] == "lock" and bool(c.get("near_expiry"))
+    return out
+
+
+def causes_text(c):
+    return (", ".join(f"{name} {c[k]}" for k, name in CAUSES) + f" (그중 잠금이 해제 시간 절반 넘게 열린 협상 {c['near_expiry']})"
+            + (f", 원인 기록 없음 {c['unlogged']}" if c["unlogged"] else ""))
+
+
 def has_col(db, t, c):
     return c in [r[1] for r in db.execute(f"PRAGMA table_info({t})")]
 
@@ -117,6 +148,7 @@ def report(t, now=None):
     try:
         a, b = lock_window(db, t, t1, now_units), lock_window(db, t - (t1 - t), t, now_units)
         ca, cb = c_window(db, t, t1, now_units), c_window(db, t - (t1 - t), t, now_units)
+        cz = causes(db, t, t1, now_units)
     finally:
         db.close()
     shares = []
@@ -139,6 +171,8 @@ def report(t, now=None):
         f"- 잠긴 재고 비율: 지금 {m['share']:.1%} ({m['locked']}/{m['held']}), 구간 중 매시 측정 "
         f"{', '.join(f'{x:.1%}' for x in shares) or '-'}",
         f"- 재고 없음 응답 {a['no_stock']} vs {b['no_stock']}건, 그중 실제 보유 SKU에 나간 것 {a['no_stock_held']} vs {b['no_stock_held']}건",
+        f"- 보유 SKU 재고 없음 원인(적용 후, seller가 응답 시점에 기록): {causes_text(cz)}; 정책 제한은 고가 개수·브레이크가 매입만 "
+        "막아서 0이 정상",
         f"- C등급 고가: 협상 {ca['neg'] if ca['neg'] is not None else '-'} vs {cb['neg'] if cb['neg'] is not None else '-'}, "
         f"판매 {ca['n']} vs {cb['n']}, 매출 {ca['rev']:,} vs {cb['rev']:,}, 원가 대비 이익 {pc(ca)} vs {pc(cb)}",
         f"- 남은 C등급 고가(소파·원가>평균 제외) {len(rows)}개, 원가 {sum(r['cost'] for r in rows):,}"])
@@ -154,7 +188,7 @@ def apply():
     with open(open_expiry.RULES, "w", encoding="utf-8") as f:
         json.dump({"expire_s": 300, "note": "person 11/09 ~15:05: 10 -> 5 min"}, f)
     r = high_ask.rules()
-    r["c_step"] = {"enabled": True, "h1": 12, "h2": 24, "cost": 1.10, "median": 0.6, "since": round(time.time()),
+    r["c_step"] = {"enabled": True, "h1": 12, "h2": 24, "cost": 1.10, "cost2": 1.00, "median": 0.6, "since": round(time.time()),
                    "note": "person 11/09 ~15:05: C grade high (not sofas, not over-cost) floor steps"}
     with open(high_ask.RULES, "w", encoding="utf-8") as f:
         json.dump(r, f, ensure_ascii=False)
@@ -169,8 +203,8 @@ def apply():
     decisions.record("sales", "c_step_on", "high_ask.c_step", r["c_step"], "person 11/09 ~15:05; open expiry 300 s")
     log(f"applied: expire 300 s, c_step {r['c_step']}; seller restart killed {killed}, back {back}")
     alerts.send("info", "c_step_on", f"seller 재시작 {datetime.now():%H:%M} ({'완료' if back else '확인 안 됨'}): (1) 협상 자동 해제 10분 -> 5분 "
-                "(2) C등급 고가(소파·원가>평균 제외) 하한: 입고 12시간 넘으면 max(원가 x 1.10, 48시간 중앙값 x 0.6), 24시간 넘으면 원가 x 1.10, "
-                "원가 아래 없음, 더 낮은 기존 인하는 유지. 3시간 점검 예정", log=log)
+                "(2) C등급 고가(소파·원가>평균 제외) 하한: 입고 12시간 넘으면 max(원가 x 1.10, 48시간 중앙값 x 0.6), 24시간 넘으면 원가 x 1.00, "
+                "원가 아래 없음, 더 낮은 기존 인하는 유지 (3) 원가>평균 고가도 원가가 평균보다 2% 이내로 비싸면 기존 손절(평균에 판매) 허용. 3시간 점검 예정", log=log)
     return t
 
 

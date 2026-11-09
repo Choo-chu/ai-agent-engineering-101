@@ -1,7 +1,8 @@
 """Over-cost high-price units (person's decision 11/09 ~14:50): a high-price unit (cost > qc.HIGH_MIN, not a sofa)
 whose cost is above the market average of its SKU, or one of the units listed at the 15:05 high-focus switch whose
 floor was above the market average (overcost_high.json "units"):
-  - floor max(cost x 1.00, 48 h median x 0.80) instead of cost x 1.05 (depts/high_ask.floor), never under cost
+  - floor max(cost x 1.00, 48 h median x 0.80) instead of cost x 1.05 (depts/high_ask.floor), never under cost,
+    except the old stoploss (11/09 ~15:15): cost at most 2% above the average -> a lower floor down to the average
   - not counted in the high-price unit limit (high_max, depts/purchasing.make_plan)
   - not counted in the high-price brake (tools/high_focus_rollout.py)
 The first time a unit qualifies: decision overcost_high (purchasing runs every minute and calls mark()).
@@ -15,6 +16,8 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES = os.path.join(HERE, "overcost_high.json")
 SEEN = os.path.join(HERE, "logs", "overcost_units.json")
 COST_FACTOR = 1.00
+STOPLOSS_SHARE = 0.02      # 11/09 ~15:15 (person): cost at most 2% above the average -> the floor may be the average
+#                            (the old stoploss, depts/sales.stoploss: 2 days of 1% storage); more than 2%: never under cost
 
 
 def rules():

@@ -18,7 +18,7 @@ def tmp(obj):
 
 
 NOW = time.time()
-CS = {"enabled": True, "h1": 12, "h2": 24, "cost": 1.10, "median": 0.6}
+CS = {"enabled": True, "h1": 12, "h2": 24, "cost": 1.10, "cost2": 1.00, "median": 0.6}
 
 
 def setup(cs=CS):
@@ -36,7 +36,7 @@ def test_steps():
     setup()
     assert high_ask.c_step_floor(u(age=6), NOW, CS) is None
     assert high_ask.c_step_floor(u(age=13), NOW, CS) == 240000                 # max(220k, 400k x 0.6)
-    assert high_ask.c_step_floor(u(age=25), NOW, CS) == 220000                 # cost x 1.10
+    assert high_ask.c_step_floor(u(age=25), NOW, CS) == 200000                 # cost x 1.00 (11/09 ~15:15)
     assert high_ask.c_step_floor(u(grade="B", age=25), NOW, CS) is None
 
 
@@ -44,9 +44,31 @@ def test_floor():
     setup()
     assert high_ask.floor(u(age=6), 450000, 999999, "normal", now=NOW) == 320000     # max(210k, 320k): unchanged
     assert high_ask.floor(u(age=13), 450000, 999999, "normal", now=NOW) == 240000
-    assert high_ask.floor(u(age=25), 450000, 999999, "normal", now=NOW) == 220000
+    assert high_ask.floor(u(age=25), 450000, 999999, "normal", now=NOW) == 200000
     assert high_ask.floor(u(age=25), 450000, 150000, "normal", now=NOW, rule="aging step 3") == 150000  # lower markdown
     assert high_ask.floor(u(age=25, cost=500000), 450000, 999999, "normal", now=NOW) == 500000          # over-cost rule
+
+
+def test_overcost_stoploss():
+    setup()
+    # cost 500k, avg 495k (1% above): the stoploss floor (the average) is allowed
+    assert high_ask.floor(u(grade="A", cost=500000), 495000, 495000, "normal", now=NOW, rule="stoploss") == 495000
+    # an aging floor lower still: not under the average
+    assert high_ask.floor(u(grade="A", cost=500000), 495000, 400000, "normal", now=NOW, rule="aging step 4") == 495000
+    # 4% above: never under cost
+    assert high_ask.floor(u(grade="A", cost=500000), 480000, 480000, "normal", now=NOW, rule="stoploss") == 500000
+
+
+def test_nostock_cause():
+    from depts import nostock_cause as N
+    us = [{"unit": "a", "sku": "S", "grade": "A"}, {"unit": "b", "sku": "S", "grade": "B"}]
+    op = {"t1": {"unit": {"unit": "a"}, "t": NOW - 200}, "t2": {"unit": {"unit": "b"}, "t": NOW - 20}}
+    c = N.classify("S", us, op, {}, NOW, 300)
+    assert c["cause"] == "lock" and c["locked"] == 2 and c["near_expiry"] == 1 and c["lock_age_max"] == 200
+    assert N.classify("S", us, {"t1": op["t1"]}, {"b": NOW}, NOW, 300)["cause"] == "lock"
+    assert N.classify("S", us, {}, {"a": NOW, "b": NOW}, NOW, 300)["cause"] == "receipt"
+    assert N.classify("S", us, {}, {"a": NOW}, NOW, 300)["cause"] == "other"
+    assert N.classify("Z", us, {}, {}, NOW, 300)["cause"] == "other"
     setup(dict(CS, enabled=False))
     assert high_ask.floor(u(age=25), 450000, 999999, "normal", now=NOW) == 320000
 
