@@ -26,7 +26,7 @@ from buyer import (A2AClient, DEADLINE, MAX_TURNS, ask_harness,  # noqa: E402
                    last_number, log, state, status_text)
 import strategy  # noqa: E402
 from market_db import connect, load_stats, price_of  # noqa: E402
-from depts import accept_rule  # noqa: E402  11/08: accept the last ask instead of a walk (24 h experiment)
+from depts import accept_rule, soft_neg  # noqa: E402  11/08: accept the last ask instead of a walk (24 h experiment)
 
 MEMORY_PATH = os.path.join(HERE, "memory.jsonl")
 NEW_SHOP_SCORE = 3.0   # score for a shop nobody has reviewed yet
@@ -309,7 +309,8 @@ def ask_price(text, budget=None):
 
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
-              force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None):
+              force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None,
+              soft=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
@@ -384,6 +385,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                                    ask=ask, last=last if last is not None else "none yet",
                                    n_offers=n_offers, min_offers=min_offers, market=market,
                                    first_pct=round(100 * first_offer))
+        soft_turn = False
         if res["injection"]:                          # 11/07 ~19:00: the code finishes this negotiation, no LLM
             res["code_injection"] = True
             d = code_move(ask, last, n_offers, budget, first_offer, market_avg)
@@ -401,6 +403,10 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                 res["ended"] = "walk"
                 client.cancel(tid)
                 return res
+        elif soft is not None and soft_neg.move(ask, last, n_offers, budget, market_avg, soft) is not None:
+            d = soft_neg.move(ask, last, n_offers, budget, market_avg, soft)   # 11/09 soft_neg: code, no LLM
+            res["soft_neg"], soft_turn = res.get("soft_neg", 0) + 1, True
+            log(f"[{soft_neg.TAG}] {d['action']} {d.get('price', '')} ({d['why']}; ask {ask}, avg {market_avg}, cap {budget})")
         elif force_first and n_offers == 0 and ask is not None and buyer_speed.on("skip_first_llm", sp):
             d = None                                  # 11/09: the code makes the opening offer just below; no call
             res["harness_skipped"] = res.get("harness_skipped", 0) + 1
@@ -408,11 +414,11 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             d = ask_harness(prompt)
             res["harness_calls"] += 1
         res["guard_last"] = False
-        if force_first and n_offers == 0 and ask is not None and not res["injection"]:
+        if force_first and n_offers == 0 and ask is not None and not res["injection"] and not soft_turn:
             # stage 2: the opening offer is the variant's share of the ask, made by the code
             d = {"action": "offer", "price": max(1, min(int(ask * first_offer), budget, ask - 1))}
             log(f"[variant] first offer {first_offer:.0%} of {ask} -> {d['price']}")
-        if n_offers < min_offers and ask is not None and (d is None or d["action"] != "offer"):
+        if n_offers < min_offers and ask is not None and (d is None or d["action"] != "offer") and not soft_turn:
             # haggle guard: no accept / walk before min_offers counteroffers; the code names the counter
             step = int(ask * first_offer) if last is None else last + max(1, (ask - last) // 3)
             counter = min(step, ask - 1, budget)
@@ -587,6 +593,10 @@ def main():
         log(f"[variant] buyer_min_offers -> {mo_variant} (weights {w2})")
     else:
         mo_variant = None
+    sn_rules = soft_neg.rules()
+    sn_arm = soft_neg.arm(order.get("order"), case, sn_rules)      # 11/09 soft_neg: half the orders, 24 h
+    if sn_arm:
+        log(f"[{soft_neg.TAG}] order {order.get('order')}: arm {sn_arm}")
     from depts import buyer_tactic
     tactic, tw = buyer_tactic.pick()                  # 11/07 experiment: plain / appeal / facts, one per order
     log(f"[variant] buyer_tactic -> {tactic} (weights {tw})")
@@ -627,7 +637,9 @@ def main():
                 log(f"[break rule] {o['sku']}: break rate {pb:.1%}, without a warranty worth {nw_cap + 1}, cap at most {nw_cap}")
         t_line = None
         try:
-            if tactic == "facts2":
+            if sn_arm == "soft":
+                pass                                  # soft_neg: plain numbers only
+            elif tactic == "facts2":
                 t_line = buyer_tactic.line("facts2", c["name"], avg=avg if offers else None,
                                            low=buyer_tactic.other_shop_low(sku, c["name"]) if offers else None)
             elif tactic == "appeal":
@@ -639,7 +651,8 @@ def main():
             res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer,
                             force_first=variant_key is not None, kind=order.get("kind"),
                             need_hours=order.get("use_within_hours"), tactic_line=t_line,
-                            market_avg=avg_now, no_warranty_cap=nw_cap if offers else None)
+                            market_avg=avg_now, no_warranty_cap=nw_cap if offers else None,
+                            soft=sn_rules if sn_arm == "soft" else None)
             res["secs"] = round(time.time() - t_neg, 1)
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
@@ -684,7 +697,16 @@ def main():
         log(f"[accept] goods with a {wh} h warranty: any grade")
     if accept:
         out["accept"] = accept
-    record_deal(chosen, sku, lp, case, variant_key, variant, min_offers, res, flag, wh, mo_variant, tactic)
+    record_deal(chosen, sku, lp, "soft_neg" if res.get("soft_neg") else case, variant_key, variant, min_offers, res, flag,
+                wh, mo_variant, None if res.get("soft_neg") else tactic)
+    if sn_arm:
+        soft_neg.log(order=order.get("order"), arm=sn_arm, soft_used=bool(res.get("soft_neg")), item=args.item, sku=sku,
+                     shop=chosen["name"], list_price=lp, budget=args.budget, deal=bool(res["deal"]),
+                     paid_ok=bool(res["deal"] and not refused), price=rp, agreed=res.get("agreed"), flag=flag,
+                     ended=res.get("ended") or res.get("last_state"), shop_ended=res.get("ended") == "seller_ended",
+                     offers=res.get("offers", 0), harness_calls=res.get("harness_calls", 0),
+                     accept_rule=res.get("accept_rule"), neg_secs=res.get("secs"), order_secs=round(time.time() - start, 1),
+                     error=bool(res.get("error")), skip=res.get("skip"))
     print(json.dumps(out, ensure_ascii=False), flush=True)  # last line: the kit reads this
 
 
