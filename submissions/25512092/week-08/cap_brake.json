@@ -1,6 +1,6 @@
 {
  "enabled": true,
- "median_h": 3,
+ "median_h": 4,
  "window_h": 6,
  "min_sales": 10,
  "old_h": 6,
@@ -10,8 +10,8 @@
  "low": 20000000,
  "since": 1794233530,
  "pid": null,
- "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M; 11/09 ~23:10 automatic cap (cash + stock - 3M): stock trips -> auto off, 20M; cash trip -> buying paused until cash > 3M",
- "old_share": 0.25,
+ "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M; 11/09 ~23:10 automatic cap (cash + stock - 3M): stock trips -> auto off, 20M; cash trip -> buying paused until cash > 3M; 11/09 ~23:55 overnight: median 4 h, unsold 35% and 5M, 2 checks in a row (person decides at 09:00)",
+ "old_share": 0.35,
  "min_old_n": 20,
  "history": [
   {
@@ -30,6 +30,14 @@
    ]
   }
  ],
- "old_unsold_min": 3000000,
- "min_old_cost": 5000000
+ "old_unsold_min": 5000000,
+ "min_old_cost": 5000000,
+ "orig_before_night": {
+  "median_h": 3,
+  "old_share": 0.25,
+  "old_unsold_min": 3000000,
+  "consecutive": 1
+ },
+ "consecutive": 2,
+ "warn_streak": 0
 }

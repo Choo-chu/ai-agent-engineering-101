@@ -285,6 +285,70 @@ def _auto_revert(p, why):
     analyst.log(f"proposal #{p['id']} auto-reverted: {why}")
 
 
+CHECK_RULES = os.path.join(HERE, "analyst_check.json")
+MIX_ACTIONS = ("cap_brake", "high_brake", "cash_pause", "auto_reverted", "reverted", "reapplied", "approved", "policy",
+               "policy_undo", "guard_revert")
+
+
+def check_rules():
+    try:
+        with open(CHECK_RULES, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def mixed_changes(p, t0, t1):
+    """Other policy / limit changes, brakes and reverts in [t0, t1] than the approval p itself: ["HH:MM what", ...]."""
+    import limits
+    me, t = f"#{p['id']}", p.get("decided_ts") or 0
+    out = []
+    try:
+        with open(os.path.join(HERE, "logs", "policy_history.jsonl"), encoding="utf-8") as f:
+            for ln in f:
+                try:
+                    e = json.loads(ln)
+                except ValueError:
+                    continue
+                ts = e.get("ts") or 0
+                if t0 <= ts <= t1 and me not in (e.get("reason") or ""):
+                    out.append((ts, f"정책 v{e.get('version')} ({e.get('by')}): {(e.get('reason') or '')[:80]}"))
+    except OSError:
+        pass
+    for name, ch in (("limits.STOCK_CAP", limits.STOCK_CAP_CHANGES), ("limits.HIGH_MAX", limits.HIGH_MAX_CHANGES)):
+        for ts, v in ch:
+            if t0 <= ts <= t1 and not (name == p.get("key") and abs(ts - t) < 300):
+                out.append((ts, f"{name.split('.')[1]} -> {v:,}"))
+    try:
+        with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
+            for ln in f:
+                if '"action": "' not in ln or not any(f'"action": "{a}"' in ln for a in MIX_ACTIONS):
+                    continue
+                d = json.loads(ln)
+                if t0 <= d["ts"] <= t1 and me not in (d.get("reason") or "") and d.get("dept") != "sales":
+                    out.append((d["ts"], f"{d['dept']} {d['action']} {d.get('target')}: {(d.get('reason') or '')[:60]}"))
+    except OSError:
+        pass
+    seen, res = set(), []
+    for ts, txt in sorted(out):
+        if txt not in seen:
+            seen.add(txt)
+            res.append(f"{datetime.fromtimestamp(ts):%H:%M} {txt}")
+    return res
+
+
+def _hold(p, label, bad, summary, mixed):
+    """No revert: the verdict and the mixed changes recorded, one Telegram."""
+    decisions.record("analyst", "check_hold", p["key"], summary, f"#{p['id']}: {label}; 판정: "
+                     + ("; ".join(bad) or "나빠지지 않음") + (f"; 섞인 변경 {len(mixed)}건" if mixed else ""))
+    alerts.send("info", f"analyst_check_hold:{p['id']}",
+                f"승인 #{p['id']} {p['key']} {CHECK_H}시간 점검: {label} (되돌리지 않음)\n판정: "
+                + ("; ".join(bad) or "나빠지지 않음")
+                + (f"\n비교 구간에 섞인 변경 {len(mixed)}건:\n- " + "\n- ".join(mixed[:15])
+                   + (f"\n... 외 {len(mixed) - 15}건" if len(mixed) > 15 else "") if mixed else ""), log=analyst.log)
+    analyst.log(f"proposal #{p['id']} check held: {label}")
+
+
 def _brake_governs(p):
     """True for a STOCK_CAP approval the cap brake watches (cap_brake.json enabled with its pid): its stop rules are the
     person's (median / unsold / cash), so the generic 3 h revenue check only records (person 11/09 ~23:50)."""
@@ -368,6 +432,15 @@ def check_approvals(now=None):
         if not buyer:
             summary["buyer_saved"] = "information only (limits key)"
         decisions.record("analyst", "approval_check", p["key"], summary, f"#{p['id']}: " + ("; ".join(bad) or "not worse"))
+        mixed = mixed_changes(p, t - CHECK_H * 3600, t + CHECK_H * 3600)
+        hold = check_rules()
+        if mixed and hold.get("mixed_hold", True):  # 11/09 ~23:55 (person): other changes in the windows -> no verdict
+            _hold(p, "판정 보류", bad, summary, mixed)
+            continue
+        if bad and now < float(hold.get("no_revert_until") or 0):   # overnight: the verdict is recorded only
+            _hold(p, f"자동 되돌리기 꺼짐({datetime.fromtimestamp(hold['no_revert_until']):%m-%d %H:%M}까지), 판정만 기록",
+                  bad, summary, [])
+            continue
         if bad and _brake_governs(p):                # 11/09 ~23:50: the person's own brake rules decide this raise
             decisions.record("analyst", "check_no_revert", p["key"], json.loads(p["value"]), f"#{p['id']}: "
                              + "; ".join(bad) + " - not reverted: the STOCK_CAP brake (cap_brake.json) governs this raise")

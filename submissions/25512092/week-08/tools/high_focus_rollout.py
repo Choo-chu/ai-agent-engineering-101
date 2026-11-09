@@ -36,7 +36,10 @@ STATE = os.path.join(HERE, "logs", "high_focus_state.json")
 LATEST = datetime(2026, 11, 9, 15, 40).timestamp()
 FROM = datetime(2026, 11, 9, 15, 0).timestamp()
 CHECK_S, H = 900, 3
-SELL_MEDIAN_H, STALE_H, STALE_SHARE, STALE_MIN_N, REC_DROP = 6, 12, 0.30, 10, 0.5   # 11/09 ~14:45: was 5M unsold
+SELL_MEDIAN_H, STALE_H, STALE_SHARE, STALE_MIN_N, REC_DROP = 6, 12, 0.30, 10, 1 / 3   # 11/09 ~14:45: was 5M unsold
+# 11/09 ~23:55 (person, overnight): receipt ratio <= 1/3 of the base (was 1/2); a trip needs CONSECUTIVE checks in a
+# row with a hit (the first: a Telegram warning only, decision high_brake_warn)
+CONSECUTIVE = 2
 SOFA_CAT = "소파/의자/스툴"
 ME = "choo-chu"
 
@@ -124,7 +127,7 @@ def brake_state(d, now, base_ratio, since=None):
     r, n = rec_ratio(d, now - 3 * 3600, now)
     c = (n >= 10 and base_ratio and r is not None and r <= REC_DROP * base_ratio,
          f"고가 협상 대비 영수증 최근 3시간 {'-' if r is None else f'{r:.1%}'} ({n}건) vs 적용 전 24시간 "
-         f"{'-' if not base_ratio else f'{base_ratio:.1%}'} (절반 이하면 발동)")
+         f"{'-' if not base_ratio else f'{base_ratio:.1%}'} (3분의 1 이하면 발동)")
     return [("sell_median", *a), ("stale_cost", *b), ("receipt_ratio", *c)]
 
 
@@ -322,6 +325,16 @@ def overcost_on(rows):
                 f"seller 재시작 {'완료' if back else '확인 안 됨'}", log=log)
 
 
+def warn(why, streak):
+    """A brake condition hit, not yet CONSECUTIVE checks in a row: one Telegram warning, nothing changes."""
+    import alerts
+    import decisions
+    decisions.record("purchasing", "high_brake_warn", "high_focus", why, f"check {streak}/{CONSECUTIVE}: warning only")
+    alerts.send("info", f"high_brake_warn:{int(time.time())}", f"고가 브레이크 경고 {datetime.now():%H:%M} ({streak}/{CONSECUTIVE}회, "
+                f"아직 발동 안 함): {why}\n다음 점검({CHECK_S // 60}분 뒤)에도 걸리면 발동", log=log)
+    log(f"warn {streak}/{CONSECUTIVE}: {why}")
+
+
 def trip(why):
     import alerts
     import decisions
@@ -384,8 +397,12 @@ def brake_loop(t, base, reported):
                 d.close()
             hit = [txt for _, x, txt in st if x]
             log("check " + " | ".join(f"{n}={'TRIP' if x else 'ok'}" for n, x, _ in st))
-            if hit:
-                trip("; ".join(hit))
+            streak = (load_state().get("warn_streak") or 0) + 1 if hit else 0
+            save_state(warn_streak=streak)
+            if hit and streak >= CONSECUTIVE:
+                trip("; ".join(hit) + f" ({streak}회 연속)")
+            elif hit:
+                warn("; ".join(hit), streak)
         if not reported and now >= t + H * 3600 + 60:
             alerts.send("daily", f"high_focus_report:{int(t)}", report(t), log=log)
             log("report sent")

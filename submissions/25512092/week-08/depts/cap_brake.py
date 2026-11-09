@@ -125,6 +125,31 @@ def _save_auto(a):
     os.replace(tmp, limits.AUTO_CAP_PATH)
 
 
+def _streak(r, n):
+    if (r.get("warn_streak") or 0) != n:
+        r["warn_streak"] = n
+        with open(RULES, "w", encoding="utf-8") as f:
+            json.dump(r, f, ensure_ascii=False, indent=1)
+
+
+def confirmed(r, trips, m, log=print):
+    """11/09 ~23:55 (person, overnight): a stock trip fires only on r['consecutive'] checks in a row (default 1); before
+    that one Telegram warning a check (decision cap_brake_warn), nothing changes."""
+    import alerts
+    import decisions
+    n = (r.get("warn_streak") or 0) + 1
+    need = int(r.get("consecutive") or 1)
+    _streak(r, n)
+    if n >= need:
+        return True
+    decisions.record("purchasing", "cap_brake_warn", "limits.STOCK_CAP", m.get("cap"), f"check {n}/{need}: "
+                     + "; ".join(trips) + " - warning only")
+    alerts.send("info", f"cap_brake_warn:{int(time.time())}", f"STOCK_CAP 브레이크 경고 {time.strftime('%H:%M')} ({n}/{need}회, "
+                f"아직 발동 안 함): " + "; ".join(trips) + f"\n다음 점검({CHECK_S // 60}분 뒤)에도 걸리면 발동", log=log)
+    log(f"cap brake warning {n}/{need}: {trips}")
+    return False
+
+
 def fire_auto(r, m, trips, log=print):
     """Automatic cap on, a stock trip (1 or 2): the automatic cap off, back to the fixed STOCK_CAP (r['low'])."""
     import alerts
@@ -233,10 +258,14 @@ def tick(log=print, now=None):
         json.dump(m, f, ensure_ascii=False)
     if auto:
         stock_trips = [t for t in trips if not t.startswith("현금 ")]
-        if stock_trips:
+        if stock_trips and confirmed(r, stock_trips, m, log):
             fire_auto(r, m, stock_trips, log=log)
-        else:
+        elif not stock_trips:
+            _streak(r, 0)
             cash_pause(r, m, log=log)
         return
     if cap > r["low"] and trips:
-        fire(r, m, trips, log=log)
+        if confirmed(r, trips, m, log):
+            fire(r, m, trips, log=log)
+    else:
+        _streak(r, 0)

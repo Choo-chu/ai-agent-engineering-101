@@ -328,7 +328,11 @@ def daily(db, inv, catalog, log):
         reason += (f"; held: share {share:.0%} -> {fl['high_share']:.0%}, units {cap} -> {fl['high_max']} "
                    f"(no lowering for 24 h after expansion 2)")
         share, cap = max(share, fl["high_share"]), max(cap, fl["high_max"])
-    from depts import policy_notify
+    from depts import policy_notify, night_freeze
+    if night_freeze.frozen(now) and (share, cap) != (pol["high_share"], pol["high_max"]):   # 11/09 ~23:55 (person)
+        reason += (f"; overnight freeze until {night_freeze.until_text()}: stays {pol['high_share']} / {pol['high_max']} "
+                   f"(rule wanted {share} / {cap})")
+        share, cap = pol["high_share"], pol["high_max"]
     if policy_notify.pinned("purchasing.high_share", now) and share != pol["high_share"]:
         reason += f"; high_share pinned by the person: stays {pol['high_share']}"
         share = pol["high_share"]

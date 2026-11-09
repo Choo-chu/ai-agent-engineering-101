@@ -401,7 +401,13 @@ def tick(inv, catalog, log=print):
             return
         reason = "; ".join(f"{s}.{k} -> {v} ({why})" for s, k, v, why in props)
         if st["mode"] == "live":
-            from depts import policy_notify
+            from depts import policy_notify, night_freeze
+            if night_freeze.frozen(now):               # 11/09 ~23:55 (person): no new policy change overnight
+                for s, k, v, why in props:
+                    decisions.record("ceo", "frozen", f"{s}.{k}", v, f"overnight freeze until "
+                                     f"{night_freeze.until_text()}: not changed ({why})")
+                log(f"[ceo] live: frozen until {night_freeze.until_text()}, not applied: {reason}")
+                return
             for s, k, v, why in [x for x in props if policy_notify.pinned(f"{x[0]}.{x[1]}", now)]:
                 decisions.record("ceo", "pinned", f"{s}.{k}", v, f"pinned by the person for 24 h: not changed ({why})")
             props = [x for x in props if not policy_notify.pinned(f"{x[0]}.{x[1]}", now)]

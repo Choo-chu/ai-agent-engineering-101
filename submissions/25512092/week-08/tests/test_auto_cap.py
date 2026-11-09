@@ -206,7 +206,7 @@ def test_high_cost_exclude():
     db.execute("INSERT INTO settles VALUES (?,?,?,?,?)", ("LS", 900_000, now - 3600, "LSu2", "other"))   # not mine
     db.commit()
     db.close()
-    r = dict(H.DEFAULT, enabled=True, force=["FX"])
+    r = dict(H.DEFAULT, enabled=True, force=["FX"], min_sold=2)   # the loss rule needs 3 sales from 11/09 ~23:55
     ex = H.compute(now, r, p)
     assert set(ex) == {"HI", "LS", "FX"} and ex["HI"]["ratio"] == 0.98 and ex["FX"]["why"] == "force", ex
     assert ex["LS"] == {"profit": -30_000, "sold": 2, "name": "LS", "why": "loss"}, ex["LS"]
