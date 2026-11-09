@@ -41,14 +41,45 @@ def test_case():
     auto(ON)
     now = limits.CAP_END_AT - 86400
     inv = lambda cash, stock: {"balance": cash, "units": [{"cost": stock, "grade": "A"}]}
-    with mock.patch.object(ceo.pricing, "endgame_step", lambda t: None):
-        assert ceo.raw_shop_case(inv(14_000_000, 35_000_000), now)[0] == "normal"          # cap 46M
-        assert ceo.raw_shop_case(inv(2_900_000, 35_000_000), now)[0] == "overstock"        # cash <= 3M: stock >= cap
-        # hysteresis: stays until stock < 88% of the cap (cash 5M: cap 37M, exit 32.56M)
-        assert ceo.raw_shop_case(inv(5_000_000, 35_000_000), now, "overstock")[0] == "overstock"
-        assert ceo.raw_shop_case(inv(9_000_000, 35_000_000), now, "overstock")[0] == "normal"   # exit 36.08M
+    from depts import turnover_case as T
+    over = {"v": (False, "turnover ok")}
+    with mock.patch.object(ceo.pricing, "endgame_step", lambda t: None), \
+            mock.patch.object(T, "overstock", lambda now=None: over["v"]):
+        # 11/09 ~23:40: with the automatic cap, overstock by turnover only; stock >= cap or low cash is not
+        assert ceo.raw_shop_case(inv(14_000_000, 35_000_000), now)[0] == "normal"
+        assert ceo.raw_shop_case(inv(2_900_000, 35_000_000), now)[0] == "normal"          # cash <= 3M: budget 0 only
+        assert ceo.raw_shop_case(inv(500_000, 35_000_000), now)[0] == "normal"            # not cash_low either
+        over["v"] = (True, "turnover: sale median 3.5 h > 3 h")
+        c, why = ceo.raw_shop_case(inv(14_000_000, 10_000_000), now)
+        assert c == "overstock" and "median" in why
         auto(dict(ON, enabled=False))
+        over["v"] = (False, "")
         assert ceo.raw_shop_case(inv(14_000_000, 35_000_000), now)[0] == "overstock"       # fixed 20M
+        assert ceo.raw_shop_case(inv(500_000, 10_000_000), now)[0] == "cash_low"
+
+
+def test_turnover_case():
+    from depts import turnover_case as T
+    now = time.time()
+    p = tmp_path("tc.db")
+    db = sqlite3.connect(p)
+    db.execute("CREATE TABLE my_stock (unit TEXT, sku TEXT, cost INTEGER, supplied_at REAL)")
+    db.execute("CREATE TABLE settles (unit TEXT, shop TEXT, ts REAL)")
+    for i in range(12):                                   # 12 sales in 6 h, 2 h from supply to sale
+        db.execute("INSERT INTO my_stock VALUES (?,?,?,?)", (f"s{i}", "A", 100_000, now - 4 * 3600))
+        db.execute("INSERT INTO settles VALUES (?,?,?)", (f"s{i}", T.ME, now - 2 * 3600))
+    for i in range(10):                                   # 7 h old: 4 of 10 x 600k unsold = 40% of 6M
+        db.execute("INSERT INTO my_stock VALUES (?,?,?,?)", (f"o{i}", "B", 600_000, now - 7 * 3600))
+        if i >= 4:
+            db.execute("INSERT INTO settles VALUES (?,?,?)", (f"o{i}", T.ME, now - 3600))
+    db.commit()
+    db.close()
+    m = T.measure(now, 0, None, p)
+    assert m["sales"] == 18 and m["old_cost"] == 6_000_000 and m["old_share"] == 0.4, m
+    assert T.overstock(now, dict(ON, since=0), p)[0]                                      # 40% > 25%
+    assert not T.overstock(now, dict(ON, since=0, case={"old_share": 0.5}), p)[0]
+    assert not T.overstock(now, dict(ON, since=now - 3600), p)[0]                         # supplied before the switch-on
+    assert T.overstock(now, dict(ON, since=0, case={"old_share": 0.5, "median_h": 1}), p)[0]   # median 2 h > 1 h
 
 
 def brake(m, trips, auto_obj, fixed=20_000_000):
@@ -118,11 +149,91 @@ def test_request_fast_only():
     db.close()
     st = tmp_json({s: {"first_buy": now - 6 * 3600} for s in ("F1", "F2", "F3", "S1")}, "rbst")
     cat = {s: {"list_price": 10_000, "kind": "goods"} for s in ("F1", "F2", "F3", "S1", "N1")}
+    rec = []
     with mock.patch.object(rb, "HERE", d), mock.patch.object(rb, "STATE", st), \
-            mock.patch("market_db.sku_avg", lambda db, sku, now: (20_000, 10)):
+            mock.patch("market_db.sku_avg", lambda db, sku, now: (20_000, 10)), \
+            mock.patch("decisions.record", lambda *a, **k: rec.append(a)):
         out = rb.candidates(cat, {}, {}, log=lambda *_: None, now=now)
-    assert len(out) == 2 and {s for s, *_ in out} <= {"F1", "F2", "F3"}, out
-    assert all(q == rb.FAST_TARGET for _, q, _, _ in out)                    # the target stays 8
+        # 11/09 ~23:40: 1 regular (fast, target 8) + 1 trial of the new SKU N1 (target 2)
+        assert [s for s, *_ in out][1:] == ["N1"] and out[0][0] in ("F1", "F2", "F3") and out[0][1] == rb.FAST_TARGET, out
+        assert out[1][1] == rb.TRIAL_TARGET
+        rb.bought(["N1"], now=now)
+        j = json.load(open(st, encoding="utf-8"))
+        assert j["N1"]["trial"] == round(now) and "trial_pending" not in j["N1"]
+        out = rb.candidates(cat, {"N1": 2}, {}, log=lambda *_: None, now=now + 60)       # trial bought up: keeps
+        assert len(out) == 1 and out[0][0] != "N1", out                                  # its slot, 1 regular line
+        # 6 h later: N1 sold within 0.5 h -> regular
+        db = sqlite3.connect(os.path.join(d, "market.db"))
+        db.execute("INSERT INTO my_stock VALUES (?,?,?,?)", ("N1u", "N1", 1000, now + 120))
+        db.execute("INSERT INTO settles VALUES (?,?,?,?)", ("N1u", rb.ME, now + 120 + 1800, "N1"))
+        db.commit()
+        db.close()
+        rb.candidates(cat, {"N1": 2}, {}, log=lambda *_: None, now=now + 6 * 3600 + 60)
+        j = json.load(open(st, encoding="utf-8"))
+        assert j["N1"].get("trial_ok") and not j["N1"].get("dropped")
+        # a slow trial is dropped
+        j["S2"] = {"first_buy": now - 7 * 3600, "trial": now - 7 * 3600}
+        json.dump(j, open(st, "w", encoding="utf-8"))
+        db = sqlite3.connect(os.path.join(d, "market.db"))
+        db.execute("INSERT INTO my_stock VALUES (?,?,?,?)", ("S2u", "S2", 1000, now - 6.5 * 3600))
+        db.commit()
+        db.close()
+        rb.candidates(cat, {}, {}, log=lambda *_: None, now=now)
+        j = json.load(open(st, encoding="utf-8"))
+        assert j["S2"]["dropped_why"] == "trial"
+    assert any(a[1] == "request_trial_drop" for a in rec) and any(a[1] == "request_trial_ok" for a in rec)
+
+
+def test_high_cost_exclude():
+    from depts import high_cost_exclude as H
+    now = time.time()
+    p = tmp_path("hce.db")
+    db = sqlite3.connect(p)
+    db.execute("CREATE TABLE my_stock (unit TEXT, sku TEXT, name TEXT, cost INTEGER, supplied_at REAL)")
+    db.execute("CREATE TABLE settles (sku TEXT, amount INTEGER, ts REAL)")
+    for sku, cost, avg in (("HI", 500_000, 510_000), ("OK", 400_000, 500_000), ("LOW", 50_000, 50_000)):
+        db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", (sku + "u", sku, sku, cost, now - 3600))
+        db.executemany("INSERT INTO settles VALUES (?,?,?)", [(sku, avg, now - 600)] * 10)
+    db.execute("INSERT INTO my_stock VALUES (?,?,?,?,?)", ("OLDu", "OLD", "OLD", 600_000, now - 50 * 3600))
+    db.executemany("INSERT INTO settles VALUES (?,?,?)", [("OLD", 500_000, now - 600)] * 10)
+    db.commit()
+    db.close()
+    r = dict(H.DEFAULT, enabled=True, force=["FX"])
+    ex = H.compute(now, r, p)
+    assert set(ex) == {"HI", "FX"} and ex["HI"]["ratio"] == 0.98 and ex["FX"]["why"] == "force", ex   # 98% > 95%
+    assert H.compute(now, dict(r, enabled=False), p) == {}
+    H.OUT, H.RULES = tmp_path("hce_out.json"), tmp_json(r, "hce_rules")
+    with mock.patch.object(H, "compute", lambda now=None: ex):
+        H.current()
+    assert "2개" in H.line() and "HI" in H.line()
+
+
+def test_revert_confirm():
+    """11/09 ~23:40: a 되돌리기 press only asks; [정말 되돌리기] runs it, [취소] changes nothing."""
+    from depts import analyst as A
+    calls, ran = [], []
+    cq = lambda data: {"id": "c", "data": data, "from": {"id": 1}, "message": {"chat": {"id": 1}, "message_id": 9, "text": "x"}}
+    with mock.patch.object(A, "_call", lambda m, **k: calls.append((m, k))), mock.patch.object(A, "chat_id", lambda: 1), \
+            mock.patch("decisions.record", lambda *a, **k: None), mock.patch.object(A, "log", lambda *a: None), \
+            mock.patch.object(A, "db", side_effect=AssertionError("nothing read before the confirmation")):
+        assert A.handle_callback(cq("revert:5")) == "confirm asked"
+        assert A.handle_callback(cq("undo:6")) == "confirm asked"
+        assert A.handle_callback(cq("cancel_undo:6")) == "cancelled"
+    asks = [k for m, k in calls if m == "sendMessage"]
+    assert len(asks) == 2 and "정말 되돌릴까요" in asks[0]["text"]
+    assert asks[0]["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "revert_ok:5"
+    assert asks[1]["reply_markup"]["inline_keyboard"][0][1]["callback_data"] == "cancel_undo:6"
+    # confirmed: goes on to the revert itself
+    row = {"id": 5, "kind": "limit", "status": "approved", "key": "limits.STOCK_CAP", "value": "1", "reason": "",
+           "message_id": None, "expires": 0, "asked": 0}
+    d = mock.Mock()
+    d.execute.return_value.fetchone.return_value = row
+    with mock.patch.object(A, "_call", lambda m, **k: calls.append((m, k))), mock.patch.object(A, "chat_id", lambda: 1), \
+            mock.patch("decisions.record", lambda *a, **k: None), mock.patch.object(A, "log", lambda *a: None), \
+            mock.patch.object(A, "db", lambda: d), mock.patch.object(A, "REVERT", lambda p: ran.append(p) or "ok"), \
+            mock.patch.object(A, "_finish", lambda p, s, r, c: ran.append(s)):
+        assert A.handle_callback(cq("revert_ok:5")) == "revert"
+    assert ran[-1] == "reverted"
 
 
 if __name__ == "__main__":

@@ -39,6 +39,14 @@ def raw_shop_case(inv, now, prev=None):
     cash, stock = inv.get("balance", 0), pricing.held_cost(inv)
     if pricing.endgame_step(now) is not None:
         return "endgame", "48 h before the end"
+    import limits
+    if limits.auto_cap_on(now=now):                   # 11/09 ~23:40 (person): with the automatic cap, overstock by
+        from depts import turnover_case              # turnover only; low cash stops buying (budget), floors stay
+        over, why = turnover_case.overstock(now)
+        cap = limits.stock_cap_now(cash, stock, now)[0]
+        if over:
+            return "overstock", f"{why} (auto cap {cap:,})"
+        return "normal", f"stock {stock:,}, cash {cash:,}, auto cap {cap:,}; {why}"
     if cash < CASH_RESERVE:
         return "cash_low", f"cash {cash:,} < {CASH_RESERVE:,}"
     import limits                                     # 11/09 ~23:10: the automatic cap (cash + stock - 3M) when on

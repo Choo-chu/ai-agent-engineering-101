@@ -119,6 +119,28 @@ def _finish(p, status, result, cq_id):
     log(f"proposal #{p['id']} {status}: {result}")
 
 
+CONFIRM_FIRST = ("revert", "undo")
+CONFIRM_BUTTONS = lambda action, pid: {"inline_keyboard": [[{"text": "정말 되돌리기", "callback_data": f"{action}_ok:{pid}"},
+                                                            {"text": "취소", "callback_data": f"cancel_undo:{pid}"}]]}
+
+
+def ask_confirm(action, pid, cq):
+    """The first 되돌리기 press: one confirmation message (reply to the button's message); nothing changes yet."""
+    _call("answerCallbackQuery", callback_query_id=cq["id"], text="한 번 더 확인해 주세요")
+    mid = (cq.get("message") or {}).get("message_id")
+    _call("sendMessage", chat_id=chat_id(), text=f"#{pid} 정말 되돌릴까요?", reply_markup=CONFIRM_BUTTONS(action, pid),
+          **({"reply_to_message_id": mid} if mid else {}))
+    decisions.record("person", "revert_ask", pid, 0, f"{action}: 되돌리기 눌림, 확인 요청")
+    log(f"#{pid} {action}: confirmation asked")
+
+
+def _close_confirm(cq, text):
+    """The confirmation message: its buttons removed, the outcome written (each confirmation works once)."""
+    m = cq.get("message") or {}
+    if m.get("message_id"):
+        _call("editMessageText", chat_id=chat_id(), message_id=m["message_id"], text=f"{m.get('text') or ''}\n{text}"[:4000])
+
+
 def handle_callback(cq):
     """One button press. Only from TELEGRAM_CHAT_ID; each proposal once."""
     msg_chat = ((cq.get("message") or {}).get("chat") or {}).get("id")
@@ -128,6 +150,19 @@ def handle_callback(cq):
         _call("answerCallbackQuery", callback_query_id=cq["id"], text="권한 없음")
         return "ignored"
     action, _, pid = (cq.get("data") or "").partition(":")
+    # 11/09 ~23:40 (person): a 되돌리기 press (revert: approved proposal, undo: automatic policy change) only asks
+    # "정말 되돌릴까요?" with [정말 되돌리기] / [취소]; the confirm button runs it
+    if action in CONFIRM_FIRST:
+        ask_confirm(action, pid, cq)
+        return "confirm asked"
+    if action == "cancel_undo":
+        _call("answerCallbackQuery", callback_query_id=cq["id"], text="취소됨, 변경 없음")
+        _close_confirm(cq, "=> 취소, 변경 없음")
+        decisions.record("person", "revert_cancel", pid, 0, "되돌리기 확인에서 취소")
+        return "cancelled"
+    if action.endswith("_ok") and action[:-3] in CONFIRM_FIRST:
+        action = action[:-3]
+        _close_confirm(cq, "=> 되돌리기 진행")
     d = db()
     d.row_factory = __import__("sqlite3").Row
     try:

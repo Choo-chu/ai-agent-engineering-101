@@ -110,6 +110,11 @@ def summary(t0, t1):
             lines.append(f"8. 고가·소파 취소 사유: 계산 실패 {type(e).__name__}")
     if t1 >= datetime(2026, 11, 10).timestamp():  # 11/09 ~19:45 (person): from the 11/10 summary
         lines.append("9. " + exclude_line())
+    try:                                          # 11/09 ~23:40 (person): the high-price cost exclusion list
+        from depts import high_cost_exclude
+        lines.append("11. " + high_cost_exclude.line())
+    except Exception as e:
+        lines.append(f"11. 고가 매입 제외 목록 읽기 실패 {type(e).__name__}")
     try:                                          # 11/09 ~21:30 (person): the shop_order 6 h check, once it is due
         from depts import shop_order
         t_on = shop_order.rules().get("since")

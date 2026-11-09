@@ -104,6 +104,15 @@ def guard_check(sku, c, avg, inv):
 BUY_EXCLUDE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "buy_exclude.json")
 
 
+def _hce():
+    """high_cost_exclude SKUs (the last list, logs/high_cost_exclude.json); empty on failure."""
+    try:
+        from depts import high_cost_exclude
+        return json.load(open(high_cost_exclude.OUT, encoding="utf-8")).get("skus") or {}
+    except Exception:
+        return {}
+
+
 def excluded():
     """{sku: why} never bought (buy_exclude.json, read every run; person's decision 11/09 ~11:10: G5e3784e6)."""
     try:
@@ -195,6 +204,8 @@ def make_plan(inv, units, catalog, budget, log):
         log(f"[hot fast] failed: {type(e).__name__}: {e}")
         fast_share = {}
     no_buy = excluded()
+    from depts import high_cost_exclude           # 11/09 ~23:40: our 48 h cost > 95% of the market average
+    no_buy = dict(no_buy, **{k: 'high_cost_exclude' for k in high_cost_exclude.current(log=log)})
     from depts import line_rank                   # 11/09 ~14:35: lines after the request lines by expected profit
     rank = line_rank.on()
     if rank:
@@ -344,7 +355,7 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     found = []
     for sku, s in stats["skus"].items():
         c = catalog.get(sku) or {}
-        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 or sku in excluded() \
+        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 or sku in excluded() or sku in _hce() \
                 or c.get("kind") == "food" or c["list_price"] * COST_SHARE["goods"] < sofa_rules.MIN_COST:
             continue
         avg, n = price_of(sku, stats)

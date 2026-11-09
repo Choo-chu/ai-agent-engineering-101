@@ -11,6 +11,9 @@ Target: TARGET units held per SKU, FAST_TARGET (8; 5 until 11/08 ~20:35) for a S
 supply to sale in FAST_H (1 h) or less at the median (person's decision 11/08 ~16:50; an unsold unit counts with its
 age so far); at most MAX_LINES lines a run (the run has 10 lines in all).
 From 11/09 ~23:10 (person): MAX_LINES 2 and FAST_ONLY: only SKUs with a measured median of FAST_H or less stay.
+From 11/09 ~23:40 (person): one of the two lines (TRIAL_LINES) tries a SKU with no turnover record, target
+TRIAL_TARGET (2); TRIAL_H after its first trial buy it becomes regular (trial_ok) if its median is <= FAST_H, else
+it is dropped (dropped_why trial). With no trial candidate the regular SKUs may use both lines.
 Drop: a SKU first bought this way that sold none of its units in the 24 h after (my settles) leaves the list for good
 (logs/request_buy.json, decision request_buy_drop).
 """
@@ -31,6 +34,9 @@ FAST_H = 1.0
 FOOD_SHELF_H = 72
 MAX_LINES = 2                   # 11/09 ~23:10 person (high focus): 4 -> 2; 11/08 ~20:35: 3 -> 4
 FAST_ONLY = True                # 11/09 ~23:10 person: only SKUs whose supply -> sale median is <= FAST_H
+TRIAL_LINES = 1                 # 11/09 ~23:40 person: 1 of the 2 lines tries a SKU with no turnover record yet
+TRIAL_TARGET = 2
+TRIAL_H = 6                     # median <= FAST_H within 6 h of the first trial buy -> regular, else dropped
 DROP_AFTER_S = 86400
 ME = "choo-chu"
 
@@ -113,7 +119,18 @@ def candidates(catalog, held, surge, log=print, now=None):
                                  f"({time.strftime('%m-%d %H:%M', time.localtime(s['first_buy']))}): no longer a candidate")
                 log(f"[request] {sku}: no sale in 24 h after the first buy -> dropped")
         turn = turnover(db, st, now)
-        out = []
+        for sku, s in st.items():                       # 11/09 ~23:40: trial verdicts, TRIAL_H after the first trial buy
+            if s.get("trial") and not s.get("trial_ok") and not s.get("dropped") and now - s["trial"] >= TRIAL_H * 3600:
+                ok = sku in turn and turn[sku] <= FAST_H
+                if ok:
+                    s["trial_ok"] = round(now)
+                else:
+                    s.update(dropped=round(now), dropped_why="trial")
+                med = "-" if sku not in turn else f"{turn[sku]:.2f} h"
+                decisions.record("purchasing", "request_trial_ok" if ok else "request_trial_drop", sku, 0,
+                                 f"request trial {TRIAL_H} h: supply->sale median {med} (<= {FAST_H} h: regular)")
+                log(f"[request] trial {sku}: median {med} -> {'regular' if ok else 'dropped'}")
+        out, trial, trials = [], [], 0
         for sku, n in req.most_common():
             if n < MIN_REQUESTS:
                 break
@@ -132,6 +149,19 @@ def candidates(catalog, held, surge, log=print, now=None):
             avg, k = sku_avg(db, sku, now)
             if avg is None or avg < cost * (1 + mm):
                 continue
+            s = st.get(sku) or {}
+            in_trial = bool(s.get("trial")) and not s.get("trial_ok")
+            new = sku not in turn and not s.get("trial")
+            if in_trial or (new and FAST_ONLY):               # a trial line (running, or a new SKU to try)
+                if trials >= TRIAL_LINES:
+                    continue
+                trials += 1                                   # a running trial keeps its slot, bought up or not
+                qty = TRIAL_TARGET - held.get(sku, 0)
+                if qty > 0:
+                    st.setdefault(sku, {})["trial_pending"] = True
+                    trial.append((sku, qty, round(avg), f"{n} requests in 24 h, avg {round(avg):,} (n {k}), est. cost "
+                                                       f"{int(cost):,}, trial (target {TRIAL_TARGET}, {TRIAL_H} h)"))
+                continue
             if FAST_ONLY and not (sku in turn and turn[sku] <= FAST_H):
                 continue
             tgt = target(sku, turn)
@@ -140,8 +170,7 @@ def candidates(catalog, held, surge, log=print, now=None):
                 continue
             tt = f", target {tgt} (supply->sale median {turn[sku]:.2f} h)" if sku in turn else ""
             out.append((sku, qty, round(avg), f"{n} requests in 24 h, avg {round(avg):,} (n {k}), est. cost {int(cost):,}{tt}"))
-            if len(out) >= MAX_LINES:
-                break
+        out = out[:MAX_LINES - min(trials, TRIAL_LINES)] + trial[:TRIAL_LINES]
     finally:
         db.close()
     _save(st)
@@ -158,4 +187,6 @@ def bought(skus, now=None):
         s = st.setdefault(sku, {})
         s.setdefault("first_buy", round(now))
         s["last_buy"] = round(now)
+        if s.pop("trial_pending", None) and not s.get("trial"):    # 11/09 ~23:40: the trial clock starts
+            s["trial"] = round(now)
     _save(st)
