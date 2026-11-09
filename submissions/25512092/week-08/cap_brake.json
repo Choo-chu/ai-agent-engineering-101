@@ -8,9 +8,9 @@
  "old_scope": "since",
  "cash_min": 2000000,
  "low": 20000000,
- "since": 1794219781,
- "pid": 38,
- "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M",
+ "since": 1794233530,
+ "pid": null,
+ "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M; 11/09 ~23:10 automatic cap (cash + stock - 3M): stock trips -> auto off, 20M; cash trip -> buying paused until cash > 3M",
  "old_share": 0.25,
  "min_old_n": 20,
  "history": [

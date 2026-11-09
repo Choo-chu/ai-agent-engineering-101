@@ -121,7 +121,8 @@ def apply():
                 f"(cash + stock - 3M; person 11/09 ~23:10)\n")
     out.append(f"STOCK_CAP 자동: 현금 {held[4]:,} + 재고 원가 {held[0] + held[2]:,} - 300만 = {cap:,} (나가는 기준 88% "
                f"{int(cap * 0.88):,}), 매 run 다시 계산")
-    v = policy.write({"purchasing": {"high_share": 0.85}}, WHY + ": high_share 0.7 -> 0.85, ceilings 0.85 / 100", by="person")
+    policy.write({"purchasing": {"high_share": 0.85}}, WHY + ": high_share 0.7 -> 0.85, ceilings 0.85 / 100", by="person")
+    v = policy.version()
     high_caps.set_caps(0.85, 100, WHY + ": ceilings 0.85 / 100 (the high-price brake goes back to 0.7 / 60)")
     out.append(f"high_share 0.7 -> {policy.get('purchasing', 'high_share')} (policy v{v}), CEO·QC 자동 상한 0.85/100")
     out.append("요청 기반 매입 run당 4줄 -> 2줄, 회전 1시간 이하 SKU만 (목표 수량 8 그대로)")

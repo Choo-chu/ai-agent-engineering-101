@@ -1,0 +1,9 @@
+{
+ "enabled": true,
+ "since": 1794233530,
+ "reserve": 3000000,
+ "exit_ratio": 0.88,
+ "resume_cash": 3000000,
+ "paused": false,
+ "why": "person's decision 11/09 ~23:10: high-price push: cap = cash + stock - 3M every run, STOCK_EXIT 88%; cash brake pauses buying until cash > 3M; the stock brakes go back to 20M; the 11/15 end cap first"
+}
