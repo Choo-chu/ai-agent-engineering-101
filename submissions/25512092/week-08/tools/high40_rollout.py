@@ -73,7 +73,24 @@ def report(t, now=None):
     return "\n".join(lines)
 
 
+def cut_report():
+    """11/09 ~12:05 (person): the seller restarted mid-window; the 3 h report covers the start .. the restart only.
+    python tools/high40_rollout.py --report-at T0 --cut T1 (sent at T0 + 3 h)."""
+    import alerts
+    t0 = float(sys.argv[sys.argv.index("--report-at") + 1])
+    cut = float(sys.argv[sys.argv.index("--cut") + 1])
+    while time.time() < t0 + H * 3600 + 60:
+        time.sleep(60)
+    alerts.send("daily", f"high40_report:{int(t0)}", f"[재시작으로 구간이 끊김] {datetime.fromtimestamp(cut):%H:%M} seller 재시작"
+                "(잠금 해제·C등급 소파 보증·B등급 보증)과 STOCK_CAP 30M 적용으로, 이 점검은 재시작 시각까지만 비교\n"
+                + report(t0, now=cut), log=log)
+    log("report sent")
+
+
 def main():
+    if "--report-at" in sys.argv:
+        cut_report()
+        return
     if "--report-dry" in sys.argv:
         print(report(time.time() - 3600))
         return

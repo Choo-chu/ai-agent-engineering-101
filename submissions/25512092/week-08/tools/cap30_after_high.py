@@ -31,6 +31,6 @@ if __name__ == "__main__":
               "시험도): 매출·회전 변화에 그 효과가 섞여 있음")
     c.WHY = "person's decision 11/09 ~11:20: STOCK_CAP 20M -> 30M again after the 14:00 report, brake back to 20M"
     c.log("11/09: waiting for the 14:00 high-price report")
-    while not report_sent() and time.time() < LATEST:
+    while "--now" not in sys.argv and not report_sent() and time.time() < LATEST:   # 11/09 ~12:05: --now
         time.sleep(20)
     c.main()

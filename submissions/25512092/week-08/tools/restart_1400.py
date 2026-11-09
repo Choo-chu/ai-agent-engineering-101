@@ -90,7 +90,7 @@ def lock_report(t, now=None):
         lw = f"잠금 측정 실패 ({type(e).__name__})"
     return "\n".join([
         f"오래 열린 협상 자동 해제 {(t1 - t) / 3600:.1f}시간 점검 ({datetime.fromtimestamp(t):%H:%M} ~ {datetime.fromtimestamp(t1):%H:%M}, "
-        "후 vs 전 같은 길이; 같은 재시작에 C등급 소파 보증·B등급 보증 시험, 14:00 직후 STOCK_CAP 30M도 함께 적용됨)",
+        "후 vs 전 같은 길이; 같은 재시작에 C등급 소파 보증·B등급 보증 시험, STOCK_CAP 30M도 함께 적용됨)",
         f"- 재고 없음 응답(이름 지정 SKU, 대체 제안 포함) {a['no_stock']} vs {b['no_stock']}건",
         f"- 그중 실제 보유 SKU에 나간 것 {a['no_stock_held']} vs {b['no_stock_held']}건",
         f"- 대체 제안(후보를 보낸 것) {a['offers']} vs {b['offers']}건 (11:58~12:0x 대체 A안 중단 구간은 후보 없이 '재고 없음')",
@@ -173,7 +173,7 @@ def main():
     from depts import b_warranty
     from seller_conc_rollout import restart_seller, seller_back
     log("waiting for the 14:00 high-price report")
-    while not report_sent() and time.time() < LATEST:
+    while "--now" not in sys.argv and not report_sent() and time.time() < LATEST:   # 11/09 ~12:05: --now
         time.sleep(20)
     t = time.time()
     r = b_warranty.rules()
@@ -197,6 +197,29 @@ def main():
                 "물건 다시 판매, 매시간 잠금 기록(20% 넘으면 긴급) (3) B등급 고가 보증 48시간: TV·냉방 붙임, 침대/매트리스 24시간 "
                 f"50% 시험. seller 재시작 {'완료' if back else '확인 안 됨 - 확인 필요'}. 3시간 뒤 잠금 해제 점검, 24시간 뒤 B 보증 보고",
                 log=log)
+    time.sleep(90)                                     # 11/09 ~12:05: the lock share right after the restart
+    try:
+        import lock_watch
+        m = lock_watch.measure()
+        alerts.send("info", "restart_lock_now", f"재시작 직후 협상에 잡힌 재고 {m['share']:.1%} ({m['locked']}/{m['held']}개, 원가 "
+                    f"{m['locked_cost']:,}); 열린 협상 {m['open']}", log=log)
+    except Exception as e:
+        log(f"lock share after the restart failed: {type(e).__name__}: {e}")
+    while time.time() < t + 3600 + 30:                 # the first hour's "not in stock" answers
+        time.sleep(30)
+    try:
+        db = _db()
+        inv = json.load(open(os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8"))
+        a = lock_window(db, t, t + 3600, {u["unit"] for u in inv.get("units", [])})
+        b = lock_window(db, t - 3600, t, {u["unit"] for u in inv.get("units", [])})
+        db.close()
+        import lock_watch
+        m = lock_watch.measure()
+        alerts.send("info", "restart_lock_1h", f"재시작 후 1시간: '재고 없음' 응답 {a['no_stock']}건 (그중 보유 SKU {a['no_stock_held']}) vs "
+                    f"직전 1시간 {b['no_stock']}건 ({b['no_stock_held']}); 판매 {a['sales']} vs {b['sales']}; 지금 잠긴 재고 "
+                    f"{m['share']:.1%}, expired {lock_watch.expired_count(t, t + 3600)}건", log=log)
+    except Exception as e:
+        log(f"1 h lock note failed: {type(e).__name__}: {e}")
     while time.time() < t + 3 * 3600 + 60:
         time.sleep(60)
     alerts.send("daily", f"lock_report:{int(t)}", lock_report(t), log=log)
