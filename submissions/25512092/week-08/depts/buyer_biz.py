@@ -309,7 +309,7 @@ def ask_price(text, budget=None):
 
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
-              force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None):
+              force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
@@ -365,6 +365,12 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                 res["ended"], res["skip"] = "precheck", why
                 client.cancel(tid)
                 return res
+            if no_warranty_cap is not None:           # 11/09 break rule: no warranty -> worth list x (1 - p)
+                w = WARRANTY_RE.search(text)
+                if not (w and float(w.group(1) or w.group(2) or 0) > 0) and no_warranty_cap < budget:
+                    log(f"[break rule] no warranty: cap {budget} -> {no_warranty_cap} (worth after the break rate)")
+                    budget = no_warranty_cap
+                    res["break_cap"] = no_warranty_cap
         ask = ask_price(text, budget)
         if ask is not None:
             res["last_ask"] = ask
@@ -578,10 +584,17 @@ def main():
     from depts import buyer_tactic
     tactic, tw = buyer_tactic.pick()                  # 11/07 experiment: plain / appeal / facts, one per order
     log(f"[variant] buyer_tactic -> {tactic} (weights {tw})")
+    from depts import buyer_break
+    br = buyer_break.order_applies(args.item, acceptable)
+    if br:                                        # 11/09 ~11:45: shops that sell this category with a warranty first
+        try:
+            ordered = buyer_break.order_shops(ordered, args.item, catalog, log=log)
+        except Exception as e:
+            log(f"[break rule] shop order failed: {type(e).__name__}")
     tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
     for i, c in enumerate(tries):
         chosen = c
-        first, cap, market, avg_now = None, args.budget, "", None
+        first, cap, market, avg_now, nw_cap = None, args.budget, "", None, None
         min_offers = min_offers_for(c["shop_score"], c["name"])      # 1 at shops where the rule keeps failing
         if mo_variant is not None and min_offers > 1:
             min_offers = int(mo_variant)
@@ -601,6 +614,11 @@ def main():
                       + (f"You paid {mine['avg_paid']} on average for it before ({mine['n']} times). " if mine else "")
                       + "Pay less than the market average.")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
+            nw_cap = None
+            if br and lp and buyer_break.applies(o["sku"], catalog):
+                pb = buyer_break.p_break(o["sku"], stats)
+                nw_cap = buyer_break.value_cap(lp, pb)
+                log(f"[break rule] {o['sku']}: break rate {pb:.1%}, without a warranty worth {nw_cap + 1}, cap at most {nw_cap}")
         t_line = None
         try:
             if tactic == "facts2":
@@ -615,7 +633,7 @@ def main():
             res = negotiate(c["url"], args.item, cap, start, first, market, min_offers, first_offer,
                             force_first=variant_key is not None, kind=order.get("kind"),
                             need_hours=order.get("use_within_hours"), tactic_line=t_line,
-                            market_avg=avg_now)
+                            market_avg=avg_now, no_warranty_cap=nw_cap if offers else None)
             res["secs"] = round(time.time() - t_neg, 1)
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
