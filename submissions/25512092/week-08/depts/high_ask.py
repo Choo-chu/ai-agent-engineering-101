@@ -47,6 +47,24 @@ def high_floor(u, now=None, fr=None):
     return max(int(u["cost"] * fr.get("cost", 1.05)), int(med * fr.get("median", 0.80)) if med else 0)
 
 
+def c_step_floor(u, now=None, cs=None):
+    """C grade high-price units (not sofas, not over-cost; checked by the caller) step down with their age (person's
+    decision 11/09 ~15:05, high_ask.json c_step.enabled): > 12 h after supply max(cost x 1.10, 48 h market median x
+    0.6), > 24 h cost x 1.10; never under cost. None when it does not apply."""
+    cs = cs if cs is not None else (rules().get("c_step") or {})
+    if not cs.get("enabled") or u.get("grade") != "C" or not u.get("supplied_at"):
+        return None
+    age = ((now or time.time()) - u["supplied_at"]) / 3600
+    cost = int(u["cost"])
+    if age > cs.get("h2", 24):
+        return max(cost, int(cost * cs.get("cost", 1.10)))
+    if age > cs.get("h1", 12):
+        from depts import sofa
+        med = sofa.market(u["sku"], now)[0]
+        return max(cost, int(cost * cs.get("cost", 1.10)), int(med * cs.get("median", 0.6)) if med else 0)
+    return None
+
+
 MARKDOWNS = ("aging", "stoploss", "clearance", "endgame", "cash_low", "overstock")   # the old markdowns (depts/sales
 #   floor rule names); 11/08 ~17:50 (person): one principle, a markdown floor lower than the new floor is kept
 
@@ -66,6 +84,10 @@ def floor(u, avg, reserve, case=None, now=None, rule=None):
         reserve = min(reserve, new) if str(rule or "").startswith(MARKDOWNS) else new
         if oc:
             reserve = max(reserve, int(u["cost"]))
+        else:
+            step = c_step_floor(u, now, r.get("c_step") or {})
+            if step is not None and step < reserve:  # 11/09 ~15:05: C grade steps down; lower markdowns kept
+                reserve = step
     share = (r.get("clear") or {}).get(u.get("sku"))
     if share is None or not avg:
         return reserve

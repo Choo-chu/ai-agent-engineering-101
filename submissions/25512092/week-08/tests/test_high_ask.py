@@ -8,6 +8,8 @@ from depts import high_ask as ha  # noqa: E402
 
 R = {"enabled": True, "cap": True, "buy_filter": True, "clear": {"GCLR": 0.98}}
 ha.rules = lambda: R
+from depts import overcost  # noqa: E402
+overcost.rules = lambda: {}          # the live overcost_high.json (on since 11/09 15:07) is tested in test_overcost.py
 
 
 def u(sku, cost):

@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(HERE, "logs", "seller_open.json")
 EXPIRED = os.path.join(HERE, "logs", "expired.jsonl")
 EXPIRE_S = 600
+RULES = os.path.join(HERE, "open_expiry.json")     # 11/09 ~15:05 (person): {"expire_s": 300} from the 18:07 restart
 STATE_S = 30
 _last = {"state": 0.0}
 
@@ -24,9 +25,19 @@ def touch(deal, now=None):
         deal["t"] = now or time.time()
 
 
-def stale(open_, now=None, expire_s=EXPIRE_S):
+def expire_s():
+    """The quiet limit in seconds: open_expiry.json "expire_s" (read on every call), else EXPIRE_S."""
+    try:
+        with open(RULES, encoding="utf-8") as f:
+            return float(json.load(f).get("expire_s") or EXPIRE_S)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return EXPIRE_S
+
+
+def stale(open_, now=None, expire_s=None):
     """Task ids of negotiations quiet for more than expire_s. A negotiation seen for the first time gets now."""
     now = now or time.time()
+    expire_s = expire_s if expire_s is not None else globals()["expire_s"]()
     out = []
     for tid, d in open_.items():
         t = d.setdefault("t", now)
