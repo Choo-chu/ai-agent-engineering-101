@@ -351,14 +351,14 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
         if avg is None or stats.get("sku_break", {}).get(sku, 0) > max_break:
             continue
         cost = c["list_price"] * COST_SHARE["goods"] * surge.get(sku, 1.0)
-        if cost > SOFA_MAX_COST or avg < cost * (1 + min_margin):
+        if cost > max(SOFA_MAX_COST, sofa_rules.limits_now()[3]) or avg < cost * (1 + min_margin):   # 11/09 ~21:20: x3 1.5M
             continue
         if sofa_rules.on() and not sofa_rules.buy_ok(sku, cost)[0]:   # E: >= 30 market sales/48 h, >= 2/h, cost <= 500k
             continue
         found.append((sku, cost, s["sold_30m"], avg, s.get("name") or c.get("name")))
     found.sort(key=lambda b: -b[2])
     if not found:
-        log("[sofa trial] skip: no sofa SKU fits (cost <= 1.0M, margin, selling, not held; rule E: >= 30 sales/48 h, "
+        log(f"[sofa trial] skip: no sofa SKU fits (cost <= {max(SOFA_MAX_COST, sofa_rules.limits_now()[3]):,}, margin, selling, not held; rule E: >= 30 sales/48 h, "
             f">= 2/h, cost <= {sofa_rules.limits_now()[3]:,})")
         return None
     out = []

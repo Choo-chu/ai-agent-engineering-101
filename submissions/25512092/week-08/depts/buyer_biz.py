@@ -637,7 +637,7 @@ def main():
                       + (f"You paid {mine['avg_paid']} on average for it before ({mine['n']} times). " if mine else "")
                       + "Pay less than the market average.")
             hf = high_accept.factor(lp) if avg is not None and case == "normal" else None
-            if hf:                                     # 11/09 high_accept_105: list >= 200,000 -> up to 1.05 x avg
+            if hf:                                     # 11/09 high_accept: list >= 200,000 -> up to 1.10 x avg (was 1.05)
                 cap = min(args.budget, int(avg * hf))
                 log(f"[{high_accept.TAG}] {o['sku']} list {lp}: accept up to {hf} x market avg")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
@@ -663,7 +663,9 @@ def main():
                             force_first=variant_key is not None, kind=order.get("kind"),
                             need_hours=order.get("use_within_hours"), tactic_line=t_line,
                             market_avg=avg_now, no_warranty_cap=nw_cap if offers else None,
-                            soft=(dict(sn_rules, accept=max(sn_rules.get("accept", 1.0), hf)) if hf else sn_rules)
+                            soft=(dict(sn_rules, accept=max(sn_rules.get("accept", 1.0), hf),       # 11/09 ~21:20: +1 haggle
+                                       haggles=sn_rules.get("haggles", soft_neg.HAGGLES) + high_accept.extra_haggles())
+                                  if hf else sn_rules)
                             if sn_arm == "soft" else None, shop=c["name"], high=hf)
             res["secs"] = round(time.time() - t_neg, 1)
             if second_from is not None:

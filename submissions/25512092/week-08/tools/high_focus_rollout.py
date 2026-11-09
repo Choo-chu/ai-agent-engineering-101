@@ -325,12 +325,17 @@ def overcost_on(rows):
 def trip(why):
     import alerts
     import decisions
-    old, v = set_high(0.6, 40, f"high-price brake: {why}")
+    old, v = set_high(BRAKE_SHARE, BRAKE_MAX, f"high-price brake: {why}")
     save_state(tripped=f"{datetime.now():%H:%M} {why}")
-    decisions.record("purchasing", "high_brake", "high_focus", why, "high_max 40, high_share 0.6 (ceilings 0.6 / 40)")
-    alerts.send("urgent", "high_brake", f"고가 브레이크 발동 {datetime.now():%H:%M}: {why}\nhigh_max {old[1]} -> 40, high_share {old[0]} -> 0.6 "
-                f"(policy v{v}, CEO·QC 자동 상한도 0.6/40). 줄 우선순위·소파 2배는 그대로", log=log)
+    decisions.record("purchasing", "high_brake", "high_focus", why,
+                     f"high_max {BRAKE_MAX}, high_share {BRAKE_SHARE} (ceilings {BRAKE_SHARE} / {BRAKE_MAX})")
+    alerts.send("urgent", "high_brake", f"고가 브레이크 발동 {datetime.now():%H:%M}: {why}\nhigh_max {old[1]} -> {BRAKE_MAX}, "
+                f"high_share {old[0]} -> {BRAKE_SHARE} (policy v{v}, CEO·QC 자동 상한도 {BRAKE_SHARE}/{BRAKE_MAX}). "
+                "줄 우선순위·소파 한도·HIGH_MAX는 그대로", log=log)
     log(f"brake: {why}")
+
+
+BRAKE_SHARE, BRAKE_MAX = 0.7, 60     # 11/09 ~21:20 (person): the brake goes back to 0.7 / 60 (was 0.6 / 40)
 
 
 def main():
@@ -343,6 +348,11 @@ def main():
         log("waiting for the 15:05 checks (cap30 report, lock report)")
         while not ready() and time.time() < LATEST:
             time.sleep(30)
+    if "--resume" in sys.argv:                  # 11/09 ~21:20: restart for the new brake values, the brake loop only
+        st = load_state()
+        log(f"resume: brake loop, since {st['since']}, back to {BRAKE_SHARE} / {BRAKE_MAX} on a trip")
+        brake_loop(st["since"], st["base_ratio"], reported=True)
+        return
     t, base, base_n, old, v = apply(rank)
     from depts import sofa
     alerts.send("info", "high_focus_on", f"고가 집중 적용 {datetime.now():%H:%M}: "
@@ -359,7 +369,11 @@ def main():
         overcost_on(rows)
     except Exception as e:
         log(f"old stale list / overcost failed: {type(e).__name__}: {e}")
-    reported = False
+    brake_loop(t, base, reported=False)
+
+
+def brake_loop(t, base, reported):
+    import alerts
     while True:
         now = time.time()
         if not load_state().get("tripped"):

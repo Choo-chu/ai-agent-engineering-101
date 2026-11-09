@@ -133,6 +133,8 @@ def limits_now(r=None):
     unit cost cap); the demand rules (>= 30 market sales / 48 h, >= 2 an hour), G5e3784e6 out and C grade without a
     warranty stay."""
     r = r if r is not None else rules()
+    if r.get("x3"):                                # 11/09 ~21:20 (person, "more aggressive"): x3 -> 3 / 30 / 3 / 1.5M
+        return (3, 30, 3, 3 * BUY_MAX_COST)
     return (2, 20, 2, 2 * BUY_MAX_COST) if r.get("x2") else (1, 10, 1, BUY_MAX_COST)
 
 

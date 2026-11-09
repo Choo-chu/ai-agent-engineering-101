@@ -38,6 +38,7 @@ def test_pick_order_and_budgets():
 def test_sofa_x2():
     assert sofa.limits_now({}) == (1, 10, 1, 500_000)
     assert sofa.limits_now({"x2": True}) == (2, 20, 2, 1_000_000)
+    assert sofa.limits_now({"x2": True, "x3": True}) == (3, 30, 3, 1_500_000)      # 11/09 ~21:20
 
 
 def test_high_caps():

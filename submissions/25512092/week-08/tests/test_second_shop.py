@@ -130,7 +130,13 @@ def test_high_accept():
     # list 300,000, avg 250,000, budget 400,000: cap 262,500, soft accept bound 1.05, accept-rule factor 1.05
     calls, cases, slog, rec = run([res(deal=True, price=260_000)], har=HA_ON, lp=300_000, avg=250_000, budget=400_000)
     assert calls[0]["cap"] == 262_500 and calls[0]["high"] == 1.05 and calls[0]["soft"]["accept"] == 1.05
-    assert slog[-1]["high_accept"] and any(a[1] == "high_accept_105" for a in rec)
+    assert calls[0]["soft"]["haggles"] == 2                       # no extra_haggles in the rules: unchanged
+    # 11/09 ~21:20: x 1.10 and one more haggle (2 -> 3) for list >= 200,000
+    calls = run([res()], har=dict(HA_ON, factor=1.10, extra_haggles=1), lp=300_000, avg=250_000, budget=400_000)[0]
+    assert calls[0]["cap"] == 275_000 and calls[0]["soft"]["accept"] == 1.10 and calls[0]["soft"]["haggles"] == 3
+    calls = run([res()], har=dict(HA_ON, factor=1.10, extra_haggles=1), lp=150_000, avg=120_000, budget=400_000)[0]
+    assert calls[0]["soft"]["haggles"] == 2 and calls[0]["soft"]["accept"] == 1.0           # under 200,000: unchanged
+    assert slog[-1]["high_accept"] and any(a[1] == high_accept.TAG for a in rec)
     # a deal at or under the average is not tagged
     _, _, slog, rec = run([res(deal=True, price=240_000)], har=HA_ON, lp=300_000, avg=250_000, budget=400_000)
     assert not slog[-1]["high_accept"] and not rec
@@ -180,7 +186,7 @@ def test_apply_and_watch():
             mock.patch.object(high_accept, "RULES", os.path.join(d, "ha.json")):
         b = {"saved": 0.42, "second": 0.37, "saved_rank": 1}
         t = mid.apply_d_high(b, 1000, dec)
-        assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == 1.05
+        assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == high_accept.FACTOR
         assert "적용" in t and len(rec) == 2
         # under 2nd + 0.025 but over + 0.015: high off, D stays
         assert gw.check({"saved": 0.39, "second": 0.37, "saved_rank": 1}, al, dec) == ["high_accept"]
