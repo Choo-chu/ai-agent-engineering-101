@@ -5,7 +5,9 @@
     buyer    one '[buyer] ... harness:' line per call (logs/market-kit.log)
     analyst  analyst_meta calls:<day> (per calendar day, analyst_brain.call_llm)
     forum    forum_meta flow:<day> (one call per day, forum_watch.flow)
-    python tools/morning_summary.py [--dry]      (waits until AT; --dry: the last 12 h now, printed, not sent)
+  9. (from 11/10) 우아미 소파 G5e3784e6 in the live buy_exclude.json, one line
+    python tools/morning_summary.py [--dry | --daily]   (waits until AT; --dry: the last 12 h now, printed, not sent;
+                                                         --daily: every day at 08:00 until the round end)
 """
 import glob
 import json
@@ -106,13 +108,55 @@ def summary(t0, t1):
             lines.append("8. " + review_link.line(review_link.high_sofa_reasons(t1 - 86400, t1)) + " (최근 24시간)")
         except Exception as e:
             lines.append(f"8. 고가·소파 취소 사유: 계산 실패 {type(e).__name__}")
+    if t1 >= datetime(2026, 11, 10).timestamp():  # 11/09 ~19:45 (person): from the 11/10 summary
+        lines.append("9. " + exclude_line())
     return "\n".join(lines)
+
+
+WATCH_SKU = "G5e3784e6"                           # 우아미 소파, never bought again (person 11/09 ~11:10)
+
+
+def exclude_line():
+    """One line: is WATCH_SKU in the live buy_exclude.json (read by depts/purchasing.excluded every restock run)?"""
+    try:
+        with open(os.path.join(HERE, "buy_exclude.json"), encoding="utf-8") as f:
+            skus = json.load(f).get("skus") or {}
+    except (OSError, ValueError, AttributeError) as e:
+        return f"매입 제외 목록(buy_exclude.json) 읽기 실패 {type(e).__name__}: 우아미 소파 {WATCH_SKU} 다시 매입될 수 있음, 확인 필요"
+    if WATCH_SKU in skus:
+        return f"우아미 소파 {WATCH_SKU}: 매입 제외 목록에 있음 (목록 {len(skus)}개)"
+    return f"우아미 소파 {WATCH_SKU}: 매입 제외 목록에 없음, 다시 매입될 수 있음 (목록 {len(skus)}개), 확인 필요"
+
+
+def daily():
+    """11/09 ~19:45: every day at 08:00 (the 12 h before) until the round end."""
+    import alerts
+    from datetime import timedelta
+    from limits import ROUND_END
+    while True:
+        n = datetime.now()
+        at = n.replace(hour=8, minute=0, second=0, microsecond=0)
+        if at <= n:
+            at += timedelta(days=1)
+        if at.timestamp() > ROUND_END:
+            return
+        while time.time() < at.timestamp():
+            time.sleep(min(60, max(1, at.timestamp() - time.time())))
+        t = at.timestamp()
+        try:
+            alerts.send("daily", f"morning_summary:{at:%Y%m%d}", summary(t - NIGHT_H * 3600, t))
+        except Exception as e:
+            alerts.send("urgent", f"morning_summary_fail:{at:%Y%m%d}", f"밤사이 요약 실패: {type(e).__name__}: {e}")
+        time.sleep(120)
 
 
 def main():
     if "--dry" in sys.argv:
         now = time.time()
         print(summary(now - NIGHT_H * 3600, now))
+        return
+    if "--daily" in sys.argv:
+        daily()
         return
     while time.time() < AT:
         time.sleep(min(60, max(1, AT - time.time())))

@@ -1,0 +1,5 @@
+11-09 19:53:15 call pid 24716: C:\WINDOWS\system32\cmd.exe /c "claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence --strict-mcp-config"
+11-09 19:53:15 call pid 29280: claude  -p --model haiku --tools "" --setting-sources "" --no-session-persistence --strict-mcp-config
+11-09 19:53:15 call pid 19580: C:\WINDOWS\system32\cmd.exe /c "claude -p --model haiku --tools "" --setting-sources "" --no-session-persistence --strict-mcp-config"
+11-09 19:53:15 call pid 7244: claude  -p --model haiku --tools "" --setting-sources "" --no-session-persistence --strict-mcp-config
+11-09 19:53:48 start; running sellers [(30528, 1794216196), (29748, 1794216196)]
