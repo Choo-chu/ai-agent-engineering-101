@@ -11,7 +11,8 @@ Keys the CEO may set (step 7 opens only these):
         10 -> 20 on 11/07 ~14:45 with units held 8 -> 18; 11/07 ~16:05: max 60% / 30 with share 0.6 / units 28;
         the unsold rule counts only when >= qc.STALE_SHARE of the high-price units held are unsold > 24 h)
   purchasing.spend_share             stock within 10% of STOCK_CAP -> no change (the cap binds anyway);
-        cash < 2.5M -> 0.3; 6 h profit > 0, stock < half the cap, cash > 3M -> 0.5; else 0.4
+        cash < 2.5M -> 0.3; 6 h profit > 0, stock < STOCK_CAP x 0.9 (half the cap until 11/09), cash > 3M -> 0.5;
+        else 0.4
   purchasing.perishable_trial_qty    perishable units wasted in 24 h -> 1, else 2
 A key changes at most once every KEY_HOLD_S (the daily rule once a day). Hard limits are not policy keys.
 
@@ -164,14 +165,7 @@ def proposals(inv, catalog, reports, st, now):
                     out.append(("purchasing", k, v, f"daily buying split: {why}"))
         decisions.record("ceo", "rule", "buying_split", new, why)
 
-    if stock >= STOCK_CAP * 0.9:
-        spend, why = None, f"stock {stock:,} within 10% of STOCK_CAP: spend share does not bind"
-    elif cash < 2_500_000:
-        spend, why = 0.3, f"cash {cash:,} < 2,500,000"
-    elif sa.get("profit", 0) > 0 and stock < STOCK_CAP / 2 and cash > 3_000_000:
-        spend, why = 0.5, f"6 h profit {sa.get('profit'):,} > 0, stock {stock:,} < half the cap, cash {cash:,} > 3M"
-    else:
-        spend, why = 0.4, f"default (stock {stock:,}, cash {cash:,}, 6 h profit {sa.get('profit', 0):,})"
+    spend, why = spend_rule(stock, cash, sa.get("profit", 0), STOCK_CAP)
     if spend is not None and spend != policy.get("purchasing", "spend_share"):
         out.append(("purchasing", "spend_share", spend, why))
 
@@ -250,6 +244,18 @@ def market_adjusted(cur, base, m_cur, m_base):
     mine = cur["revenue"] / base["revenue"] - 1 if base["revenue"] else None
     mkt = m_cur / m_base - 1 if m_base else None
     return mine, mkt, (mine - mkt if mine is not None and mkt is not None else None)
+
+
+def spend_rule(stock, cash, profit, cap):
+    """purchasing.spend_share: (value or None, why). 11/09 ~12:15 (person, option A of 11/08): the 0.5 condition is
+    stock < STOCK_CAP x 0.9 (was half the cap); profit > 0, cash > 3M and the cash < 2.5M -> 0.3 rule unchanged."""
+    if stock >= cap * 0.9:
+        return None, f"stock {stock:,} within 10% of STOCK_CAP: spend share does not bind"
+    if cash < 2_500_000:
+        return 0.3, f"cash {cash:,} < 2,500,000"
+    if profit > 0 and stock < cap * 0.9 and cash > 3_000_000:
+        return 0.5, f"6 h profit {profit:,} > 0, stock {stock:,} < STOCK_CAP x 0.9, cash {cash:,} > 3M"
+    return 0.4, f"default (stock {stock:,}, cash {cash:,}, 6 h profit {profit:,})"
 
 
 def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10, buyer=True, market=None):

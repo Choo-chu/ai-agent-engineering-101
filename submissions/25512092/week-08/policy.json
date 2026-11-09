@@ -11,7 +11,8 @@
   "perishable_trial_qty": 2,
   "sofa_trial_start": 1793951508,
   "sofa_trial_end": 1794797940,
-  "high_max": 30
+  "high_max": 40,
+  "high_share": 0.6
  },
  "sales": {
   "warranty_enabled": true,
@@ -43,8 +44,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 14,
- "ts": 1794124912,
+ "version": 18,
+ "ts": 1794194761,
  "by": "person",
- "reason": "person's decision 11/08 ~17:00: revenue fell with the high-price expansion; back to high_max 30 / HIGH_MAX 1.0M: high_max 60 -> 30"
+ "reason": "person 11/09 ~12:15: spend_share back to 0.5 with the CEO rule at stock < STOCK_CAP x 0.9"
 }
