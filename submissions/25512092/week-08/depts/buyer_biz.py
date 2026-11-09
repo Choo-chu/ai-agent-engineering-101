@@ -348,7 +348,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             return res
         if st != "TASK_STATE_INPUT_REQUIRED":
             log(f"ENDED without deal ({st})")
-            res["ended"] = "seller_ended"
+            res["ended"], res["end_text"] = "seller_ended", (text or "")[:200]   # no stock vs ended (plan D reasons)
             return res
         if time.time() - start > DEADLINE:
             p = None if res.get("accept_rule") else accept_rule.price(ask_price(text, budget) or res["last_ask"], budget,
@@ -674,7 +674,8 @@ def main():
             if ss_on and second_from is None and i + 1 < len(tries) and len(shops) >= 2 and d2.qualifies(res):
                 el = time.time() - start
                 if d2.fits(el):
-                    second_from = {"shop": c["name"], "ended": res.get("ended"), "sku": sku, "secs": res["secs"]}
+                    second_from = {"shop": c["name"], "ended": res.get("ended"), "why": d2.reason(res), "sku": sku,
+                                   "secs": res["secs"]}
                     log(f"[{d2.TAG}] {c['name']} ended ({res.get('ended')}) at {el:.1f} s -> {tries[i + 1]['name']}, soft_neg way")
                     try:
                         record_deal(c, sku, lp, "soft_neg", variant_key, variant, min_offers, res, "walk", 0, mo_variant, None)
@@ -698,6 +699,14 @@ def main():
             res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
                    "injection": False, "solicit": False, "last_state": "", "error": str(e)}
             if i + 1 < len(tries):
+                # 11/09 ~20:00 plan D: a first shop that did not answer counts as D's 2nd-shop try when the order is
+                # still within D's 30 s; the next candidate is tried either way (the slow-shop rule, as before D)
+                if ss_on and second_from is None and len(shops) >= 2 and d2.fits(time.time() - start):
+                    second_from = {"shop": c["name"], "ended": "no_reply", "why": "무응답",
+                                   "stage": getattr(e, "stage", "error"), "sku": sku if offers else None,
+                                   "secs": round(time.time() - t_neg, 1)}
+                    log(f"[{d2.TAG}] {c['name']} did not answer at {time.time() - start:.1f} s -> {tries[i + 1]['name']}, "
+                        "soft_neg way")
                 log(f"[choose] trying next candidate {tries[i + 1]['url']}")
 
     stars, review, flag = judge(res, args.item, args.budget, acceptable)

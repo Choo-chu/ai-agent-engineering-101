@@ -104,6 +104,25 @@ def d_effect(R, cyc, h):
             f"{lost_orders / h:.1f}/h x 첫 가게 성사율 {p:.0%} = {(d_deals - lost_orders * p) / h:+.1f}/h"]
 
 
+WHY = {"walk": "가격", "turn_limit": "가격", "seller_ended": "끊김", "no_reply": "무응답", "time_limit": "무응답"}
+
+
+def by_reason(D):
+    """11/09 ~20:00 (person): D tries and close rate by how the first shop ended (가격 / 재고 / 끊김 / 무응답).
+    Entries before 20:00 have no "why": seller_ended counts as 끊김 then (no stock not told apart)."""
+    g = {}
+    for r in D:
+        f = r.get("first_shop") or {}
+        k = f.get("why") or WHY.get(f.get("ended"), f.get("ended") or "?")
+        g.setdefault(k, []).append(bool(r.get("deal")))
+    if not g:
+        return "  첫 가게 종료 이유별: 없음"
+    order = ["가격", "재고", "끊김", "무응답"]
+    keys = [k for k in order if k in g] + sorted(k for k in g if k not in order)
+    return "  첫 가게 종료 이유별 D 시도 / 성사율: " + ", ".join(
+        f"{k} {len(g[k])}건 / {sum(g[k]) / len(g[k]):.0%}" for k in keys)
+
+
 def report(t0, b0, b1, t1=None):
     import soft_neg_watch as w
     import surplus_bands
@@ -121,9 +140,8 @@ def report(t0, b0, b1, t1=None):
     L.append(f"- D 2번째 가게: 시도 {len(D)}건 (soft 주문 {sum(r['arm'] == 'soft' for r in R)}건 중), 성사 "
              f"{sum(1 for r in D if r.get('deal'))}건, 결제 {len(Dd)}건, 성사율 "
              f"{pct(sum(1 for r in D if r.get('deal')) / len(D) if D else None)}, 건당 절약률(정가 대비) "
-             f"{pct(sum((r['list_price'] - r['price']) / r['list_price'] for r in Dd) / len(Dd) if Dd else None)}; "
-             f"첫 가게가 끝난 이유 " + ", ".join(f"{k} {v}" for k, v in sorted(
-                 __import__('collections').Counter((r['first_shop'] or {}).get('ended') for r in D).items(), key=lambda x: -x[1])))
+             f"{pct(sum((r['list_price'] - r['price']) / r['list_price'] for r in Dd) / len(Dd) if Dd else None)}")
+    L.append(by_reason(D))
     try:
         L += d_effect(R, w.kit_cycles(t0, t1), h)
     except Exception as e:

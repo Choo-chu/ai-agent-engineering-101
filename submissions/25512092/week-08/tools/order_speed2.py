@@ -100,7 +100,8 @@ def row(s, e):
     m = re.search(r"(\d+)/\d+ shops in stock", txt)
     if e["deal"]:
         why = "성사"
-    elif e["error"] or "[slow shop]" in txt or e["ended"] == "time_limit":
+    elif e["error"] or e["ended"] == "time_limit":   # 11/09 ~21:00: the last shop's end only (was any "[slow shop]"
+        # line, which since 17:18 includes "regular, ... limit 20 s" and slow shops the order moved past)
         why = "타임아웃·무응답"
     elif e["ended"] == "precheck":
         why = "조건(유통기한 등)"

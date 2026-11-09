@@ -79,7 +79,8 @@ def orders(t0, t1):
             why = "성사"
         elif "no shop to trade with" in txt or re.search(r" 0/\d+ shops in stock", txt):
             why = "재고 없음"
-        elif "[slow shop]" in txt or "failed:" in txt or "time limit" in txt:
+        elif "failed:" in txt[txt.rfind("[choose]"):] or "time limit: walking" in txt[txt.rfind("[choose]"):]:
+            # 11/09 ~21:00: only when the last shop tried did not answer (was any "[slow shop]" line in the order)
             why = "타임아웃·무응답"
         elif sm and o2.STOCK.search(sm[-1]):
             why = "재고 없음"

@@ -43,7 +43,10 @@ def run(results, d2r=D2_ON, har=None, lp=50_000, avg=40_000, budget=60_000, n_sh
 
     def neg(url, item, cap, start, *a, **k):
         calls.append({"url": url, "cap": cap, "soft": k.get("soft"), "high": k.get("high")})
-        return dict(next(it))
+        r = next(it)
+        if isinstance(r, Exception):                  # a shop that did not answer
+            raise r
+        return dict(r)
     argv = ["x", "--shops", os.path.join(d, "shops.json"), "--item", "x", "--budget", str(budget),
             "--order", os.path.join(d, "order.json")]
     P = mock.patch.object
@@ -87,9 +90,34 @@ def test_second_shop():
     assert len(run([res(), res(deal=True, price=1)], d2r={})[0]) == 1
     assert len(run([res(), res(deal=True, price=1)], arm="control")[0]) == 1
     assert len(run([res(), res(deal=True, price=1)], n_shops=1)[0]) == 1
-    assert len(run([res(ended="time_limit"), res(deal=True, price=1)])[0]) == 1      # timeout: not D's case
+    # 11/09 ~20:00: a timeout is D's case too (within 30 s), reason 무응답
+    calls, cases, slog, _ = run([res(ended="time_limit"), res(deal=True, price=1)])
+    assert len(calls) == 2 and slog[-1]["first_shop"]["why"] == "무응답"
     # no time left within the 30 s limit
     assert len(run([res(), res(deal=True, price=1)], d2r=dict(D2_ON, limit_s=5))[0]) == 1
+    # the first shop does not answer (slow shop): the next shop as D, soft_neg way, tagged second_shop
+    from depts import buyer_speed
+    slow = buyer_speed.SlowShop("first reply", 10.0)
+    calls, cases, slog, _ = run([slow, res(deal=True, price=30_000)])
+    assert len(calls) == 2 and calls[1]["soft"]["first"] == 0.75 and cases[-1] == ("s1", "second_shop")
+    assert slog[-1]["first_shop"]["why"] == "무응답" and slog[-1]["first_shop"]["ended"] == "no_reply"
+    # over the 30 s: the next shop is still tried (the slow-shop rule, as before D) but not counted as D
+    calls, cases, slog, _ = run([slow, res(deal=True, price=30_000)], d2r=dict(D2_ON, limit_s=5))
+    assert len(calls) == 2 and cases[-1][1] == "soft_neg" and slog[-1]["first_shop"] is None
+    # control arm: the slow-shop rule only, no D
+    calls, cases, slog, _ = run([slow, res(deal=True, price=30_000)], arm="control")
+    assert len(calls) == 2 and slog[-1]["first_shop"] is None
+    # reasons: no stock vs ended
+    assert d2.reason(res(ended="seller_ended", end_text="Sorry, none of that in stock.")) == "재고"
+    assert d2.reason(res(ended="seller_ended", end_text="Bye")) == "끊김" and d2.reason(res(ended="walk")) == "가격"
+
+
+def test_by_reason():
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+    import saved_guard_watch as gw
+    D = [{"deal": True, "first_shop": {"why": "무응답"}}, {"deal": False, "first_shop": {"why": "무응답"}},
+         {"deal": True, "first_shop": {"ended": "walk"}}, {"deal": False, "first_shop": {"why": "재고"}}]
+    assert gw.by_reason(D) == "  첫 가게 종료 이유별 D 시도 / 성사율: 가격 1건 / 100%, 재고 1건 / 0%, 무응답 2건 / 50%"
 
 
 def test_fits():
@@ -183,5 +211,5 @@ def test_d_effect():
 if __name__ == "__main__":
     test_d_effect()
     test_second_shop(); test_fits(); test_high_accept(); test_accept_rule_factor(); test_soft_move_accept()
-    test_saved_guard(); test_apply_and_watch()
+    test_saved_guard(); test_apply_and_watch(); test_by_reason()
     print("ok")
