@@ -112,6 +112,30 @@ GROUPS = {
 }
 
 
+# 11/09 person: logistics.near_expiry_h is not proposed until a day's waste at cost (perishable, last 24 h, logistics
+# dept report) is over WASTE_GATE; a missing or stale (> 3 h) report counts as below
+WASTE_GATE = 200_000
+GATED = {"logistics.near_expiry_h"}
+
+
+def waste_24h(path=None, now=None):
+    """Perishable waste at cost in the last 24 h from reports/dept/logistics.json, or None (missing / stale)."""
+    try:
+        with open(path or os.path.join(HERE, "reports", "dept", "logistics.json"), encoding="utf-8") as f:
+            j = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if (now or time.time()) - (j.get("ts") or 0) > 3 * 3600:
+        return None
+    return ((j.get("metrics") or {}).get("perishable_24h") or {}).get("waste_cost")
+
+
+def gate_open(key, waste=None):
+    if key not in GATED:
+        return True
+    return waste is not None and waste > WASTE_GATE
+
+
 MIN_EVIDENCE_H = 6          # a key whose window (since its group last changed) is shorter gets no proposal
 
 
@@ -266,7 +290,10 @@ def allowed_keys():
     import policy
     import sales_report
     out = {}
+    waste = waste_24h()
     for full in POLICY_KEYS:
+        if not gate_open(full, waste):
+            continue
         sec, k = full.split(".")
         if k == "sofa_trial_extend_h":
             out[full] = (1, 48, 0)
