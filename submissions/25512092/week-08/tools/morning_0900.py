@@ -22,7 +22,7 @@ os.chdir(HERE)
 AT = datetime(2026, 11, 10, 9, 0).timestamp()
 T0 = datetime(2026, 11, 9, 23, 40).timestamp()
 FIRED = ("cap_brake", "high_brake", "cash_pause", "cash_resume", "auto_reverted", "guard_revert")
-WARNED = ("cap_brake_warn", "high_brake_warn", "check_hold", "check_no_revert", "frozen", "pinned")
+WARNED = ("cap_brake_warn", "high_brake_warn", "overstock_warn", "check_hold", "check_no_revert", "frozen", "pinned")
 REPORTS = (("00:15 공격적 변경 3시간", "aggressive_report"), ("02:12 고가 몰아주기 3시간", "highpush_report"),
            ("02:27 D·high_accept 6시간", "d_high_report"))
 
@@ -124,7 +124,8 @@ def summary(now):
 
 def needs(now):
     out = ["밤 동안 완화한 브레이크 기준을 원래대로 돌릴지: STOCK_CAP 브레이크 중앙값 4시간(원래 3) / 미판매 35%·500만(원래 25%·300만) / "
-           "2회 연속 발동(원래 1회); 고가 브레이크 영수증 1/3(원래 1/2) / 2회 연속",
+           "2회 연속 발동(원래 1회); 고가 브레이크 영수증 1/3(원래 1/2) / 2회 연속; 자동 STOCK_CAP 과재고 판단 중앙값 4시간·"
+           "미판매 35%·500만·2회 연속(원래 3시간·25%·1회)",
            "09:00에 풀린 것: 자동 정책 변경 동결, 분석관 3시간 점검 자동 되돌리기 꺼짐 (계속할지)",
            "승인 #39 HIGH_MAX 1.5M 24시간 고정은 11/10 23:40까지"]
     try:

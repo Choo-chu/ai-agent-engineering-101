@@ -7,7 +7,11 @@ CEO's shop case (depts/ceo.raw_shop_case) is overstock only when
      least MIN_COST (5M)
 (the same two measures as the cap brake, depts/cap_brake.py). "stock >= cap" and low cash are not overstock then: low
 cash only stops buying (the restock budget is cash - 3M), the price floors stay normal.
-Thresholds: stock_cap_auto.json "case" ({median_h, window_h, min_sales, old_h, old_share, supply_h, min_cost}).
+Thresholds: stock_cap_auto.json "case" ({median_h, window_h, min_sales, old_h, old_share, supply_h, min_cost,
+unsold_min, consecutive}).
+From 11/09 ~23:50 (person), the same as the cap brake: median 4 h, unsold share 35% AND unsold cost over 5M, and
+overstock only on `consecutive` (2) checks in a row at least MIN_GAP_S apart (the CEO case tick is every 5 min); the
+first hit sends a Telegram warning (decision overstock_warn) and the case stays normal. State: logs/turnover_case.json.
 """
 import os
 import sqlite3
@@ -17,7 +21,26 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ME = "choo-chu"
 DEFAULT = {"median_h": 3, "window_h": 6, "min_sales": 10, "old_h": 6, "old_share": 0.25, "supply_h": 24,
-           "min_cost": 5_000_000}
+           "min_cost": 5_000_000, "unsold_min": 0, "consecutive": 1}
+STATE = os.path.join(HERE, "logs", "turnover_case.json")
+MIN_GAP_S = 240
+
+
+def _state():
+    try:
+        import json
+        with open(STATE, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _save(s):
+    import json
+    tmp = STATE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(s, f, ensure_ascii=False)
+    os.replace(tmp, STATE)
 
 
 def measure(now=None, since=0, c=None, db_path=None):
@@ -39,6 +62,17 @@ def measure(now=None, since=0, c=None, db_path=None):
             "old_cost": el_cost, "old_unsold": un_cost, "old_share": round(un_cost / el_cost, 4) if el_cost else None}
 
 
+def _warn(why, n, need):
+    try:
+        import alerts
+        import decisions
+        decisions.record("ceo", "overstock_warn", "shop case", n, f"check {n}/{need}: " + "; ".join(why) + " - warning only")
+        alerts.send("info", f"overstock_warn:{int(time.time())}", f"과재고(overstock) 판단 경고 {time.strftime('%H:%M')} "
+                    f"({n}/{need}회, 아직 normal 유지): " + "; ".join(why) + " - 다음 점검(5분 뒤)에도 걸리면 overstock")
+    except Exception:
+        pass
+
+
 def overstock(now=None, r=None, db_path=None):
     """(True / False, reason)."""
     import limits
@@ -48,8 +82,22 @@ def overstock(now=None, r=None, db_path=None):
     why = []
     if m["sales"] >= c["min_sales"] and m["median_h"] is not None and m["median_h"] > c["median_h"]:
         why.append(f"sale median {m['median_h']} h > {c['median_h']} h ({m['sales']} sales in {c['window_h']} h)")
-    if m["old_cost"] >= c["min_cost"] and m["old_share"] is not None and m["old_share"] > c["old_share"]:
-        why.append(f"{c['old_h']} h+ unsold {m['old_share']:.1%} > {c['old_share']:.0%} of {m['old_cost']:,}")
+    if (m["old_cost"] >= c["min_cost"] and m["old_share"] is not None and m["old_share"] > c["old_share"]
+            and m["old_unsold"] > c["unsold_min"]):
+        why.append(f"{c['old_h']} h+ unsold {m['old_share']:.1%} > {c['old_share']:.0%} and {m['old_unsold']:,} > "
+                   f"{c['unsold_min']:,} (of {m['old_cost']:,})")
+    now = now or time.time()
+    need = int(c.get("consecutive") or 1)
+    if need > 1:
+        st = _state()
+        if now - (st.get("ts") or 0) >= MIN_GAP_S:     # one count per case check (5 min), not per call
+            st = {"ts": round(now), "streak": (st.get("streak", 0) + 1) if why else 0, "why": why}
+            _save(st)
+            if why and st["streak"] < need:
+                _warn(why, st["streak"], need)
+        streak = st.get("streak", 0)
+        if why and streak < need:
+            return False, f"turnover warning {streak}/{need} (not overstock yet): " + "; ".join(why)
     if why:
         return True, "turnover: " + "; ".join(why)
     return False, (f"turnover ok: median {m['median_h']} h ({m['sales']} sales), {c['old_h']} h+ unsold "

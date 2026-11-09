@@ -102,6 +102,32 @@ def test_loss_needs_three():
     assert set(ex) == {"L3"} and ex["L3"]["sold"] == 3, ex
 
 
+def test_overstock_two_in_a_row():
+    from depts import turnover_case as T
+    T.STATE = tmp_path("tc_state.json")
+    r = {"enabled": True, "since": 0, "case": {"median_h": 4, "old_share": 0.35, "unsold_min": 5_000_000,
+                                                "min_cost": 5_000_000, "consecutive": 2}}
+    seen = {"m": None}
+    sent = []
+    bad = {"sales": 50, "median_h": 4.5, "old_cost": 0, "old_unsold": 0, "old_share": None}
+    ok = dict(bad, median_h=3.5)                           # 3.5 h: over the old 3 h, under the new 4 h
+    unsold = {"sales": 50, "median_h": 1, "old_cost": 12_000_000, "old_unsold": 4_800_000, "old_share": 0.4}  # 4.8M <= 5M
+    now = time.time()
+    with mock.patch.object(T, "measure", lambda *a: seen["m"]), mock.patch("alerts.send", lambda *a, **k: sent.append(a)),             mock.patch("decisions.record", lambda *a, **k: None):
+        seen["m"] = ok
+        assert not T.overstock(now, r)[0]
+        seen["m"] = unsold
+        assert not T.overstock(now + 300, r)[0] and not sent
+        seen["m"] = bad
+        assert not T.overstock(now + 600, r)[0] and len(sent) == 1 and "경고" in sent[0][2]   # 1/2: warning
+        assert not T.overstock(now + 660, r)[0] and len(sent) == 1         # same check window: not counted again
+        assert T.overstock(now + 900, r)[0]                                 # 2/2: overstock
+        seen["m"] = ok
+        assert not T.overstock(now + 1200, r)[0]                            # reset
+        seen["m"] = bad
+        assert not T.overstock(now + 1500, r)[0] and len(sent) == 2
+
+
 if __name__ == "__main__":
     for n, f in list(globals().items()):
         if n.startswith("test_"):
