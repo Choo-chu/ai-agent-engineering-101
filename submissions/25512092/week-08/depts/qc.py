@@ -22,9 +22,10 @@ REPORTS = os.path.join(HERE, "reports")
 HIGH_MIN = 100_000              # unit cost above this is "high price" ...
 HIGH_MAX = 1_000_000            # ... up to this (11/06: was 500,000; sofas cost ~0.6 x list)
 START_SHARE, START_MAX = 0.30, 2
-SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.60, 30   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
+SHARE_STEP, SHARE_MIN, SHARE_CAP, MAX_CAP = 0.10, 0.20, 0.60, 40   # MAX_CAP 5 -> 10 on 11/06 (units held 8);
 #                                                     11/07 ~16:05: SHARE_CAP 0.5 -> 0.6, MAX_CAP 20 -> 30 (share 0.6, units 28)
 #                                                     11/08 ~13:30 (person): MAX_CAP 30 -> 60 (high_max 60); ~17:00 back to 30
+#                                                     11/09 ~11:00 (person): MAX_CAP 30 -> 40 (high_max 40)
 HOLD_S = 24 * 3600   # 11/07 ~16:10 (person's decision): for 24 h after buying expansion 2 is applied, no rule lowers
 #                      the high-price share (0.6) or units held (28); raising stays allowed. buy_expand.json since2.
 

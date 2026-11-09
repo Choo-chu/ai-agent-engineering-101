@@ -121,7 +121,7 @@ def split_rule(inv, catalog, now):
         return {"high_share": max(0.2, round(share - 0.1, 2)), "high_max": cap}, \
             f"{today - __import__('datetime').timedelta(days=1):%m-%d}: {len(stale)} high-price units unsold > 24 h, {refunds} high-price refunds"
     if hr is not None and (lr is None or hr >= lr):
-        return {"high_share": min(0.6, round(share + 0.1, 2)), "high_max": min(30, cap + 1)}, \
+        return {"high_share": min(0.6, round(share + 0.1, 2)), "high_max": min(40, cap + 1)}, \
             f"high profit/cost {sales_report.pct(hr)} >= low {sales_report.pct(lr)}"
     return None, f"no change (high {sales_report.pct(hr)}, low {sales_report.pct(lr)})"
 
@@ -237,13 +237,36 @@ def trial_units_if_stopped(db, now):
     return tuple(r[0] for r in rows)
 
 
-def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10, buyer=True):
+MARKET_ADJ_MIN = -0.30       # analyst approval check (11/09 person): my revenue change - market revenue change
+
+
+def market_revenue(db, t0, t1):
+    """Revenue of every shop on the market (my shop included) in [t0, t1)."""
+    return db.execute("SELECT COALESCE(SUM(amount), 0) FROM settles WHERE ts>=? AND ts<?", (t0, t1)).fetchone()[0]
+
+
+def market_adjusted(cur, base, m_cur, m_base):
+    """(my revenue change, market revenue change, my change - market change); None parts when a base is 0."""
+    mine = cur["revenue"] / base["revenue"] - 1 if base["revenue"] else None
+    mkt = m_cur / m_base - 1 if m_base else None
+    return mine, mkt, (mine - mkt if mine is not None and mkt is not None else None)
+
+
+def worse(cur, base, min_sales=20, min_accounts=8, min_paid=10, buyer=True, market=None):
     """Measures clearly worse in cur than in base (dept_reports.window dicts); [] if none. buyer=False leaves the
-    buyer Saved measures out (the CEO guard, 11/07; the analyst's approval checks keep them)."""
+    buyer Saved measures out (the CEO guard, 11/07; the analyst's approval checks keep them).
+    market=(market revenue in cur, in base) (the analyst's approval check, person's decision 11/09): sales and profit
+    are not compared; instead my revenue change minus the market's revenue change over the same windows under
+    MARKET_ADJ_MIN (-30%p) is worse."""
     bad = []
-    if base["sales"] >= min_sales and cur["sales"] < 0.7 * base["sales"]:
+    if market is not None:
+        mine, mkt, adj = market_adjusted(cur, base, *market)
+        if base["sales"] >= min_sales and adj is not None and adj < MARKET_ADJ_MIN:
+            bad.append(f"매출 변화 {mine:+.1%} - 시장 전체 {mkt:+.1%} = {adj:+.1%}p < {MARKET_ADJ_MIN:+.0%}p "
+                       f"(매출 {cur['revenue']:,} vs {base['revenue']:,})")
+    elif base["sales"] >= min_sales and cur["sales"] < 0.7 * base["sales"]:
         bad.append(f"sales {cur['sales']} vs {base['sales']}")
-    if base["sales"] >= min_sales and base["profit"] > 0 and cur["profit"] < 0.7 * base["profit"]:
+    if market is None and base["sales"] >= min_sales and base["profit"] > 0 and cur["profit"] < 0.7 * base["profit"]:
         bad.append(f"profit {cur['profit']:,} vs {base['profit']:,}")
     if cur["review_accounts"] >= min_accounts and base["review_accounts"] >= min_accounts and cur["stars"] is not None \
             and base["stars"] is not None and cur["stars"] < base["stars"] - 0.4:

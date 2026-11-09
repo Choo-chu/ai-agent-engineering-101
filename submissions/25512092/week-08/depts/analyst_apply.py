@@ -337,6 +337,7 @@ def check_approvals(now=None):
             ex = ceo_policy.trial_units_if_stopped(d, now)
             before = dept_reports.window(d, t - CHECK_H * 3600, t, cat, ex)
             after = dept_reports.window(d, t, t + CHECK_H * 3600, cat, ex)
+            mkt = (ceo_policy.market_revenue(d, t, t + CHECK_H * 3600), ceo_policy.market_revenue(d, t - CHECK_H * 3600, t))
             d.execute("UPDATE proposals SET checked=1 WHERE id=?", (p["id"],))
             d.commit()
         finally:
@@ -344,9 +345,14 @@ def check_approvals(now=None):
         # person's decision 11/07 ~14:50: a limits key (STOCK_CAP, HIGH_MAX, CASH_RESERVE) is a shop key, so buyer
         # Saved is not a condition for it (buyer experiments run); other keys (buyer keys included) keep it
         buyer = not p["key"].startswith("limits.")
-        bad = ceo_policy.worse(after, before, min_sales=10, min_accounts=5, min_paid=5, buyer=buyer)
+        # person's decision 11/09: sales / profit are judged against the market: my revenue change minus the whole
+        # market's revenue change over the same windows (ceo_policy.worse(market=...)); stars and buyer Saved as before
+        bad = ceo_policy.worse(after, before, min_sales=10, min_accounts=5, min_paid=5, buyer=buyer, market=mkt)
         summary = {k: [after[k], before[k]] for k in ("sales", "revenue", "profit", "stars", "buyer_paid",
                                                        "buyer_saved_sum")}   # revenue: 11/07 ~17:55
+        mine, mk, adj = ceo_policy.market_adjusted(after, before, *mkt)
+        summary["market_revenue"] = list(mkt)
+        summary["market_adjusted"] = [mine, mk, adj]
         if not buyer:
             summary["buyer_saved"] = "information only (limits key)"
         decisions.record("analyst", "approval_check", p["key"], summary, f"#{p['id']}: " + ("; ".join(bad) or "not worse"))
