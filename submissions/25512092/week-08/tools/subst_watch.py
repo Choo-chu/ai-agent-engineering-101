@@ -4,7 +4,8 @@ seller code is in since the 14:06 restart), checks the stop rules every CHECK_S 
   stop -> mode B ("not in stock" at once, no alternatives) + urgent Telegram, when arm A has >= MIN_N receipts and
     paid share of A receipts < 30%, or
     mismatch reviews on A deals >= 5 and >= 10% of A results, or
-    A deals' average stars <= normal deals' average - 0.3 (both >= MIN_N results with stars)
+    A deals' average stars <= normal deals' average - 0.3; from 11/09 ~12:00 paid deals only (the board's basis),
+    once >= MIN_N paid A results carry stars; unpaid stars are recorded, not judged
   paid = the ledger result of the receipt's task says settled; stars are kept apart for paid and unpaid results
   (the board's stars count paid deals only, agent.md; results carry stars either way)
 Every A / control result is written to logs/subst_exp_results.jsonl.
@@ -127,8 +128,10 @@ def stop_reason(m):
         return f"대체(A) 영수증 결제율 {a['paid']}/{a['receipts']} < 30%"
     if a["mismatch"] >= 5 and a["mismatch"] >= 0.10 * max(1, a["results"]):
         return f"대체(A) 품목 불일치 리뷰 {a['mismatch']}건 / 결과 {a['results']}건"
-    if a["stars_all_n"] >= MIN_N and n["stars_all"] is not None and a["stars_all"] <= n["stars_all"] - 0.3:
-        return f"대체(A) 별점 {a['stars_all']} <= 일반 {n['stars_all']} - 0.3"
+    # 11/09 ~12:00 (person): stars of paid deals only, as on the board, from MIN_N paid A results with stars; the
+    # unpaid ones are kept in the numbers but not judged (11:58 stop: all 4.14 vs 4.44, paid only 4.71 vs 4.46)
+    if a["stars_paid_n"] >= MIN_N and n["stars_paid"] is not None and a["stars_paid"] <= n["stars_paid"] - 0.3:
+        return f"대체(A) 결제 거래 별점 {a['stars_paid']} <= 일반 결제 거래 {n['stars_paid']} - 0.3 (A 결제 {a['stars_paid_n']}건)"
     return None
 
 

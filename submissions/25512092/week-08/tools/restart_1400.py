@@ -59,17 +59,18 @@ def held_at(db, sku, ts, now_units):
 def lock_window(db, t0, t1, now_units):
     """Named-SKU "not in stock" answers (substitute offers or plain no-stock, logs/subst_exp.jsonl), those for a
     SKU I held at that moment, sales, revenue, one-star stock / wrong-item reviews."""
-    nost = held = 0
+    nost = held = offers = 0
     with open(os.path.join(HERE, "logs", "subst_exp.jsonl"), encoding="utf-8") as f:
         for ln in f:
             e = json.loads(ln)
             if t0 <= e["ts"] < t1 and e.get("event") in ("offer", "no_offer"):
                 nost += 1
+                offers += e["event"] == "offer"
                 held += bool(e.get("x")) and held_at(db, e["x"], e["ts"], now_units)
     s = db.execute("SELECT COUNT(*), COALESCE(SUM(amount),0) FROM settles WHERE shop=? AND ts>=? AND ts<?", (ME, t0, t1)).fetchone()
     one = sum(1 for (r,) in db.execute("SELECT review FROM my_results WHERE stars<=1 AND ts>=? AND ts<?", (t0, t1))
               if STOCK_RE.search(r or ""))
-    return {"no_stock": nost, "no_stock_held": held, "sales": s[0], "revenue": s[1], "one_star_stock": one}
+    return {"no_stock": nost, "no_stock_held": held, "offers": offers, "sales": s[0], "revenue": s[1], "one_star_stock": one}
 
 
 def lock_report(t, now=None):
@@ -92,6 +93,7 @@ def lock_report(t, now=None):
         "후 vs 전 같은 길이; 같은 재시작에 C등급 소파 보증·B등급 보증 시험, 14:00 직후 STOCK_CAP 30M도 함께 적용됨)",
         f"- 재고 없음 응답(이름 지정 SKU, 대체 제안 포함) {a['no_stock']} vs {b['no_stock']}건",
         f"- 그중 실제 보유 SKU에 나간 것 {a['no_stock_held']} vs {b['no_stock_held']}건",
+        f"- 대체 제안(후보를 보낸 것) {a['offers']} vs {b['offers']}건 (11:58~12:0x 대체 A안 중단 구간은 후보 없이 '재고 없음')",
         f"- 판매 {a['sales']} vs {b['sales']}건, 매출 {a['revenue']:,} vs {b['revenue']:,}",
         f"- 1점 리뷰(재고/품목) {a['one_star_stock']} vs {b['one_star_stock']}건",
         f"- {lw}"])
