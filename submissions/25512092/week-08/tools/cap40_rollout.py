@@ -4,7 +4,7 @@ limits.ANALYST_MAX STOCK_CAP 40M (code), STOCK_CAP by the analyst path (b0 check
 once the eligible cost is >= 5M (min_old_cost, was 20 units); median 3 h, cash 2M and the trip back to 20M unchanged.
 hot_fast and the rest unchanged. 3 h later one Telegram, 3 h after vs 3 h before: revenue, high-price and sofa sales,
 stock at cost, cash, buying held back by cause, brake state.
-    python tools/cap40_rollout.py [--report-dry]          (log in logs/cap40_rollout.log)
+    python tools/cap40_rollout.py [--report-dry | --no-wait | --report-only]          (log in logs/cap40_rollout.log)
 """
 import json
 import os
@@ -96,6 +96,13 @@ def report(t, now=None):
 def main():
     if "--report-dry" in sys.argv:
         print(report(time.time() - 3600))
+        return
+    if "--report-only" in sys.argv:                 # applied already (--no-wait): wait for the 3 h report only
+        t = json.load(open(STATE, encoding="utf-8"))["t"]
+        while time.time() < t + H * 3600 + 60:
+            time.sleep(60)
+        alerts.send("daily", f"cap40_report:{int(t)}", report(t), log=log)
+        log("report sent")
         return
     from depts import analyst, analyst_apply
     now = time.time()
