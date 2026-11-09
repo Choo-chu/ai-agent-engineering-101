@@ -310,7 +310,7 @@ def ask_price(text, budget=None):
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
               force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None,
-              soft=None, shop=None):
+              soft=None, shop=None, high=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
@@ -352,7 +352,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             return res
         if time.time() - start > DEADLINE:
             p = None if res.get("accept_rule") else accept_rule.price(ask_price(text, budget) or res["last_ask"], budget,
-                                                                      market_avg, res["injection"])
+                                                                      market_avg, res["injection"], factor=high)
             if p is not None:                         # 11/08 accept_rule_95: accept the last ask instead of the walk
                 res.update(accept_rule="time_limit", accept_price=p)
                 log(f"[{accept_rule.TAG}] time limit: accept the last ask {p} (market avg {market_avg}, cap {budget})")
@@ -431,7 +431,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             res["guard_last"] = True
         if d is None or d["action"] == "walk" or (d["action"] == "accept" and ask is None):
             p = None if res.get("accept_rule") else accept_rule.price(ask if ask is not None else res["last_ask"],
-                                                                      budget, market_avg, res["injection"])
+                                                                      budget, market_avg, res["injection"], factor=high)
             if p is not None:                         # 11/08 accept_rule_95: accept the last ask instead of the walk
                 res.update(accept_rule="walk", accept_price=p)
                 log(f"[{accept_rule.TAG}] walk -> accept the last ask {p} (market avg {market_avg}, cap {budget})")
@@ -476,7 +476,8 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             log(f"[tactic] sent with the offer: {tactic_line}")
         task = client.send(msg, tid)
 
-    p = None if res.get("accept_rule") else accept_rule.price(res["last_ask"], budget, market_avg, res["injection"])
+    p = None if res.get("accept_rule") else accept_rule.price(res["last_ask"], budget, market_avg, res["injection"],
+                                                                   factor=high)
     if p is not None and state(task) == "TASK_STATE_INPUT_REQUIRED":   # 11/08 accept_rule_95 at the turn limit
         res.update(accept_rule="turn_limit", accept_price=p)
         log(f"[{accept_rule.TAG}] turn limit: accept the last ask {p} (market avg {market_avg}, cap {budget})")
@@ -611,9 +612,12 @@ def main():
         except Exception as e:
             log(f"[break rule] shop order failed: {type(e).__name__}")
     tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
+    from depts import high_accept, second_shop as d2
+    ss_on = sn_arm == "soft" and d2.on()            # 11/09 plan D: a 2nd shop in the time under the 20 s spacing
+    second_from, hf = None, None
     for i, c in enumerate(tries):
         chosen = c
-        first, cap, market, avg_now, nw_cap = None, args.budget, "", None, None
+        first, cap, market, avg_now, nw_cap, hf = None, args.budget, "", None, None, None
         min_offers = min_offers_for(c["shop_score"], c["name"])      # 1 at shops where the rule keeps failing
         if mo_variant is not None and min_offers > 1:
             min_offers = int(mo_variant)
@@ -632,6 +636,10 @@ def main():
                          if avg is not None else "too few deals to know its market price. ")
                       + (f"You paid {mine['avg_paid']} on average for it before ({mine['n']} times). " if mine else "")
                       + "Pay less than the market average.")
+            hf = high_accept.factor(lp) if avg is not None and case == "normal" else None
+            if hf:                                     # 11/09 high_accept_105: list >= 200,000 -> up to 1.05 x avg
+                cap = min(args.budget, int(avg * hf))
+                log(f"[{high_accept.TAG}] {o['sku']} list {lp}: accept up to {hf} x market avg")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
             nw_cap = None
             if br and lp and buyer_break.applies(o["sku"], catalog):
@@ -655,11 +663,25 @@ def main():
                             force_first=variant_key is not None, kind=order.get("kind"),
                             need_hours=order.get("use_within_hours"), tactic_line=t_line,
                             market_avg=avg_now, no_warranty_cap=nw_cap if offers else None,
-                            soft=sn_rules if sn_arm == "soft" else None, shop=c["name"])
+                            soft=(dict(sn_rules, accept=max(sn_rules.get("accept", 1.0), hf)) if hf else sn_rules)
+                            if sn_arm == "soft" else None, shop=c["name"], high=hf)
             res["secs"] = round(time.time() - t_neg, 1)
+            if second_from is not None:
+                res["second_shop"] = True
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
                 continue
+            if ss_on and second_from is None and i + 1 < len(tries) and len(shops) >= 2 and d2.qualifies(res):
+                el = time.time() - start
+                if d2.fits(el):
+                    second_from = {"shop": c["name"], "ended": res.get("ended"), "sku": sku, "secs": res["secs"]}
+                    log(f"[{d2.TAG}] {c['name']} ended ({res.get('ended')}) at {el:.1f} s -> {tries[i + 1]['name']}, soft_neg way")
+                    try:
+                        record_deal(c, sku, lp, "soft_neg", variant_key, variant, min_offers, res, "walk", 0, mo_variant, None)
+                    except Exception:
+                        pass
+                    continue
+                log(f"[{d2.TAG}] no time for a 2nd shop ({el:.1f} s in)")
             break
         except Exception as e:
             from depts import buyer_speed
@@ -680,6 +702,15 @@ def main():
 
     stars, review, flag = judge(res, args.item, args.budget, acceptable)
     rp = res["receipt"].get("price") if res["receipt"] else None
+    if hf and res["deal"] and avg_now and (rp or res.get("agreed") or 0) > avg_now:
+        res["high_accept"] = True                     # closed above the market average: only the 1.05 bound allowed it
+        log(f"[{high_accept.TAG}] deal at {rp or res.get('agreed')} > market avg {avg_now} (list {lp})")
+        try:
+            __import__("decisions").record("buyer", high_accept.TAG, sku, {"price": rp or res.get("agreed"), "avg": avg_now,
+                                                                           "list": lp, "shop": chosen["name"]},
+                                           f"list >= 200,000: accepted up to {hf} x the market average")
+        except Exception:
+            pass
     remember({"ts": time.strftime("%Y-%m-%d %H:%M:%S"), "shop": chosen["name"], "item": args.item,
               "sku": res["receipt"].get("item") if res["receipt"] else None,
               "budget": args.budget, "agreed": res["agreed"], "receipt_price": rp,
@@ -701,7 +732,7 @@ def main():
         log(f"[accept] goods with a {wh} h warranty: any grade")
     if accept:
         out["accept"] = accept
-    record_deal(chosen, sku, lp, "soft_neg" if res.get("soft_neg") else case, variant_key, variant, min_offers, res, flag,
+    record_deal(chosen, sku, lp, d2.TAG if res.get("second_shop") else "soft_neg" if res.get("soft_neg") else case, variant_key, variant, min_offers, res, flag,
                 wh, mo_variant, None if res.get("soft_neg") else tactic)
     if sn_arm:
         soft_neg.log(order=order.get("order"), arm=sn_arm, soft_used=bool(res.get("soft_neg")), item=args.item, sku=sku,
@@ -710,7 +741,8 @@ def main():
                      ended=res.get("ended") or res.get("last_state"), shop_ended=res.get("ended") == "seller_ended",
                      offers=res.get("offers", 0), harness_calls=res.get("harness_calls", 0),
                      accept_rule=res.get("accept_rule"), neg_secs=res.get("secs"), order_secs=round(time.time() - start, 1),
-                     error=bool(res.get("error")), skip=res.get("skip"))
+                     error=bool(res.get("error")), skip=res.get("skip"), second_shop=bool(res.get("second_shop")),
+                     first_shop=second_from, high_accept=bool(res.get("high_accept")), high_factor=hf, market_avg=avg_now)
     print(json.dumps(out, ensure_ascii=False), flush=True)  # last line: the kit reads this
 
 

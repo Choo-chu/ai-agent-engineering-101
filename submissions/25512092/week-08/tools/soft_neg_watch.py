@@ -4,7 +4,10 @@ under SAVED_MIN or it is no longer first on saved; after 24 h (or the stop) swit
 the current way: close rate, time per negotiation, time per order (buyer process and the kit's order to next order),
 orders and deals per hour, saving per deal (vs list), saved change, the share the shop ended; and the accept rule
 (100%) fires in the window vs the replay baseline (close 48.2%).
-    python tools/soft_neg_watch.py [--report-dry]          (log in logs/soft_neg_watch.log)
+11/09 ~17:40 (person): the guard is staged by the 2nd best saved (depts/saved_guard.py): off when my saved < 2nd +
+0.008 or not first (was saved < 0.397 or not first). --resume picks up a running experiment (since / until from
+soft_neg.json, the start board from this log) without switching anything on.
+    python tools/soft_neg_watch.py [--report-dry | --resume]          (log in logs/soft_neg_watch.log)
 """
 import json
 import os
@@ -125,7 +128,7 @@ def report(t0, b0, b1, stopped=None, now=None):
     pct = lambda x: f"{x:.1%}" if x is not None else "-"
     num = lambda x: f"{x:.1f}" if x is not None else "-"
     L = [f"buyer soft_neg {'중단' if stopped else f'{h:.1f}시간'} 결과 ({datetime.fromtimestamp(t0):%m-%d %H:%M} ~ "
-         f"{datetime.fromtimestamp(t1):%m-%d %H:%M}, soft_neg vs 기존, 주문 50:50)" + (f": {stopped}" if stopped else "")]
+         f"{datetime.fromtimestamp(t1):%m-%d %H:%M}, soft_neg vs 기존, {share_text()})" + (f": {stopped}" if stopped else "")]
     if not s or not c:
         L.append(f"- 기록 부족 (soft {sum(r['arm'] == 'soft' for r in R)}건, 기존 {sum(r['arm'] == 'control' for r in R)}건)")
     else:
@@ -146,6 +149,12 @@ def report(t0, b0, b1, stopped=None, now=None):
     return "\n".join(L)
 
 
+def share_text():
+    r = soft_neg.rules()
+    w = r.get("widened")
+    return f"주문 50:50, {datetime.fromtimestamp(w):%H:%M}부터 soft 100%" if w else f"주문 soft {r.get('share', 0.5):.0%}"
+
+
 def set_rule(**kw):
     r = soft_neg.rules()
     r.update(kw)
@@ -154,11 +163,8 @@ def set_rule(**kw):
 
 
 def guard(b):
-    if b["saved"] < SAVED_MIN:
-        return f"saved {b['saved']} < {SAVED_MIN}"
-    if b["saved_rank"] != 1:
-        return f"saved 1위 상실 ({b['saved_rank']}위)"
-    return None
+    from depts import saved_guard
+    return saved_guard.why("soft_neg", b)
 
 
 def main():
@@ -168,6 +174,9 @@ def main():
         return
     import alerts
     import decisions
+    if "--resume" in sys.argv:
+        resume(alerts, decisions)
+        return
     t0 = time.time()
     b0 = board()
     set_rule(enabled=True, since=round(t0), until=round(t0 + H * 3600), share=soft_neg.SHARE, first=soft_neg.FIRST,
@@ -180,7 +189,31 @@ def main():
                 f"시작 saved {b0['saved']} (2위 {b0['second']}). 30분마다 확인, saved < {SAVED_MIN} 또는 saved 1위 상실이면 즉시 끔",
                 log=log)
     log(f"on, board {b0}")
-    end = t0 + H * 3600
+    loop(t0, b0, t0 + H * 3600, alerts, decisions)
+
+
+def start_board():
+    import ast
+    b = None
+    with open(LOG, encoding="utf-8") as f:
+        for ln in f:
+            if " on, board {" in ln:
+                b = ast.literal_eval(ln.split(" on, board ", 1)[1].strip())
+    return b
+
+
+def resume(alerts, decisions):
+    r = soft_neg.rules()
+    if not soft_neg.on(r=r):
+        log("resume: soft_neg not on, nothing to watch")
+        return
+    t0, end = r["since"], r["until"]
+    log(f"resumed (guard: 2nd + 0.008 or not first), since {datetime.fromtimestamp(t0):%m-%d %H:%M}, "
+        f"until {datetime.fromtimestamp(end):%m-%d %H:%M}")
+    loop(t0, start_board(), end, alerts, decisions)
+
+
+def loop(t0, b0, end, alerts, decisions):
     while time.time() < end:
         time.sleep(min(CHECK_S, max(5, end - time.time())))
         try:

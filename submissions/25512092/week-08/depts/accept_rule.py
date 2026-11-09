@@ -39,12 +39,15 @@ def on(now=None):
     return bool(r.get("enabled")) and (r.get("since") or 0) <= now and (until is None or now < until)
 
 
-def price(ask, budget, market_avg, injection=False, now=None):
-    """The price to accept at instead of ending, or None."""
+def price(ask, budget, market_avg, injection=False, now=None, factor=None):
+    """The price to accept at instead of ending, or None. factor: a higher upper bound for this order
+    (11/09 high_accept_105: x 1.05 for SKUs listed at >= 200,000; depts/high_accept.py)."""
     if injection or ask is None or not market_avg or not on(now):
         return None
     r = rules()
     lo, hi = r.get("low", LOW), r.get("high", HIGH)
+    if factor:
+        hi = max(hi, factor)
     if lo * market_avg <= ask <= hi * market_avg and ask <= budget:
         return int(ask)
     return None

@@ -1,0 +1,166 @@
+"""Plan D second_shop, high_accept_105 and the staged saved guard (person's decision 11/09 ~17:40), through the buyer's
+main loop with the shops' negotiations faked.
+    python tests/test_second_shop.py"""
+import contextlib
+import io
+import json
+import os
+import sys
+import tempfile
+from unittest import mock
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from depts import accept_rule, buyer_biz as bb, high_accept, saved_guard, second_shop as d2, soft_neg  # noqa: E402
+
+D2_ON = {"enabled": True, "since": 0}
+HA_ON = {"enabled": True, "since": 0, "min_list": 200_000, "factor": 1.05}
+SN = {"enabled": True, "since": 0, "until": 9e12, "share": 1.0, "first": 0.75, "haggles": 2, "accept": 1.0, "low": 0.5}
+
+
+def res(deal=False, ended="walk", price=None, **kw):
+    r = {"deal": deal, "receipt": {"price": price, "item": "GX"} if deal else None, "agreed": price, "first_ask": None,
+         "last_ask": None, "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 2,
+         "ended": "" if deal else ended, "harness_calls": 0, "soft_neg": 1}
+    r.update(kw)
+    return r
+
+
+def run(results, d2r=D2_ON, har=None, lp=50_000, avg=40_000, budget=60_000, n_shops=3, arm="soft"):
+    """results: one negotiate() result per shop tried, in order. Returns (negotiate calls, record_deal cases, soft log)."""
+    d = tempfile.mkdtemp()
+    shops = [{"name": f"s{i}", "url": f"https://s{i}", "offers": [{"sku": "GX", "qty": 1, "name": "x"}], "shop_score": 0.5}
+             for i in range(n_shops)]
+    with open(os.path.join(d, "shops.json"), "w", encoding="utf-8") as f:
+        json.dump(shops, f)
+    with open(os.path.join(d, "order.json"), "w", encoding="utf-8") as f:
+        json.dump({"order": "o-1", "acceptable": ["GX"], "kind": "goods"}, f)
+    calls, cases, slog = [], [], []
+    it = iter(results)
+
+    def neg(url, item, cap, start, *a, **k):
+        calls.append({"url": url, "cap": cap, "soft": k.get("soft"), "high": k.get("high")})
+        return dict(next(it))
+    argv = ["x", "--shops", os.path.join(d, "shops.json"), "--item", "x", "--budget", str(budget),
+            "--order", os.path.join(d, "order.json")]
+    P = mock.patch.object
+    with contextlib.ExitStack() as es:
+        for obj, name, val in (
+                (bb, "load_memory", lambda: {}), (bb, "load_stats", lambda: {}),
+                (bb, "load_catalog", lambda: {"GX": {"list_price": lp, "kind": "goods"}}),
+                (bb, "choose", lambda shops, *a: (shops, "test")), (bb, "min_offers_for", lambda *a: 1),
+                (bb, "pick_sku", lambda offers, *a: (offers[0], avg, 10)), (bb, "negotiate", neg),
+                (bb, "judge", lambda r, *a: (5, "ok", "ok") if r["deal"] else (2, "no", "walk")),
+                (bb, "remember", lambda row: None), (bb, "refuse_receipt", lambda *a, **k: False),
+                (bb, "record_deal", lambda c, sku, lp_, case, *a: cases.append((c["name"], case))),
+                (bb, "log", lambda m: None),
+                (bb.strategy, "buyer_case", lambda: "normal"), (bb.strategy, "pick", lambda k: ("0.6", {})),
+                (soft_neg, "rules", lambda: SN), (soft_neg, "arm", lambda o, c, r: arm),
+                (soft_neg, "log", lambda **kw: slog.append(kw)),
+                (d2, "rules", lambda: d2r), (high_accept, "rules", lambda: har or {}),
+                (sys, "argv", argv)):
+            es.enter_context(P(obj, name, val))
+        from depts import buyer_break, buyer_tactic
+        es.enter_context(P(buyer_tactic, "pick", lambda: ("plain", {})))
+        es.enter_context(P(buyer_break, "order_applies", lambda *a: False))
+        rec = []
+        es.enter_context(mock.patch("decisions.record", lambda *a, **k: rec.append(a)))
+        with contextlib.redirect_stdout(io.StringIO()):
+            bb.main()
+    return calls, cases, slog, rec
+
+
+def test_second_shop():
+    # first shop walks -> the second shop, soft_neg way, closes: recorded as second_shop
+    calls, cases, slog, _ = run([res(ended="walk"), res(deal=True, price=30_000)])
+    assert [c["url"] for c in calls] == ["https://s0", "https://s1"]
+    assert calls[1]["soft"] is not None and calls[1]["soft"]["first"] == 0.75
+    assert cases == [("s0", "soft_neg"), ("s1", "second_shop")]
+    assert slog[-1]["second_shop"] and slog[-1]["first_shop"]["shop"] == "s0" and slog[-1]["deal"]
+    # the shop ended it (no stock is a shop-ended reply) -> also retried; at most one 2nd shop
+    calls, cases, _, _ = run([res(ended="seller_ended"), res(ended="walk"), res(deal=True, price=1)])
+    assert len(calls) == 2 and cases[-1] == ("s1", "second_shop")
+    # D off, a control-arm order, one shop in stock, an error or a precheck skip: no D
+    assert len(run([res(), res(deal=True, price=1)], d2r={})[0]) == 1
+    assert len(run([res(), res(deal=True, price=1)], arm="control")[0]) == 1
+    assert len(run([res(), res(deal=True, price=1)], n_shops=1)[0]) == 1
+    assert len(run([res(ended="time_limit"), res(deal=True, price=1)])[0]) == 1      # timeout: not D's case
+    # no time left under the 20 s spacing
+    assert len(run([res(), res(deal=True, price=1)], d2r=dict(D2_ON, floor_s=5))[0]) == 1
+
+
+def test_fits():
+    assert d2.fits(7.0, {}) and not d2.fits(7.1, {})            # 7 + 9 + 1.5 + 2.5 = 20
+    assert d2.qualifies(res(ended="turn_limit")) and not d2.qualifies(res(deal=True, price=1))
+    assert not d2.qualifies(res(ended="precheck", skip="shelf")) and not d2.qualifies(res(injection=True))
+
+
+def test_high_accept():
+    # list 300,000, avg 250,000, budget 400,000: cap 262,500, soft accept bound 1.05, accept-rule factor 1.05
+    calls, cases, slog, rec = run([res(deal=True, price=260_000)], har=HA_ON, lp=300_000, avg=250_000, budget=400_000)
+    assert calls[0]["cap"] == 262_500 and calls[0]["high"] == 1.05 and calls[0]["soft"]["accept"] == 1.05
+    assert slog[-1]["high_accept"] and any(a[1] == "high_accept_105" for a in rec)
+    # a deal at or under the average is not tagged
+    _, _, slog, rec = run([res(deal=True, price=240_000)], har=HA_ON, lp=300_000, avg=250_000, budget=400_000)
+    assert not slog[-1]["high_accept"] and not rec
+    # under 200,000 list, or the rule off: cap at the average, no factor
+    calls = run([res()], har=HA_ON, lp=150_000, avg=120_000, budget=400_000)[0]
+    assert calls[0]["cap"] == 120_000 and calls[0]["high"] is None and calls[0]["soft"]["accept"] == 1.0
+    calls = run([res()], har={}, lp=300_000, avg=250_000, budget=400_000)[0]
+    assert calls[0]["cap"] == 250_000 and calls[0]["high"] is None
+    # the budget still bounds the cap
+    assert run([res()], har=HA_ON, lp=300_000, avg=250_000, budget=255_000)[0][0]["cap"] == 255_000
+
+
+def test_accept_rule_factor():
+    with mock.patch.object(accept_rule, "rules", lambda: {"enabled": True, "since": 0, "until": None, "low": 0.5, "high": 1.0}):
+        assert accept_rule.price(104, 200, 100) is None
+        assert accept_rule.price(104, 200, 100, factor=1.05) == 104
+        assert accept_rule.price(106, 200, 100, factor=1.05) is None
+        assert accept_rule.price(104, 103, 100, factor=1.05) is None          # over the cap
+
+
+def test_soft_move_accept():
+    assert soft_neg.move(104, None, 0, 105, 100, dict(SN, accept=1.05))["action"] == "accept"
+    assert soft_neg.move(104, None, 0, 105, 100, SN)["action"] == "offer"
+
+
+def test_saved_guard():
+    b = lambda s, sec, rank=1: {"saved": s, "second": sec, "saved_rank": rank}
+    w = saved_guard.why
+    assert w("high_accept", b(0.394, 0.37)) and not w("high_accept", b(0.395, 0.37))      # 2nd + 0.025
+    assert w("second_shop", b(0.384, 0.37)) and not w("second_shop", b(0.385, 0.37))      # 2nd + 0.015
+    assert w("soft_neg", b(0.377, 0.37)) and not w("soft_neg", b(0.378, 0.37))            # 2nd + 0.008
+    assert w("accept_rule", b(0.377, 0.37)) and not w("accept_rule", b(0.40, 0.37))
+    assert w("soft_neg", b(0.45, 0.37, rank=2))                                          # not first
+
+
+def test_apply_and_watch():
+    """20:27: on only with soft_neg widened and not already under the staged guard; the watcher switches off by stage."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+    import saved_guard_watch as gw
+    import soft_neg_mid as mid
+    d = tempfile.mkdtemp()
+    rec, sent = [], []
+    dec = mock.Mock(record=lambda *a, **k: rec.append(a))
+    al = mock.Mock(send=lambda *a, **k: sent.append(a))
+    with mock.patch.object(d2, "RULES", os.path.join(d, "d2.json")), \
+            mock.patch.object(high_accept, "RULES", os.path.join(d, "ha.json")):
+        b = {"saved": 0.42, "second": 0.37, "saved_rank": 1}
+        t = mid.apply_d_high(b, 1000, dec)
+        assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == 1.05
+        assert "적용" in t and len(rec) == 2
+        # under 2nd + 0.025 but over + 0.015: high off, D stays
+        assert gw.check({"saved": 0.39, "second": 0.37, "saved_rank": 1}, al, dec) == ["high_accept"]
+        assert not high_accept.rules()["enabled"] and d2.rules()["enabled"] and len(sent) == 1
+        assert gw.check({"saved": 0.384, "second": 0.37, "saved_rank": 1}, al, dec) == ["second_shop"]
+        assert gw.check({"saved": 0.30, "second": 0.37, "saved_rank": 2}, al, dec) == []       # both already off
+        # at 20:27 already under 2nd + 0.025: high not switched on, D on
+        os.remove(d2.RULES); os.remove(high_accept.RULES)
+        t = mid.apply_d_high({"saved": 0.39, "second": 0.37, "saved_rank": 1}, 1000, dec)
+        assert d2.rules()["enabled"] and not high_accept.rules() and "적용 안 함" in t
+
+
+if __name__ == "__main__":
+    test_second_shop(); test_fits(); test_high_accept(); test_accept_rule_factor(); test_soft_move_accept()
+    test_saved_guard(); test_apply_and_watch()
+    print("ok")

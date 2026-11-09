@@ -105,6 +105,31 @@ def chunks(text, n=3800):
     return out
 
 
+def apply_d_high(b, now, decisions):
+    """11/09 ~17:40 (person): with soft_neg at 100%, switch on plan D (second_shop.json) and high_accept_105
+    (high_accept.json), unless the staged guard would switch one off at once; tools/saved_guard_watch.py guards them
+    and reports 6 h later. Returns the text for the message."""
+    import json
+    from depts import high_accept, saved_guard, second_shop
+    out = []
+    for key, mod, extra, name in (("second_shop", second_shop, {}, "D 2번째 가게(second_shop)"),
+                                  ("high_accept", high_accept, {"min_list": high_accept.MIN_LIST, "factor": high_accept.FACTOR},
+                                   "비싼 주문 수락 완화(high_accept_105: 정가 20만 이상, 시장 평균 x 1.05까지)")):
+        why = saved_guard.why(key, b)
+        if why:
+            out.append(f"{name}: 적용 안 함, 안전장치 기준에 이미 걸림 ({why})")
+            decisions.record("buyer", f"{mod.TAG}_skip", mod.TAG, b, f"not switched on at 20:27: {why}")
+            continue
+        r = dict(mod.rules(), enabled=True, since=round(now), applied_by="soft_neg_mid", board=b, stopped=None,
+                 stop_reason=None, **extra)
+        with open(mod.RULES, "w", encoding="utf-8") as f:
+            json.dump(r, f, ensure_ascii=False)
+        decisions.record("buyer", f"{mod.TAG}_on", mod.TAG, b, "person 11/09 ~17:40: on with soft_neg at 100%")
+        out.append(f"{name}: 적용")
+    return ("이어서 적용 (" + datetime.fromtimestamp(now).strftime("%H:%M") + "): " + "; ".join(out)
+            + ". 안전장치: 2위 saved + 0.025 미만이면 고가 완화 끔, + 0.015 미만이면 D 끔 (30분마다). 6시간 뒤 점검 보고")
+
+
 def b0_of(t0):
     """The board at the start, from the watcher's 'on, board {...}' log line."""
     import ast
@@ -130,7 +155,7 @@ def main():
         w.log(f"6h check: soft_neg not on (stopped {r.get('stopped')}, {r.get('stop_reason')}), nothing to do")
         if not dry:
             alerts.send("info", f"soft_neg_mid:{int(t0)}", f"soft_neg 6시간 점검: 이미 꺼져 있음 ({r.get('stop_reason')}), "
-                        "확대 안 함", log=w.log)
+                        "확대 안 함. D(2번째 가게)·비싼 주문 수락 완화(high_accept_105)도 적용하지 않음", log=w.log)
         return
     now = time.time()
     b0, b1 = b0_of(t0), w.board()
@@ -147,10 +172,11 @@ def main():
         text += f"\n- 단골 가게 20초 제한 전후: 계산 실패 {type(e).__name__}"
     if ok:
         text += ("\n조건 모두 충족 (saved >= 0.41·1위, 성사율 soft >= 기존 - 2%p, 주문 1건(다음 주문까지) soft < 기존, "
-                 "soft 건당 절약률 >= 35%): soft_neg 주문 100%로 확대. 안전장치(saved < 0.397 또는 1위 상실 시 중지) 그대로, "
-                 "24시간 끝은 그대로")
+                 "soft 건당 절약률 >= 35%): soft_neg 주문 100%로 확대. 안전장치(2위 saved + 0.008 미만 또는 1위 상실 시 중지), "
+                 "24시간 끝(11/10 14:27)은 그대로")
     else:
-        text += "\n조건 미충족 (" + "; ".join(miss) + "): 50% 유지. 안전장치 그대로"
+        text += ("\n조건 미충족 (" + "; ".join(miss) + "): 50% 유지. 안전장치(2위 saved + 0.008 미만 또는 1위 상실 시 중지) 그대로."
+                 "\nD(2번째 가게)·비싼 주문 수락 완화(high_accept_105)·그 6시간 점검은 적용하지 않음 (확대 조건)")
     try:
         import order_speed2
         speed = order_speed2.report(t0, now, saved=b1["saved"], deals_total=b1["deals"])
@@ -167,6 +193,7 @@ def main():
     if ok:
         w.set_rule(share=1.0, widened=round(now))
         decisions.record("buyer", "soft_neg_widen", "soft_neg", b1, "person 11/09 ~17:00: 6 h check all met -> 100% of orders")
+        text += "\n" + apply_d_high(b1, now, decisions)
     else:
         decisions.record("buyer", "soft_neg_keep", "soft_neg", b1, "6 h check not met: " + "; ".join(miss))
     alerts.send("info", f"soft_neg_mid:{int(t0)}", text, log=w.log)

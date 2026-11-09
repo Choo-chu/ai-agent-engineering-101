@@ -107,8 +107,10 @@ def report(t0, b0, b1, stopped=None):
 
 
 def guard(b):
-    return (f"saved {b['saved']} < {SAVED_MIN}" if b["saved"] < SAVED_MIN else
-            f"2위와 차이 {b['saved'] - b['second']:.4f} <= {LEAD_MIN}" if b["saved"] - b["second"] <= LEAD_MIN else None)
+    """11/09 ~17:40 (person): off when my saved < the 2nd best + 0.008 or not first (depts/saved_guard.py); was
+    saved < 0.395 or a lead <= 0.02."""
+    from depts import saved_guard
+    return saved_guard.why("accept_rule", b)
 
 
 def always():
@@ -116,6 +118,22 @@ def always():
     import alerts
     import decisions
     from limits import ROUND_END
+    if "--resume" in sys.argv:                     # 11/09 ~17:40: pick up the running rule, switch nothing on
+        r = accept_rule.rules()
+        if not accept_rule.on():
+            log("resume: rule not on, nothing to watch")
+            return
+        t0 = r["since"]
+        b0 = None
+        import ast
+        with open(LOG, encoding="utf-8") as f:
+            for ln in f:
+                if " always on, board {" in ln:
+                    b0 = ast.literal_eval(ln.split(" always on, board ", 1)[1].strip())
+        log(f"resumed (guard: 2nd + 0.008 or not first), since {datetime.fromtimestamp(t0):%m-%d %H:%M}")
+        day0 = t0 + 86400 * int((time.time() - t0) // 86400)
+        always_loop(t0, b0, day0, b0, alerts, decisions, ROUND_END)
+        return
     t0 = time.time()
     b0 = board()
     set_rule(enabled=True, since=round(t0), until=None, low=accept_rule.LOW, high=accept_rule.HIGH, ended=None,
@@ -127,7 +145,10 @@ def always():
                 f"시장 평균의 50~100%이고 예산 안이면 수락 (코드, LLM 없음; 예전 95%). 시작 saved {b0['saved']} (2위 {b0['second']}). "
                 f"30분마다 확인, saved < {SAVED_MIN} 또는 2위와 차이 <= {LEAD_MIN}이면 즉시 끔. 24시간마다 요약", log=log)
     log(f"always on, board {b0}")
-    day0, bd = t0, b0
+    always_loop(t0, b0, t0, b0, alerts, decisions, ROUND_END)
+
+
+def always_loop(t0, b0, day0, bd, alerts, decisions, ROUND_END):
     while time.time() < ROUND_END:
         time.sleep(CHECK_S)
         if not accept_rule.on():
