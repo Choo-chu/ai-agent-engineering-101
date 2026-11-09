@@ -365,11 +365,13 @@ def sofa_numbers(since, now=None):
         sales = db.execute("SELECT s.sku, s.amount, m.cost FROM settles s LEFT JOIN my_stock m ON m.unit=s.unit "
                            "WHERE s.shop=? AND s.ts>=? AND s.ts<?", (ME, since, now)).fetchall()
         sales = [x for x in sales if sofa.is_sofa(x[0])]
-        refunds = db.execute("""SELECT b.sku, (SELECT s.amount FROM settles s WHERE s.shop=? AND s.sku=b.sku
+        # 11/09: refunded holds the amount (> 0 = refunded); only refunds of sales made since `since`, so a sale
+        # under an older warranty rule does not count against the current one
+        refunds = db.execute("""SELECT b.sku, b.refunded, (SELECT s.ts FROM settles s WHERE s.shop=? AND s.sku=b.sku
                                 AND s.buyer=b.buyer AND s.ts<=b.ts ORDER BY s.ts DESC LIMIT 1)
-                                FROM broken b WHERE b.shop=? AND b.refunded=1 AND b.ts>=? AND b.ts<?""",
+                                FROM broken b WHERE b.shop=? AND b.refunded>0 AND b.ts>=? AND b.ts<?""",
                              (ME, ME, since, now)).fetchall()
-        refunds = [r for r in refunds if sofa.is_sofa(r[0])]
+        refunds = [(r[0], r[1]) for r in refunds if sofa.is_sofa(r[0]) and r[2] is not None and r[2] >= since]
     finally:
         db.close()
     n = len([d for d in deals if d[1] != "open"])
@@ -393,7 +395,7 @@ def sofa_warranty_check(seen, log=print, now=None):
     r = sofa.rules()
     if not (r.get("enabled") and r.get("warranty") and r.get("since")):
         return None
-    o = sofa_numbers(r["since"], now)
+    o = sofa_numbers(r.get("warranty_since") or r["since"], now)   # 11/09: counted from the grade rule
     if o["refunds"] >= SOFA_REFUND_MAX or (o["refunds"] and o["refund_amount"] > o["profit"]):
         r.update(warranty=False, warranty_off_at=round(time.time()),
                  warranty_off_reason=f"{o['refunds']} refunds, {o['refund_amount']:,} vs sofa profit {o['profit']:,}")

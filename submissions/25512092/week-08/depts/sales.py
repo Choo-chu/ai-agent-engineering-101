@@ -148,7 +148,7 @@ def warranty_hours(u, case, stats):
                                                                    "warranty_min_n")
     from depts import sofa
     if case != "endgame" and sofa.applies(u):        # sofas: 72 h while sofa_rules.json says warranty (C)
-        return sofa.WARRANTY_H if sofa.warranty_on() else 0
+        return sofa.warranty_for(u)                  # 11/09: none on a C grade sofa
     if not policy.get("sales", "warranty_enabled"):
         return 0
     if case != "normal" or u.get("kind") == "food" or u.get("grade") != "A":

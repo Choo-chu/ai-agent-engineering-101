@@ -4,8 +4,10 @@ Sofa = catalog category leaf SOFA_CAT. Switched by sofa_rules.json, read on ever
 
   A  first ask   the market median of the SKU (other shops' sales, last 48 h), at most the list price, never under B
   B  floor       max(cost x 1.05, median x 0.92), in every shop case but the endgame
-  C  warranty    72 h on every sofa while "warranty" is true; the restock check turns it off by itself after
-                 3 sofa warranty refunds or once the refunds exceed the profit on sofa sales (both since "since")
+  C  warranty    72 h on A / B grade sofas while "warranty" is true, none on C grade (11/09 ~11:10); the restock
+                 check turns it off by itself after 3 sofa warranty refunds or once the refunds exceed the profit
+                 on sofa sales (both since "warranty_since", the 11/09 rule change; "since" before it). Until 11/09
+                 the check counted no refund (broken.refunded holds the amount, it compared it with 1)
   D  haggling    by code, no harness call: never above the first ask; each counter steps STEP_SHARE of
                  (first ask - floor) down, ending at the floor; accept an offer >= the next counter
   E  buying      (depts/purchasing.py) >= 30 market sales in 48 h, >= 2 sales an hour (last 2 h), cost <= 500,000
@@ -49,6 +51,17 @@ def on():
 def warranty_on():
     r = rules()
     return bool(r.get("enabled") and r.get("warranty"))
+
+
+def warranty_for(u):
+    """C (person's decision 11/09 ~11:10): WARRANTY_H for an A / B grade sofa unit while "warranty" is on; a C grade
+    unit (refurbished: 4 of the 6 sofa refunds of 11/08) is sold without a warranty ("c_no_warranty", default on)."""
+    r = rules()
+    if not (r.get("enabled") and r.get("warranty")):
+        return 0
+    if u.get("grade") == "C" and r.get("c_no_warranty", True):
+        return 0
+    return WARRANTY_H
 
 
 def is_sofa(sku):

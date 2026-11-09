@@ -101,6 +101,18 @@ def guard_check(sku, c, avg, inv):
     return None
 
 
+BUY_EXCLUDE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "buy_exclude.json")
+
+
+def excluded():
+    """{sku: why} never bought (buy_exclude.json, read every run; person's decision 11/09 ~11:10: G5e3784e6)."""
+    try:
+        with open(BUY_EXCLUDE, encoding="utf-8") as f:
+            return json.load(f).get("skus") or {}
+    except (OSError, ValueError):
+        return {}
+
+
 def make_plan(inv, units, catalog, budget, log):
     """The buy lines for this budget (unchanged rules; moved out of main so cap_record can run it without the cap)."""
     held, held_high = {}, 0
@@ -154,6 +166,8 @@ def make_plan(inv, units, catalog, budget, log):
         reqc = []
     for sku, qty, ravg, why in reqc:
         c = catalog.get(sku) or {}
+        if sku in excluded():
+            continue
         cost = c["list_price"] * COST_SHARE.get(c.get("kind", "goods"), 0.6) * surge.get(sku, 1.0)
         qty = min(qty, int(left["low"] // cost))
         if qty <= 0:
@@ -171,10 +185,11 @@ def make_plan(inv, units, catalog, budget, log):
     except Exception as e:
         log(f"[hot fast] failed: {type(e).__name__}: {e}")
         fast_share = {}
+    no_buy = excluded()
     for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}
-        if not s or not c.get("list_price"):
+        if not s or not c.get("list_price") or sku in no_buy:
             continue
         forum = sku in wanted
         avg, n = price_of(sku, stats)
@@ -301,7 +316,7 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     best = None
     for sku, s in stats["skus"].items():
         c = catalog.get(sku) or {}
-        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 \
+        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 or sku in excluded() \
                 or c.get("kind") == "food" or c["list_price"] * COST_SHARE["goods"] < sofa_rules.MIN_COST:
             continue
         avg, n = price_of(sku, stats)
