@@ -7,6 +7,8 @@ commit + push, no b0 check: a lower cap may change the shop case on purpose) and
      From 11/08 ~11:00 (person), with "old_share" in cap_brake.json instead: of the units supplied after the raise
      that are at least OLD_H old, the share of their cost still unsold is over OLD_SHARE (needs MIN_OLD_N of them;
      the 11/08 07:29 trip was 19.6% on this measure)
+     From 11/09 ~19:00 (person): the share AND their unsold cost over OLD_UNSOLD_MIN (3M), judged only once their
+     cost is at least MIN_OLD_COST (5M; was 20 units)
   3. cash (inventory balance, as the shop case reads it) under CASH_MIN
 Rules in cap_brake.json; the latest numbers in logs/cap_brake_state.json (read by the 3 h report). The brake fires
 once; raising the cap again is the person's decision.
@@ -65,8 +67,13 @@ def measure(r, now=None):
         trips.append(f"입고→판매 중앙값 {m['median_h']:.1f}시간 > {r['median_h']}시간 (최근 {r['window_h']}시간 판매 "
                      f"{m['sales']}개)")
     if r.get("old_share") is not None:              # 11/08 ~11:00 (person): a share instead of a cost
-        if m["old_eligible_n"] >= r.get("min_old_n", 20) and m["old_share"] > r["old_share"]:
+        # 11/09 ~19:00 (person): the share AND the unsold cost over old_unsold_min (3M); judged only once the eligible
+        # cost is at least min_old_cost (5M) instead of min_old_n (20) units
+        enough = (m["old_eligible_cost"] >= r["min_old_cost"] if r.get("min_old_cost") is not None
+                  else m["old_eligible_n"] >= r.get("min_old_n", 20))
+        if enough and m["old_share"] > r["old_share"] and m["old_unsold_cost"] > r.get("old_unsold_min", 0):
             trips.append(f"상향 후 입고분 중 {r['old_h']}시간+ 미판매 비율 {m['old_share']:.1%} > {r['old_share']:.0%} "
+                         f"이고 미판매 원가 {m['old_unsold_cost']:,} > {r.get('old_unsold_min', 0):,} "
                          f"(원가 {m['old_unsold_cost']:,} / {m['old_eligible_cost']:,}, {m['old_eligible_n']}개 중)")
     elif m["old_cost"] > r["old_cost"]:
         trips.append(f"{r['old_h']}시간 넘게 안 팔린 재고 원가 {m['old_cost']:,} > {r['old_cost']:,} ({m['old_units']}개"

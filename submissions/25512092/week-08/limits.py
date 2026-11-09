@@ -34,7 +34,7 @@ CASH_RESERVE_CHANGES = []
 
 # how far an approved analyst proposal may move the hard limits above (person's decision 11/06). Fixed here:
 # neither the analyst nor the CEO can change these maxima.
-ANALYST_MAX = {"STOCK_CAP": 30_000_000,   # 11/07 ~20:40 person: 15M -> 20M (with the cap brake, depts/cap_brake.py); 11/08 ~20:35: -> 30M (brake back to 20M)
+ANALYST_MAX = {"STOCK_CAP": 40_000_000,   # 11/09 ~19:00 person: 30M -> 40M (brake condition 2 needs share AND 3M unsold); 11/07 ~20:40 person: 15M -> 20M (with the cap brake, depts/cap_brake.py); 11/08 ~20:35: -> 30M (brake back to 20M)
                 "HIGH_MAX": 1_500_000, "CASH_RESERVE_MIN": 1_000_000}
 
 # market rules for one restock run (agent.md): at most 10 lines, 1-20 units a line

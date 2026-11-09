@@ -7,8 +7,27 @@
  "old_cost": 3000000,
  "old_scope": "since",
  "cash_min": 2000000,
- "low": 15000000,
- "since": null,
- "pid": null,
- "why": "person's decision 11/07 ~20:40; condition 2 counts only units supplied after the raise (person, 11/07 ~20:50)"
+ "low": 20000000,
+ "since": 1794193525,
+ "pid": 33,
+ "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M",
+ "old_share": 0.25,
+ "min_old_n": 20,
+ "history": [
+  {
+   "fired": 1794090562,
+   "fired_why": [
+    "6시간 넘게 안 팔린 재고 원가 3,058,144 > 3,000,000 (50개, 상향 후 입고분만)"
+   ]
+  },
+  {},
+  {},
+  {}
+ ],
+ "fired": 1794217635,
+ "fired_why": [
+  "상향 후 입고분 중 6시간+ 미판매 비율 39.8% > 25% (원가 782,811 / 1,969,050, 50개 중)"
+ ],
+ "old_unsold_min": 3000000,
+ "min_old_cost": 5000000
 }
