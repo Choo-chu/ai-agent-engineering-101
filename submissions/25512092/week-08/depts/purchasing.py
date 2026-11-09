@@ -116,10 +116,19 @@ def excluded():
 def make_plan(inv, units, catalog, budget, log):
     """The buy lines for this budget (unchanged rules; moved out of main so cap_record can run it without the cap)."""
     held, held_high = {}, 0
+    stats0 = load_stats()
+    try:                                          # 11/09 ~14:50: over-cost high units are out of the high_max count
+        from depts import overcost
+        oc = overcost.mark(units, lambda k: price_of(k, stats0)[0], log=log)
+    except Exception as e:
+        log(f"[overcost] failed: {type(e).__name__}: {e}")
+        oc = set()
     for u in units:
         if u.get("grade") != "expired":
             held[u["sku"]] = held.get(u["sku"], 0) + 1
-            held_high += u.get("cost", 0) > HIGH_MIN
+            held_high += u.get("cost", 0) > HIGH_MIN and u.get("unit") not in oc
+    if oc:
+        log(f"[overcost] {len(oc)} high-price units with cost above the market average: not counted in high_max")
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
     (MIN_MARGIN, MY_SHARE, WANTED_QTY, MIN_SOLD_30M, FOOD_MIN_SHELF_H, MAX_BREAK, TRIAL_MARKET_30M,
      TRIAL_QTY) = policy.values("purchasing", "min_margin", "my_share", "wanted_qty", "min_sold_30m",

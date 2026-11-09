@@ -60,8 +60,12 @@ def floor(u, avg, reserve, case=None, now=None, rule=None):
         return reserve
     fr = r.get("floor_rule") or {}
     if fr.get("enabled") and _high(u) and case != "endgame" and not _sofa(u):
-        new = high_floor(u, now, fr)
+        from depts import overcost                 # 11/09 ~14:50: cost above the average -> cost x 1.00, never under cost
+        oc = overcost.is_overcost(u, avg)
+        new = high_floor(u, now, dict(fr, cost=overcost.COST_FACTOR) if oc else fr)
         reserve = min(reserve, new) if str(rule or "").startswith(MARKDOWNS) else new
+        if oc:
+            reserve = max(reserve, int(u["cost"]))
     share = (r.get("clear") or {}).get(u.get("sku"))
     if share is None or not avg:
         return reserve

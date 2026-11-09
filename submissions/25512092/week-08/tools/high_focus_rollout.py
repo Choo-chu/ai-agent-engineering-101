@@ -82,12 +82,22 @@ def rec_ratio(d, t0, t1):
     return (r / n if n else None), n
 
 
+def excluded_units():
+    """(11/09 ~14:50) over-cost high units (depts/overcost.py: listed or seen) are out of the brake."""
+    try:
+        from depts import overcost
+        return set(overcost.rules().get("units") or []) | set(overcost.seen())
+    except Exception:
+        return set()
+
+
 def brake_state(d, now, base_ratio, since=None):
-    """[(name, tripped, text)] for the three conditions."""
+    """[(name, tripped, text)] for the three conditions (over-cost units left out of a and b)."""
     hm = high_min()
-    sold = d.execute("SELECT s.ts - m.supplied_at FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND "
+    ex = excluded_units()
+    sold = d.execute("SELECT s.ts - m.supplied_at, m.unit FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND "
                      "s.ts>=? AND m.cost>? AND m.supplied_at IS NOT NULL", (ME, now - SELL_MEDIAN_H * 3600, hm)).fetchall()
-    secs = [x for x, in sold if x is not None and x >= 0]
+    secs = [x for x, u in sold if x is not None and x >= 0 and u not in ex]
     med = statistics.median(secs) / 3600 if secs else None
     a = (len(secs) >= 3 and med > SELL_MEDIAN_H,
          f"고가 입고->판매 중앙값(최근 6시간 판매 {len(secs)}건) {'-' if med is None else f'{med:.1f}시간'} (기준 {SELL_MEDIAN_H}시간 초과"
@@ -97,6 +107,7 @@ def brake_state(d, now, base_ratio, since=None):
     if since:
         aged = d.execute("SELECT unit, cost FROM my_stock WHERE cost>? AND supplied_at>=? AND supplied_at<=?",
                          (hm, since, now - STALE_H * 3600)).fetchall()
+        aged = [(u, c) for u, c in aged if u not in ex]
     else:
         aged = []
     held = held_units()
@@ -280,6 +291,37 @@ def old_stale_text(rows):
     return "\n".join(L)
 
 
+def overcost_on(rows):
+    """(11/09 ~14:50) the listed units whose floor is above the market average: floor cost x 1.00, out of high_max and
+    the brake; from now on any high unit with cost > avg too (depts/overcost.py). The seller loads high_ask at a
+    restart: restart it."""
+    import alerts
+    from depts import overcost
+    from seller_conc_rollout import restart_seller, seller_back
+    over = [r for r in rows if r["floor"] and r["avg"] and r["floor"] > r["avg"]]
+    with open(overcost.RULES, "w", encoding="utf-8") as f:
+        json.dump({"enabled": True, "since": round(time.time()), "units": [r["unit"] for r in over],
+                   "note": "person 11/09 ~14:50: floor > avg at the 15:05 list + any high unit with cost > avg: floor "
+                           "cost x 1.00, out of high_max and the high-price brake"}, f, ensure_ascii=False)
+    units = held_units() or []
+    from market_db import load_stats, price_of
+    st = load_stats()
+    oc = overcost.mark(units, lambda k: price_of(k, st)[0], log=log)
+    t = time.time()
+    killed = restart_seller()
+    back = None
+    for _ in range(36):
+        time.sleep(5)
+        back = seller_back(t)
+        if back:
+            break
+    log(f"overcost on: {len(over)} listed, {len(oc)} over-cost held; seller restart: killed {killed}, back {back}")
+    alerts.send("info", "overcost_on", f"원가가 시장 평균보다 높은 고가 규칙 적용 {datetime.now():%H:%M}: 목록 중 하한>평균 {len(over)}개 "
+                f"({', '.join(r['sku'] for r in over)}) + 지금 원가>평균인 고가, 합 {len(oc)}개: 하한 원가 x 1.05 -> 1.00 (원가 아래 없음), "
+                "high_max 개수와 고가 브레이크에서 제외, 앞으로 원가>평균이 되는 고가도 자동 (decision overcost_high). 나머지(하한<평균)는 그대로. "
+                f"seller 재시작 {'완료' if back else '확인 안 됨'}", log=log)
+
+
 def trip(why):
     import alerts
     import decisions
@@ -314,8 +356,9 @@ def main():
         rows = old_stale()
         save_state(excluded=[r["unit"] for r in rows])
         alerts.send("info", "high_focus_old_stale", old_stale_text(rows), log=log)
+        overcost_on(rows)
     except Exception as e:
-        log(f"old stale list failed: {type(e).__name__}: {e}")
+        log(f"old stale list / overcost failed: {type(e).__name__}: {e}")
     reported = False
     while True:
         now = time.time()
