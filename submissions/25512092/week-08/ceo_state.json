@@ -3,15 +3,15 @@
  "shadow_since": 1793946964.9468915,
  "live_since": 1794034904.6715198,
  "auto_live_at": 1794034800.0,
- "runs": 109,
+ "runs": 154,
  "errors": 0,
- "last_run": 1794149611.3646216,
- "last_guard": 1794147175.8491695,
+ "last_run": 1794234729.1054232,
+ "last_guard": 1794234926.1926575,
  "key_ts": {
-  "purchasing.spend_share": 1794104071.4661002,
+  "purchasing.spend_share": 1794194666.892281,
   "purchasing.perishable_trial_qty": 1794036453.7725725
  },
- "split_day": "20261108",
+ "split_day": "20261109",
  "pre_live": {
   "purchasing.high_share": null,
   "purchasing.high_max": null,

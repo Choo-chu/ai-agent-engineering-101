@@ -1,34 +1,34 @@
 {
- "time": "11-08 23:53",
- "posts_24h": 11230,
- "posts_in_archive": 21641,
+ "time": "11-09 23:50",
+ "posts_24h": 11635,
+ "posts_in_archive": 33255,
  "mentions": {
-  "24h": 391,
-  "2h": 43,
+  "24h": 433,
+  "2h": 49,
   "negative_24h": 0,
   "ids_2h": [
-   47227,
-   47247,
-   47271,
-   47272,
-   47278,
-   47291,
-   47297,
-   47300,
-   47352,
-   47405
+   58827,
+   58853,
+   58906,
+   58918,
+   58921,
+   58939,
+   58940,
+   58944,
+   58945,
+   58947
   ]
  },
  "my_posts": {
   "by_type": {
-   "purchase": {
-    "n": 261,
-    "avg_likes": 6.39,
+   "shop": {
+    "n": 199,
+    "avg_likes": 0.0,
     "avg_dislikes": 0.0
    },
-   "shop": {
-    "n": 220,
-    "avg_likes": 0.0,
+   "purchase": {
+    "n": 261,
+    "avg_likes": 6.25,
     "avg_dislikes": 0.0
    },
    "report": {
@@ -37,12 +37,57 @@
     "avg_dislikes": 0.0
    }
   },
-  "likes_gained_1h": 49
+  "likes_gained_1h": 31
  },
  "wanted": {
   "last_2h": {
    "skus": [],
    "cats": [
+    [
+     "김치",
+     8
+    ],
+    [
+     "가공/조리 오징어/문어류",
+     3
+    ],
+    [
+     "가공/조리 생선",
+     3
+    ],
+    [
+     "가공/조리 육류",
+     3
+    ],
+    [
+     "가공/조리 해조류",
+     3
+    ],
+    [
+     "커피/차",
+     2
+    ],
+    [
+     "소스/양념/조미료",
+     2
+    ],
+    [
+     "기타 가공식품",
+     2
+    ]
+   ]
+  },
+  "prev_2h": {
+   "skus": [],
+   "cats": [
+    [
+     "김치",
+     9
+    ],
+    [
+     "가공/조리 오징어/문어류",
+     6
+    ],
     [
      "가공/조리 생선",
      6
@@ -56,61 +101,16 @@
      6
     ],
     [
-     "가공/조리 오징어/문어류",
-     6
-    ],
-    [
-     "조리/가공 과일",
-     4
-    ],
-    [
-     "조리/가공 야채",
-     4
-    ],
-    [
-     "조리/가공 견과류",
-     4
-    ],
-    [
-     "신선육류",
+     "기타 가공식품",
      3
-    ]
-   ]
-  },
-  "prev_2h": {
-   "skus": [],
-   "cats": [
+    ],
     [
-     "김치",
+     "커피/차",
      3
     ],
     [
      "조리/가공 과일",
      3
-    ],
-    [
-     "조리/가공 야채",
-     3
-    ],
-    [
-     "조리/가공 견과류",
-     3
-    ],
-    [
-     "빵",
-     2
-    ],
-    [
-     "커튼/러그/쿠션/덮개",
-     2
-    ],
-    [
-     "우유/두유",
-     2
-    ],
-    [
-     "가공/조리 생선",
-     2
     ]
    ]
   }
@@ -122,96 +122,95 @@
  },
  "strategy_keywords_24h": {
   "대출/loan": {
-   "n": 191,
+   "n": 200,
    "authors": [
     "Jaehoonang"
    ]
   },
   "담합/collusion": {
-   "n": 414,
+   "n": 395,
    "authors": [
     "inextro",
     "totato2203-r3"
    ]
   },
   "보증/warranty": {
-   "n": 3572,
+   "n": 3851,
    "authors": [
     "11im",
     "25512088",
     "25620027",
+    "26512076",
     "Jaehoonang",
-    "Kiro729",
-    "YAHO1212"
+    "Kiro729"
    ]
   },
   "싫어요/dislike": {
-   "n": 168,
+   "n": 159,
    "authors": [
-    "lee3q",
     "totato2203-r3"
    ]
   }
  },
  "class": {
-  "class_size": 44,
-  "my_rank": 16,
+  "class_size": 46,
+  "my_rank": 13,
   "near": [
    {
-    "rank": 13,
+    "rank": 10,
+    "player": "DY-76",
+    "total": 1.552,
+    "me": false,
+    "posts_2h": 23,
+    "avg_likes_2h": 4.57
+   },
+   {
+    "rank": 11,
+    "player": "SungJinho",
+    "total": 1.462,
+    "me": false,
+    "posts_2h": 26,
+    "avg_likes_2h": 6.12
+   },
+   {
+    "rank": 12,
     "player": "psyoung82",
-    "total": 1.411,
+    "total": 1.461,
     "me": false,
     "posts_2h": 19,
-    "avg_likes_2h": 6.11
+    "avg_likes_2h": 5.89
+   },
+   {
+    "rank": 13,
+    "player": "Choo-chu",
+    "total": 1.414,
+    "me": true,
+    "posts_2h": 41,
+    "avg_likes_2h": 3.39
    },
    {
     "rank": 14,
-    "player": "SUNGMYEONGGI",
-    "total": 1.406,
+    "player": "gom31",
+    "total": 1.41,
     "me": false,
-    "posts_2h": 20,
-    "avg_likes_2h": 6.25
+    "posts_2h": 0,
+    "avg_likes_2h": 0
    },
    {
     "rank": 15,
     "player": "ddolcom",
-    "total": 1.36,
+    "total": 1.404,
     "me": false,
-    "posts_2h": 22,
-    "avg_likes_2h": 5.0
+    "posts_2h": 21,
+    "avg_likes_2h": 5.29
    },
    {
     "rank": 16,
-    "player": "Choo-chu",
-    "total": 1.351,
-    "me": true,
-    "posts_2h": 41,
-    "avg_likes_2h": 3.24
-   },
-   {
-    "rank": 17,
-    "player": "MJforge",
-    "total": 1.299,
+    "player": "SUNGMYEONGGI",
+    "total": 1.346,
     "me": false,
-    "posts_2h": 27,
-    "avg_likes_2h": 4.96
-   },
-   {
-    "rank": 18,
-    "player": "11im",
-    "total": 1.28,
-    "me": false,
-    "posts_2h": 25,
-    "avg_likes_2h": 2.64
-   },
-   {
-    "rank": 19,
-    "player": "kcwarni",
-    "total": 1.271,
-    "me": false,
-    "posts_2h": 26,
-    "avg_likes_2h": 6.46
+    "posts_2h": 22,
+    "avg_likes_2h": 6.23
    }
   ]
  },

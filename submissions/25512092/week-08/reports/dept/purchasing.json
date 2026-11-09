@@ -1,22 +1,22 @@
 {
  "metrics": {
-  "units_bought": 549,
-  "cost_bought": 17394674,
-  "cap_runs": 18,
-  "cap_budget_held": 91199586,
-  "plan_decisions": 377,
-  "dedup": 6
+  "units_bought": 407,
+  "cost_bought": 47148600,
+  "cap_runs": 27,
+  "cap_budget_held": 204158385,
+  "plan_decisions": 307,
+  "dedup": 0
  },
  "issues": [
   {
    "level": "info",
-   "text": "STOCK_CAP cut or blocked 18 runs, 91,199,586 of budget held back",
+   "text": "STOCK_CAP cut or blocked 27 runs, 204,158,385 of budget held back",
    "refs": []
   }
  ],
  "dept": "purchasing",
- "ts": 1794149931,
- "policy_version": 14,
+ "ts": 1794236129,
+ "policy_version": 21,
  "window_h": 6,
  "requests": []
 }

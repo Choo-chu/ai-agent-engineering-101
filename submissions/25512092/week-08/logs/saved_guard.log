@@ -1,0 +1,26 @@
+11-09 17:50:38 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 17:50:38 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 17:50:47 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 17:50:47 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 17:51:17 start (staged guard: high_accept 2nd + 0.025, second_shop 2nd + 0.015)
+11-09 17:54:11 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 17:54:11 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 17:54:22 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 17:54:22 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 17:54:45 start (staged guard: high_accept 2nd + 0.025, second_shop 2nd + 0.015)
+11-09 19:21:06 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 19:21:06 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 19:35:14 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 19:35:14 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 19:35:43 high_accept off: saved 0.39 < 2위 0.37 + 0.025 (차이 0.0200)
+11-09 19:35:43 second_shop off: saved 0.384 < 2위 0.37 + 0.015 (차이 0.0140)
+11-09 20:54:48 check {'saved': 0.4195, 'deals': 2291, 'surplus': 89725296, 'all': 0.863, 'second': 0.3709, 'saved_rank': 1, 'all_rank': 6}
+11-09 21:03:53 start (staged guard: high_accept 2nd + 0.025, second_shop 2nd + 0.015)
+11-09 21:03:55 check {'saved': 0.4195, 'deals': 2295, 'surplus': 89774302, 'all': 0.863, 'second': 0.3709, 'saved_rank': 1, 'all_rank': 6}
+11-09 21:26:15 start (staged guard: high_accept 2nd + 0.025, second_shop 2nd + 0.015)
+11-09 21:26:17 check {'saved': 0.4194, 'deals': 2305, 'surplus': 90279685, 'all': 0.863, 'second': 0.371, 'saved_rank': 1, 'all_rank': 6}
+11-09 21:56:17 check {'saved': 0.4193, 'deals': 2323, 'surplus': 90750187, 'all': 0.863, 'second': 0.3711, 'saved_rank': 1, 'all_rank': 6}
+11-09 22:26:19 check {'saved': 0.419, 'deals': 2341, 'surplus': 92726518, 'all': 0.863, 'second': 0.3713, 'saved_rank': 1, 'all_rank': 6}
+11-09 22:56:26 check {'saved': 0.4188, 'deals': 2371, 'surplus': 94010284, 'all': 0.863, 'second': 0.3714, 'saved_rank': 1, 'all_rank': 6}
+11-09 23:26:27 check {'saved': 0.4187, 'deals': 2397, 'surplus': 94550522, 'all': 0.864, 'second': 0.3715, 'saved_rank': 1, 'all_rank': 6}
+11-09 23:56:28 check {'saved': 0.4187, 'deals': 2430, 'surplus': 95954317, 'all': 0.864, 'second': 0.3716, 'saved_rank': 1, 'all_rank': 6}

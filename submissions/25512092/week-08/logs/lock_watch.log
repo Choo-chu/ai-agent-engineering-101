@@ -1,0 +1,13 @@
+11-09 11:13:16 waiting for the seller state (14:00 restart)
+11-09 12:06:16 seller state seen
+11-09 13:06:16 {"ts": 1794197177, "state_age_s": 12, "open": 6, "held": 607, "locked": 6, "locked_cost": 59748, "share": 0.0099, "expired_1h": 23}
+11-09 14:06:16 {"ts": 1794200777, "state_age_s": 23, "open": 11, "held": 596, "locked": 11, "locked_cost": 758142, "share": 0.0185, "expired_1h": 30}
+11-09 15:06:16 {"ts": 1794204377, "state_age_s": 16, "open": 7, "held": 580, "locked": 7, "locked_cost": 93943, "share": 0.0121, "expired_1h": 46}
+11-09 16:06:16 {"ts": 1794207977, "state_age_s": 20, "open": 10, "held": 550, "locked": 10, "locked_cost": 313934, "share": 0.0182, "expired_1h": 50}
+11-09 17:06:16 {"ts": 1794211577, "state_age_s": 20, "open": 6, "held": 564, "locked": 6, "locked_cost": 711322, "share": 0.0106, "expired_1h": 51}
+11-09 18:06:16 {"ts": 1794215177, "state_age_s": 24, "open": 5, "held": 585, "locked": 5, "locked_cost": 375670, "share": 0.0085, "expired_1h": 50}
+11-09 19:06:16 {"ts": 1794218777, "state_age_s": 34, "open": 1, "held": 555, "locked": 0, "locked_cost": 0, "share": 0.0, "expired_1h": 44}
+11-09 20:06:16 {"ts": 1794222377, "state_age_s": 23, "open": 4, "held": 523, "locked": 4, "locked_cost": 107749, "share": 0.0076, "expired_1h": 53}
+11-09 21:06:16 {"ts": 1794225977, "state_age_s": 16, "open": 5, "held": 575, "locked": 5, "locked_cost": 1364418, "share": 0.0087, "expired_1h": 66}
+11-09 22:06:16 {"ts": 1794229577, "state_age_s": 17, "open": 6, "held": 591, "locked": 6, "locked_cost": 469584, "share": 0.0102, "expired_1h": 51}
+11-09 23:06:16 {"ts": 1794233177, "state_age_s": 35, "open": 11, "held": 521, "locked": 10, "locked_cost": 638137, "share": 0.0192, "expired_1h": 61}

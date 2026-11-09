@@ -1,18 +1,18 @@
 {
  "metrics": {
-  "reviews": 961,
+  "reviews": 806,
   "stars": 4.15,
   "review_accounts": 35,
-  "stars_per_review": 4.16,
-  "one_star": 3,
-  "cancelled": 3092,
-  "posts": 126,
+  "stars_per_review": 3.85,
+  "one_star": 24,
+  "cancelled": 2025,
+  "posts": 121,
   "guards": 0
  },
  "issues": [],
  "dept": "cs",
- "ts": 1794149931,
- "policy_version": 14,
+ "ts": 1794236129,
+ "policy_version": 21,
  "window_h": 6,
  "requests": []
 }
