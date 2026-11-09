@@ -74,6 +74,24 @@ def check(b, alerts, decisions):
     return off
 
 
+def shop_order_check(alerts, decisions, now=None):
+    """11/09 ~21:30: switch only shop_order's two rules off (stock_first, rate_order) when the close rate or deals per
+    hour drop (tools/shop_order_check.guard); everything else stays."""
+    from depts import shop_order
+    import shop_order_check as so
+    why = so.guard(now)
+    if not why:
+        return None
+    r = shop_order.rules()
+    r.update(stock_first=False, rate_order=False, stopped=round(now or time.time()), stop_reason=why)
+    with open(shop_order.RULES, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False)
+    decisions.record("buyer", f"{shop_order.TAG}_stop", shop_order.TAG, r.get("base"), why)
+    alerts.send("urgent", f"{shop_order.TAG}_stop", f"buyer 가게 순서(재고 없음 뒤로·성사율 순) 끔: {why}. 나머지는 유지", log=log)
+    log(f"shop_order off: {why}")
+    return why
+
+
 FLOOR = 20.6                                   # the order spacing floor (tools/order_speed2.py)
 
 
@@ -196,6 +214,10 @@ def main():
                 check(b, alerts, decisions)
             except Exception as e:
                 log(f"check failed: {type(e).__name__}")
+        try:
+            shop_order_check(alerts, decisions)
+        except Exception as e:
+            log(f"shop_order check failed: {type(e).__name__}")
         nxt = CHECK_S
         if t_on and not st.get(f"report:{int(t_on)}"):
             nxt = max(5, min(CHECK_S, t_on + REPORT_H * 3600 - time.time()))

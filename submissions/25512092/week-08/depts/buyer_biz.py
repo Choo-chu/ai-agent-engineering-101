@@ -126,8 +126,9 @@ def summarize(shop, memory):
             "snippets": [clean(r.get("review", "")) for r in revs[:2]]}
 
 
-def choose(shops, memory, item, scores):
-    """Returns allowed candidates, best shop score first, and the reason for the first one."""
+def choose(shops, memory, item, scores, reorder=None):
+    """Returns allowed candidates, best shop score first, and the reason for the first one. reorder(allowed) -> list:
+    11/09 ~21:30 depts/shop_order (no-stock shops back, our close rate first), applied before the top-k cut."""
     infos = [summarize(s, memory) for s in shops if s.get("name") and s.get("url")]
     allowed = [c for c in infos if not c["blocked"]]
     for c in infos:
@@ -140,6 +141,11 @@ def choose(shops, memory, item, scores):
     allowed.sort(key=lambda c: c["shop_score"]["score"], reverse=True)
     if not allowed:
         return [], "no shops in the list"
+    if reorder is not None:
+        try:
+            allowed = reorder(allowed)
+        except Exception as e:                        # never lose the order over it: shop-score order
+            log(f"[shop_order] failed: {type(e).__name__}: {e}")
     b = allowed[0]["shop_score"]
     return allowed[:__import__("policy").get("buyer", "top_k", TOP_K)], (f"{allowed[0]['name']}: shop score {b['score']:.2f} (cheap {b['cheap']:.2f}, "
                              f"honest {b['honest']:.2f}, success {b['success']:.2f})")
@@ -579,7 +585,20 @@ def main():
     stats, catalog = load_stats(), load_catalog()
     SHOP_FLAGS.update(stats.get("shop_flags", {}))
     case = strategy.buyer_case()
-    ordered, why = choose(shops, memory, args.item, stats.get("shop_score", {}))
+    from depts import shop_order                      # 11/09 ~21:30: no-stock shops back, our close rate first
+    so_r, so_hold, reorder_fn = shop_order.rules(), {}, None
+    if shop_order.on(so_r):
+        def reorder_fn(allowed):
+            def sku_of(c):
+                offers = next((s.get("offers") for s in shops if s["name"] == c["name"]), None)
+                return pick_sku(offers, stats, catalog, args.budget)[0]["sku"] if offers else None
+            out, info = shop_order.reorder(allowed, sku_of, r=so_r)
+            so_hold.update(rec={"score_first": allowed[0]["name"], "first": out[0]["name"],
+                                "back": [n for n, v in info.items() if v[0]]})
+            log(f"[{shop_order.TAG}] " + ", ".join(f"{c['name']}({'no stock 1 h, ' if info[c['name']][0] else ''}"
+                                                   f"rate {info[c['name']][1]:.2f}, n {info[c['name']][2]})" for c in out[:5]))
+            return out
+    ordered, why = choose(shops, memory, args.item, stats.get("shop_score", {}), reorder_fn)
     if not ordered:
         log("no shop to trade with")
         print(json.dumps({"shop": None, "receipt": None, "stars": None, "review": "no shops"}), flush=True)
@@ -668,6 +687,8 @@ def main():
                                   if hf else sn_rules)
                             if sn_arm == "soft" else None, shop=c["name"], high=hf)
             res["secs"] = round(time.time() - t_neg, 1)
+            if res.get("ended") == "seller_ended" and d2.STOCK.search(res.get("end_text") or ""):
+                shop_order.note_no_stock(c["name"], sku if offers else None)     # 11/09 ~21:30: for shop_order
             if second_from is not None:
                 res["second_shop"] = True
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
@@ -753,7 +774,8 @@ def main():
                      offers=res.get("offers", 0), harness_calls=res.get("harness_calls", 0),
                      accept_rule=res.get("accept_rule"), neg_secs=res.get("secs"), order_secs=round(time.time() - start, 1),
                      error=bool(res.get("error")), skip=res.get("skip"), second_shop=bool(res.get("second_shop")),
-                     first_shop=second_from, high_accept=bool(res.get("high_accept")), high_factor=hf, market_avg=avg_now)
+                     first_shop=second_from, high_accept=bool(res.get("high_accept")), high_factor=hf, market_avg=avg_now,
+                     shop_order=so_hold.get("rec"))
     print(json.dumps(out, ensure_ascii=False), flush=True)  # last line: the kit reads this
 
 

@@ -110,6 +110,14 @@ def summary(t0, t1):
             lines.append(f"8. 고가·소파 취소 사유: 계산 실패 {type(e).__name__}")
     if t1 >= datetime(2026, 11, 10).timestamp():  # 11/09 ~19:45 (person): from the 11/10 summary
         lines.append("9. " + exclude_line())
+    try:                                          # 11/09 ~21:30 (person): the shop_order 6 h check, once it is due
+        from depts import shop_order
+        t_on = shop_order.rules().get("since")
+        if t_on and t1 >= t_on + 6 * 3600 and t1 - t_on <= 36 * 3600:
+            import shop_order_check
+            lines.append("10. " + shop_order_check.report(t_on, t_on + 6 * 3600))
+    except Exception as e:
+        lines.append(f"10. 가게 순서 6시간 점검 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 

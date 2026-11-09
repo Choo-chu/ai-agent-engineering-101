@@ -15,6 +15,10 @@ from depts import accept_rule, buyer_biz as bb, high_accept, saved_guard, second
 from _isolate import policy, tmp_path  # noqa: E402
 
 policy()                                          # a temp policy.json (code defaults)
+from depts import shop_order  # noqa: E402
+shop_order.RULES, shop_order.LOG = tmp_path("shop_order.json"), tmp_path("no_stock.jsonl")   # not the live files
+from depts import buyer_speed  # noqa: E402
+buyer_speed.RULES = tmp_path("buyer_speed.json")
 
 D2_ON = {"enabled": True, "since": 0}
 HA_ON = {"enabled": True, "since": 0, "min_list": 200_000, "factor": 1.05}
