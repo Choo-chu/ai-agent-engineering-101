@@ -363,7 +363,8 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
         return None
     out = []
     for sku, cost, sold, avg, name in found[:room]:
-        if held_cost + cost > STOCK_CAP or cash - cost < CASH_RESERVE:
+        import limits
+        if held_cost + cost > limits.stock_cap_now(cash, held_cost)[0] or cash - cost < CASH_RESERVE:
             log(f"[sofa trial] skip {name[:30]}: est. cost {int(cost):,} would pass STOCK_CAP or the cash reserve")
             break
         held_cost, cash = held_cost + cost, cash - cost
@@ -398,7 +399,7 @@ def cap_record(inv, units, catalog, budget, plan, case):
             cut = int(sum(q * ((catalog.get(k) or {}).get("list_price") or 0) * COST_SHARE.get(
                 (catalog.get(k) or {}).get("kind", "goods"), 0.6) for k, q in extra))
             alerts.send("info", "stock_cap_binding",
-                        f"STOCK_CAP {MAX_STOCK_COST:,}에 매입이 막히기 시작: 재고 원가 {stock:,}, 현금 {cash:,}, "
+                        f"STOCK_CAP {__import__('limits').stock_cap_now(cash, stock)[0]:,}에 매입이 막히기 시작: 재고 원가 {stock:,}, 현금 {cash:,}, "
                         f"이번 run 예산 {int(max(budget, 0)):,} (상한 없으면 {int(free):,}), 상한 때문에 못 산 "
                         f"{len(extra)}개 SKU 약 {cut:,}원. STOCK_CAP은 그대로(사람 결정 대기)", log=log,
                         repeat_s=6 * 3600)

@@ -167,7 +167,8 @@ def proposals(inv, catalog, reports, st, now):
                     out.append(("purchasing", k, v, f"daily buying split: {why}"))
         decisions.record("ceo", "rule", "buying_split", new, why)
 
-    spend, why = spend_rule(stock, cash, sa.get("profit", 0), STOCK_CAP)
+    import limits
+    spend, why = spend_rule(stock, cash, sa.get("profit", 0), limits.stock_cap_now(cash, stock)[0])
     if spend is not None and spend != policy.get("purchasing", "spend_share"):
         out.append(("purchasing", "spend_share", spend, why))
 

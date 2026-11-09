@@ -10,6 +10,7 @@ becomes a buy candidate whatever its place on the hot list, when it passes the b
 Target: TARGET units held per SKU, FAST_TARGET (8; 5 until 11/08 ~20:35) for a SKU whose request-based units of the last 24 h went from
 supply to sale in FAST_H (1 h) or less at the median (person's decision 11/08 ~16:50; an unsold unit counts with its
 age so far); at most MAX_LINES lines a run (the run has 10 lines in all).
+From 11/09 ~23:10 (person): MAX_LINES 2 and FAST_ONLY: only SKUs with a measured median of FAST_H or less stay.
 Drop: a SKU first bought this way that sold none of its units in the 24 h after (my settles) leaves the list for good
 (logs/request_buy.json, decision request_buy_drop).
 """
@@ -28,7 +29,8 @@ TARGET = 2
 FAST_TARGET = 8                 # 11/08 ~20:35 person: 5 -> 8
 FAST_H = 1.0
 FOOD_SHELF_H = 72
-MAX_LINES = 4                   # 11/08 ~20:35 person: 3 -> 4
+MAX_LINES = 2                   # 11/09 ~23:10 person (high focus): 4 -> 2; 11/08 ~20:35: 3 -> 4
+FAST_ONLY = True                # 11/09 ~23:10 person: only SKUs whose supply -> sale median is <= FAST_H
 DROP_AFTER_S = 86400
 ME = "choo-chu"
 
@@ -129,6 +131,8 @@ def candidates(catalog, held, surge, log=print, now=None):
                 continue
             avg, k = sku_avg(db, sku, now)
             if avg is None or avg < cost * (1 + mm):
+                continue
+            if FAST_ONLY and not (sku in turn and turn[sku] <= FAST_H):
                 continue
             tgt = target(sku, turn)
             qty = tgt - held.get(sku, 0)

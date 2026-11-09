@@ -25,6 +25,44 @@ RESTOCK_STOP_H = 36           # no restock in the last 36 h
 #   goods: unchanged until the restock stop (RESTOCK_STOP_H, 11/16 11:59)
 CAP_END_AT = datetime(2026, 11, 15, 23, 59).timestamp()
 CAP_END = 15_000_000
+
+# automatic STOCK_CAP (person's decision 11/09 ~23:10): while stock_cap_auto.json is enabled (and before CAP_END_AT,
+# which keeps priority), the cap every run is cash + stock at cost - AUTO_RESERVE, STOCK_EXIT 88% of it; the fixed
+# STOCK_CAP above is the value when it is off (the cap brake's two stock trips turn it off and keep 20M).
+# "paused" (set by the cap brake when cash < its cash_min, cleared once cash > resume_cash): no buying, case unchanged.
+import json as _json  # noqa: E402
+import os as _os  # noqa: E402
+AUTO_CAP_PATH = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "stock_cap_auto.json")
+AUTO_RESERVE = 3_000_000
+EXIT_RATIO = 0.88
+
+
+def auto_cap_rules():
+    try:
+        with open(AUTO_CAP_PATH, encoding="utf-8") as f:
+            return _json.load(f)
+    except (OSError, ValueError):
+        return {"enabled": False}
+
+
+def auto_cap_on(r=None, now=None):
+    import time as _t
+    r = auto_cap_rules() if r is None else r
+    return bool(r.get("enabled")) and (now or _t.time()) < CAP_END_AT
+
+
+def stock_cap_now(cash, stock, now=None, r=None):
+    """(cap, exit, source): the automatic cap while it is on, else the fixed STOCK_CAP / STOCK_EXIT of this module."""
+    r = auto_cap_rules() if r is None else r
+    if auto_cap_on(r, now):
+        cap = int(cash + stock - r.get("reserve", AUTO_RESERVE))
+        return cap, int(cap * r.get("exit_ratio", EXIT_RATIO)), "auto"
+    return STOCK_CAP, STOCK_EXIT, "fixed"
+
+
+def buy_paused(r=None, now=None):
+    r = auto_cap_rules() if r is None else r
+    return auto_cap_on(r, now) and bool(r.get("paused"))
 FOOD_TO_END_FROM = datetime(2026, 11, 15, 23, 59).timestamp()
 ENDGAME_MIN = 1.00            # the endgame floor never goes under cost x this (ALL ranks shops by book)
 
@@ -44,7 +82,7 @@ MAX_LINES = 10
 # the range each CEO policy value may take (policy.py clips into it); keys not listed have no range
 POLICY_RANGES = {
     "purchasing.spend_share": (0.2, 0.5),
-    "purchasing.high_share": (0.2, 0.7),          # 11/09 ~14:35 person: max 0.6 -> 0.7 (high focus); 11/07 ~16:05: max 0.5 -> 0.6 (share 0.4 -> 0.6)
+    "purchasing.high_share": (0.2, 0.85),         # 11/09 ~23:10 person: max 0.7 -> 0.85; 11/09 ~14:35: 0.6 -> 0.7 (high focus); 11/07 ~16:05: max 0.5 -> 0.6 (share 0.4 -> 0.6)
     "purchasing.high_max": (0, 100),              # 11/09 ~21:20 person: 60 -> 100 (more aggressive); 11/09 ~14:35 person: 40 -> 60 (high focus); 11/09 ~11:00 person: 30 -> 40; 11/06: 5 -> 10; 11/07 ~14:45: 10 -> 20 (units 8 -> 18); ~16:05: -> 30 (units 28); 11/08 ~13:30: -> 60; ~17:00: back to 30
     "purchasing.min_margin": (0.05, 0.5),
     "purchasing.my_share": (0.1, 0.5),

@@ -125,7 +125,16 @@ def main():
         return
 
     held_cost = pricing.held_cost(inv)
-    budget = min((inv.get("balance", 0) - CUSHION) * spend_share(), MAX_STOCK_COST - held_cost)
+    import limits                                    # 11/09 ~23:10: the automatic cap, read every run
+    cap_now = limits.stock_cap_now(inv.get("balance", 0), held_cost, now)[0]
+    if limits.buy_paused(now=now):                   # the cash brake: no buying until cash > the resume level
+        log(f"cash brake: buying paused until cash > {limits.auto_cap_rules().get('resume_cash', 0):,} "
+            f"(cash {inv.get('balance', 0):,})")
+        decisions.record("purchasing", "no_restock", case, 0, f"cash brake pause, cash {inv.get('balance', 0):,}",
+                         limit_hit="STOCK_CAP")
+        print(json.dumps({"buy": []}))
+        return
+    budget = min((inv.get("balance", 0) - CUSHION) * spend_share(), cap_now - held_cost)
     try:                                             # bundle 2 (15): the first plan of a window spends all cash
         from depts.purchasing import c_rules         # above the reserve (restock_c.json, from 11/07 10:00)
         C, wpath = c_rules(), os.path.join(HERE, "logs", "restock_c_window.json")
@@ -134,7 +143,7 @@ def main():
             last = json.load(open(wpath)).get("opens_at") if os.path.exists(wpath) else None
             if last != win:
                 share = float(C.get("first_run_share", 0.7))   # 11/07: at most 70% of the cash above the reserve
-                full = min((inv.get("balance", 0) - CUSHION) * share, MAX_STOCK_COST - held_cost)
+                full = min((inv.get("balance", 0) - CUSHION) * share, cap_now - held_cost)
                 log(f"[window] first plan of the window opening {time.strftime('%H:%M', time.localtime(win))}: "
                     f"budget {int(budget):,} -> {int(full):,} ({share:.0%} of the cash above the reserve, within STOCK_CAP)")
                 budget = max(budget, full)

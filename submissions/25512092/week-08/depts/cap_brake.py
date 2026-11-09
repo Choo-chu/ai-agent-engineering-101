@@ -10,6 +10,10 @@ commit + push, no b0 check: a lower cap may change the shop case on purpose) and
      From 11/09 ~19:00 (person): the share AND their unsold cost over OLD_UNSOLD_MIN (3M), judged only once their
      cost is at least MIN_OLD_COST (5M; was 20 units)
   3. cash (inventory balance, as the shop case reads it) under CASH_MIN
+From 11/09 ~23:10 (person), while the automatic cap is on (limits.stock_cap_now, stock_cap_auto.json): trip 1 or 2
+turns the automatic cap off (the fixed STOCK_CAP, 20M, stays: no limits.py edit needed while it is already there);
+trip 3 (cash) only pauses buying ("paused" in stock_cap_auto.json, restock.py buys nothing) until cash is over
+resume_cash (3M), the cap stays automatic. From limits.CAP_END_AT the scheduled end cap keeps priority.
 Rules in cap_brake.json; the latest numbers in logs/cap_brake_state.json (read by the 3 h report). The brake fires
 once; raising the cap again is the person's decision.
 """
@@ -113,6 +117,68 @@ def fire(r, m, trips, log=print):
     log(f"cap brake fired: {old:,} -> {r['low']:,}: {trips}")
 
 
+def _save_auto(a):
+    import limits
+    tmp = limits.AUTO_CAP_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(a, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, limits.AUTO_CAP_PATH)
+
+
+def fire_auto(r, m, trips, log=print):
+    """Automatic cap on, a stock trip (1 or 2): the automatic cap off, back to the fixed STOCK_CAP (r['low'])."""
+    import alerts
+    import decisions
+    import limits
+    from depts import analyst_apply
+    now = time.time()
+    a = limits.auto_cap_rules()
+    a.update(enabled=False, paused=False, fired=round(now), fired_why=trips)
+    _save_auto(a)
+    fixed = analyst_apply.current_limit("limits.STOCK_CAP")
+    head = None
+    if fixed != r["low"]:
+        paths = analyst_apply.edit_limit("limits.STOCK_CAP", r["low"], "brake", now)
+        head = analyst_apply.git_commit(list(paths), f"week-08 STOCK_CAP brake (auto cap off): {fixed:,} -> {r['low']:,} "
+                                                     f"({'; '.join(trips)})")
+    r.update(enabled=False, fired=round(now), fired_why=trips)
+    with open(RULES, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False, indent=1)
+    decisions.record("purchasing", "cap_brake", "limits.STOCK_CAP", [m.get("cap"), r["low"]],
+                     "auto cap off: " + "; ".join(trips) + f" | {m}")
+    alerts.send("urgent", f"cap_brake:{int(now)}",
+                f"STOCK_CAP 자동 브레이크: 자동 계산(현금+재고-300만, 지금 {m.get('cap', 0):,}) 끄고 {r['low']:,} 복귀"
+                + (f" (커밋 {head})" if head else "") + ".\n걸린 조건: " + "; ".join(trips)
+                + f"\n현재: 재고 원가 {m['stock']:,}, 현금 {m['cash']:,}, 최근 {r['window_h']}시간 판매 {m['sales']}개 "
+                f"(중앙값 {m['median_h']}시간), 상향 후 입고분 {r['old_h']}시간+ 미판매 비율 {m['old_share']}.\n"
+                "다시 켜는 건 사람 결정.", log=log)
+    log(f"cap brake fired (auto off): {m.get('cap')} -> {r['low']:,}: {trips}")
+
+
+def cash_pause(r, m, log=print):
+    """Automatic cap on: cash under r['cash_min'] -> buying paused; cash over resume_cash -> resumed. One alert each."""
+    import alerts
+    import decisions
+    import limits
+    a = limits.auto_cap_rules()
+    resume = a.get("resume_cash", 3_000_000)
+    if not a.get("paused") and m["cash"] < r["cash_min"]:
+        a.update(paused=True, paused_at=round(time.time()))
+        _save_auto(a)
+        decisions.record("purchasing", "cash_pause", "limits.STOCK_CAP", m["cash"], f"cash {m['cash']:,} < "
+                         f"{r['cash_min']:,}: buying paused until cash > {resume:,}")
+        alerts.send("urgent", f"cash_pause:{int(time.time())}", f"현금 브레이크: 현금 {m['cash']:,} < {r['cash_min']:,}, "
+                    f"현금 {resume:,} 넘을 때까지 매입만 중지 (STOCK_CAP 자동 계산은 유지, 재고 원가 {m['stock']:,})", log=log)
+        log(f"cash pause: cash {m['cash']:,}")
+    elif a.get("paused") and m["cash"] > resume:
+        a.update(paused=False, resumed_at=round(time.time()))
+        _save_auto(a)
+        decisions.record("purchasing", "cash_resume", "limits.STOCK_CAP", m["cash"], f"cash {m['cash']:,} > {resume:,}")
+        alerts.send("info", f"cash_resume:{int(time.time())}", f"현금 브레이크 해제: 현금 {m['cash']:,} > {resume:,}, 매입 다시 시작",
+                    log=log)
+        log(f"cash resume: cash {m['cash']:,}")
+
+
 def end_cap(log=print, now=None):
     """Scheduled (person's decision 11/07 ~22:00): from limits.CAP_END_AT, STOCK_CAP above limits.CAP_END goes down to
     it once (limits.py, commit + push, Telegram); the brake is switched off then (the cap is at its low already)."""
@@ -123,6 +189,10 @@ def end_cap(log=print, now=None):
     import alerts
     import decisions
     from depts import analyst_apply
+    a = limits.auto_cap_rules()
+    if a.get("enabled"):                                         # 11/09 ~23:10: the end cap has priority over auto
+        a.update(enabled=False, paused=False, ended=round(now))
+        _save_auto(a)
     old = analyst_apply.current_limit("limits.STOCK_CAP")       # reloads limits.py
     if old <= limits.CAP_END:
         return
@@ -151,11 +221,22 @@ def tick(log=print, now=None):
     r = rules()
     if not r.get("enabled"):
         return
+    import limits
     from depts import analyst_apply
     cap = analyst_apply.current_limit("limits.STOCK_CAP")       # reloads limits.py
     m, trips = measure(r, now)
-    m.update(cap=cap, trips=trips)
+    auto = limits.auto_cap_on(now=now)
+    if auto:
+        cap = limits.stock_cap_now(m["cash"], m["stock"], now)[0]
+    m.update(cap=cap, trips=trips, auto=auto, paused=limits.buy_paused(now=now))
     with open(STATE, "w", encoding="utf-8") as f:
         json.dump(m, f, ensure_ascii=False)
+    if auto:
+        stock_trips = [t for t in trips if not t.startswith("현금 ")]
+        if stock_trips:
+            fire_auto(r, m, stock_trips, log=log)
+        else:
+            cash_pause(r, m, log=log)
+        return
     if cap > r["low"] and trips:
         fire(r, m, trips, log=log)

@@ -41,10 +41,13 @@ def raw_shop_case(inv, now, prev=None):
         return "endgame", "48 h before the end"
     if cash < CASH_RESERVE:
         return "cash_low", f"cash {cash:,} < {CASH_RESERVE:,}"
-    if stock >= STOCK_CAP:
-        return "overstock", f"stock {stock:,} >= {STOCK_CAP:,}"
-    if prev == "overstock" and stock >= STOCK_EXIT:
-        return "overstock", f"stock {stock:,} still >= {STOCK_EXIT:,} (hysteresis)"
+    import limits                                     # 11/09 ~23:10: the automatic cap (cash + stock - 3M) when on
+    cap, exit_, src = limits.stock_cap_now(cash, stock, now)
+    tag = " (auto)" if src == "auto" else ""
+    if stock >= cap:
+        return "overstock", f"stock {stock:,} >= {cap:,}{tag}"
+    if prev == "overstock" and stock >= exit_:
+        return "overstock", f"stock {stock:,} still >= {exit_:,}{tag} (hysteresis)"
     return "normal", f"stock {stock:,}, cash {cash:,}"
 
 

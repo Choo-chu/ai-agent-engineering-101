@@ -117,7 +117,7 @@ def build(inv, catalog, now=None):
         import sales_report
         per = sales_report.perishable_numbers(db, now - 86400, now, catalog, inv)
         issues = []
-        if stock >= STOCK_CAP * 0.95:
+        if stock >= __import__('limits').stock_cap_now(inv.get('balance', 0), stock)[0] * 0.95:
             issues.append({"level": "info", "text": f"stock at cost {stock:,} within 5% of STOCK_CAP", "refs": []})
         if stale_high:
             issues.append({"level": "warn", "text": f"{len(stale_high)} high-price units unsold > 24 h",
