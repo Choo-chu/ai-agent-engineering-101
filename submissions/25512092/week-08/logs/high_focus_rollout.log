@@ -1,0 +1,78 @@
+11-09 14:35:46 waiting for the 15:05 checks (cap30 report, lock report)
+11-09 14:42:10 waiting for the 15:05 checks (cap30 report, lock report)
+11-09 14:45:47 waiting for the 15:05 checks (cap30 report, lock report)
+11-09 15:07:17 applied: rank True, sofa x2 (2, 20, 2, 1000000), high (0.6, 40) -> (0.7, 60) policy v19; base receipt ratio 0.17302798982188294 (786)
+11-09 15:07:19 [alert] info high_focus_on: 고가 집중 적용 15:07: (1) restock 줄: 요청 기반 4줄 다음은 기대 이익 순 (2) high_max 40 -> 60, high_share 0.6 -> 0.7 (policy v19, CEO·QC 자동 상한 0.7/60) (3) 소파 한도 2배: 20분 창당 1 -> 2개, 미판매 10 -> 20개, 줄 1 -> 2, 단위 원가 50만 -> 100만 (수요 조건·G5e3784e6 제외·C등급 보증 없음 그대로). 고가 가드·첫 호가·하한·1.0M·B 보증·STOCK_CAP 브레이크·분석관 점검 그대로. 고가 브레이크 15분마다 (입고->판매 중앙값 6시간, 적용 후 입고 고가 중 12시간 지난 것의 미판매 원가 30% 초과(10개 이상일 때), 영수증 비율 절반; 기준 17.3% / 786건). 3시간 점검 예정 (telegram sent)
+11-09 15:07:20 [alert] info high_focus_old_stale: 브레이크 계산에서 뺀 기존 12시간+ 미판매 고가 20개 (원가 5,201,170): SKU / 나이 / 원가 / 하한 / 시장 평균 (하한÷평균)
+- G6b0fd5bc [헬렌스타인][이불커버 증정] 겨울용 헝가리 (C): 44시간, 원가 167,061, 하한 324,310, 평균 434,494 (75%)
+- G6841e8a3 [설치배송/단단한타입] 지누스 키스톤 독립  (A): 42시간, 원가 293,953, 하한 308,650, 평균 296,636 (104%)
+- G445ada94 보루네오 마르체 디엘 E0 미드센츄리 모듈  (C): 27시간, 원가 111,206, 하한 192,872, 평균 247,316 (78%)
+- G0667d440 지누스 그린티 에어 하이브리드 스프링 매트리 (A): 25시간, 원가 254,982, 하한 267,731, 평균 248,222 (108%)
+- G51ca1147 지누스 매든 저상형 침대 프레임 (라지킹)  (C): 25시간, 원가 151,120, 하한 208,000, 평균 259,572 (80%)
+- G58b20aad LG G4 27G411BW 68cm(27인치 (A): 25시간, 원가 165,387, 하한 173,656, 평균 165,523 (105%)
+- G4de4eb5e 인홈 리노 LED 평상형 침대프레임+본넬 매 (A): 25시간, 원가 140,723, 하한 147,759, 평균 134,827 (110%)
+- G85a1a856 시몬스 뷰티레스트 시트러스. 슈퍼싱글 매트리 (C): 25시간, 원가 380,940, 하한 488,755, 평균 587,026 (83%)
+- G58c8543f [지누스침대][SS] 1500H 블랙 침대S (A): 25시간, 원가 272,558, 하한 286,185, 평균 237,568 (120%)
+- G9c1a6eee 지누스 매든 저상형 침대 프레임 (슈퍼싱글) (A): 24시간, 원가 160,919, 하한 168,964, 평균 149,471 (113%)
+- G021aae64 현대의료기 NAMU G208SF 포그니처 황 (C): 19시간, 원가 179,738, 하한 307,489, 평균 412,995 (74%)
+- G07ec17d5 지누스 얼티마 에어 하이브리드 스프링 침대  (B): 18시간, 원가 138,754, 하한 161,417, 평균 194,371 (83%)
+- G2c023a8c 현대의료기 5005SF 황토숯볼 흙쇼파 흙카 (C): 18시간, 원가 192,835, 하한 266,478, 평균 332,381 (80%)
+- G1515d951 지누스 그린티 럭스S 하이브리드 매트리스 2 (C): 17시간, 원가 179,284, 하한 252,000, 평균 289,308 (87%)
+- G05277ffe [헬렌스타인][한파용] 국내생산 알러지케어  (A): 15시간, 원가 441,889, 하한 463,983, 평균 406,166 (114%)
+- Gea0cca52 [나이스필]소라 워싱모달 차렵베개세트Q (C): 14시간, 원가 113,144, 하한 192,000, 평균 247,373 (78%)
+- G03d0199f 라클라우드 루나 호텔식 침대 세트 Q 퀸 ( (C): 14시간, 원가 614,388, 하한 881,539, 평균 1,126,526 (78%)
+- G6969f82d 삼익가구 앤더슨 LED 4단 수납 원목 침대 (A): 12시간, 원가 263,345, 하한 276,512, 평균 242,022 (114%)
+- G77834f4a [에이스침대] 원매트리스 CA2 (CLUB  (A): 12시간, 원가 407,560, 하한 427,938, 평균 346,596 (123%)
+- G53b150b5 시몬스 뷰티레스트 스위트. 슈퍼싱글 매트리스 (A): 12시간, 원가 571,384, 하한 599,953, 평균 535,036 (112%) (telegram sent)
+11-09 15:07:20 [overcost] G6841e8a3 u-d199b9799e42: cost 293,953 vs avg 296636 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G0667d440 u-7aef33dfae33: cost 254,982 vs avg 248222 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G58b20aad u-45d7836a67a9: cost 165,387 vs avg 165523 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G4de4eb5e u-ffc1b426cb31: cost 140,723 vs avg 134827 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G58c8543f u-990a89a7a6a3: cost 272,558 vs avg 237568 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G9c1a6eee u-c66fbac3f8b7: cost 160,919 vs avg 149471 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G05277ffe u-b2dd75145121: cost 441,889 vs avg 406166 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G6969f82d u-c288a8b8528f: cost 263,345 vs avg 242022 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G77834f4a u-9bd65a885a42: cost 407,560 vs avg 346596 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G53b150b5 u-6bec43e129c1: cost 571,384 vs avg 535036 (listed at the 15:05 switch (floor above avg))
+11-09 15:07:20 [overcost] G1a265ca2 u-5602a4a234f2: cost 284,949 vs avg 254712 (cost > avg)
+11-09 15:07:20 [overcost] G2607d1f6 u-72acd9559d69: cost 462,909 vs avg 392308 (cost > avg)
+11-09 15:07:20 [overcost] Ge04f5cab u-b6c42e9e0d7e: cost 523,074 vs avg 509455 (cost > avg)
+11-09 15:07:20 [overcost] G72c86070 u-2c20424cddf6: cost 277,538 vs avg 266029 (cost > avg)
+11-09 15:07:20 [overcost] Gb5d0dde7 u-575b37cd83c8: cost 762,955 vs avg 728507 (cost > avg)
+11-09 15:07:41 overcost on: 10 listed, 15 over-cost held; seller restart: killed 32496, back 15:07:41 [seller] [seller] 57 units with a receipt in the last 25 min held back
+11-09 15:07:43 [alert] info overcost_on: 원가가 시장 평균보다 높은 고가 규칙 적용 15:07: 목록 중 하한>평균 10개 (G6841e8a3, G0667d440, G58b20aad, G4de4eb5e, G58c8543f, G9c1a6eee, G05277ffe, G6969f82d, G77834f4a, G53b150b5) + 지금 원가>평균인 고가, 합 15개: 하한 원가 x 1.05 -> 1.00 (원가 아래 없음), high_max 개수와 고가 브레이크에서 제외, 앞으로 원가>평균이 되는 고가도 자동 (decision overcost_high). 나머지(하한<평균)는 그대로. seller 재시작 완료 (telegram sent)
+11-09 15:07:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 15:22:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 15:37:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 15:52:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 16:07:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 16:22:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 16:37:43 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 16:52:44 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 17:07:44 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 17:22:44 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 17:37:44 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 17:52:44 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 18:07:44 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 18:22:45 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 18:22:46 [alert] daily high_focus_report:1794204437: 고가 집중 3.0시간 점검 (15:07 ~ 18:07, 후 vs 전)
+- 고가(소파 제외): 매입 56개 17,326,850 vs 15개 4,676,019; 판매 33 vs 12, 매출 11,343,206 vs 3,259,254, 원가 대비 이익 +11.2% vs +3.4%
+- 소파: 매입 10개 5,451,484 vs 5개 795,554; 판매 9 vs 6, 매출 5,982,257 vs 1,738,947, 원가 대비 이익 +22.6% vs +11.2%
+- 고가 재고(지금) 원가 18,433,038 63개
+- 객단가 93,480 vs 38,459, 50만 이상 판매 비중 6.3% vs 0.4%, 전체 매출 23,557,179 (252건) vs 10,191,890 (265건)
+- 고가 브레이크: 정상; 고가 입고->판매 중앙값(최근 6시간 판매 49건) 0.9시간 (기준 6시간 초과); 적용 후 입고 고가 중 12시간 지난 0개 원가 0 가운데 미판매 0 (-, 기준 30% 초과, 10개 미만이면 판단 보류); 고가 협상 대비 영수증 최근 3시간 28.4% (162건) vs 적용 전 24시간 17.3% (절반 이하면 발동) (telegram sent)
+11-09 18:22:46 report sent
+11-09 18:37:46 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 18:52:46 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 19:07:46 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 19:22:46 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 19:37:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 19:52:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 20:07:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 20:22:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 20:37:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 20:52:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 21:07:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-09 21:14:21 waiting for the 15:05 checks (cap30 report, lock report)
+11-09 21:14:21 resume: brake loop, since 1794204438, back to 0.7 / 60 on a trip
+11-09 21:14:22 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
