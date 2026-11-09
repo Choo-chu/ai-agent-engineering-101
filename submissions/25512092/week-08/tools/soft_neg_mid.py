@@ -12,6 +12,7 @@ first) keeps running unchanged; it reads soft_neg.json fresh, so it also stops t
 import os
 import sys
 import time
+from collections import Counter
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +54,37 @@ def arms(t0, t1):
             w.arm_stats([r for r in R if r["arm"] == "control"], cyc, h))
 
 
+def regular_text(now):
+    """Before / after the 20 s limit for regular shops (buyer_speed.json regular_since, 11/09 ~17:20): close rate of the
+    orders (soft_neg.jsonl, both arms) overall and at regular shops, and slow_shop_skip decisions (regular / other)."""
+    import json
+    from depts import buyer_speed
+    r = buyer_speed.rules()
+    ta = r.get("regular_since")
+    if not ta:
+        return "- 단골 가게 20초 제한: 적용 기록 없음"
+    regs = set(buyer_speed.regulars(now=now))
+    tb = max(r.get("since") or 0, ta - (now - ta))              # same length before, with the 10 s rule on
+    out = []
+    for a, b in ((tb, ta), (ta, now)):
+        R = w._jsonl(soft_neg.LOG, a, b)
+        g = [x for x in R if x.get("shop") in regs]
+        sk = Counter()
+        with open(os.path.join(HERE, "logs", "decisions.jsonl"), encoding="utf-8") as f:
+            for ln in f:
+                if '"slow_shop_skip"' in ln:
+                    e = json.loads(ln)
+                    if a <= e["ts"] < b:
+                        sk["regular" if e["target"] in regs else "other"] += 1
+        h = max(1e-6, (b - a) / 3600)
+        rate = lambda X: f"{sum(1 for x in X if x['deal']) / len(X):.1%} ({len(X)}건)" if X else "-"
+        out.append(f"성사율 전체 {rate(R)}, 단골 가게 {rate(g)}; skip 단골 {sk['regular']}건 / 그 외 {sk['other']}건 "
+                   f"(시간당 {sk['regular'] / h:.1f} / {sk['other'] / h:.1f})")
+    return (f"- 단골 가게(24시간 성사 20건 이상: {', '.join(sorted(regs))}) 카드·첫 응답 제한 10초 → 20초, "
+            f"{datetime.fromtimestamp(ta):%H:%M} 적용\n  적용 전 ({datetime.fromtimestamp(tb):%H:%M}~"
+            f"{datetime.fromtimestamp(ta):%H:%M}): {out[0]}\n  적용 후 (~{datetime.fromtimestamp(now):%H:%M}): {out[1]}")
+
+
 def b0_of(t0):
     """The board at the start, from the watcher's 'on, board {...}' log line."""
     import ast
@@ -89,6 +121,10 @@ def main():
     text += (f"\n- 전체(두 방식 합계) 시간당 주문 {oh['orders'][0]} vs 시작 전 같은 길이 "
              f"({datetime.fromtimestamp(2 * t0 - now):%H:%M}~{datetime.fromtimestamp(t0):%H:%M}) {oh['orders'][1]}, "
              f"시간당 deals {oh['deals'][0]} vs {oh['deals'][1]}")
+    try:
+        text += "\n" + regular_text(now)
+    except Exception as e:
+        text += f"\n- 단골 가게 20초 제한 전후: 계산 실패 {type(e).__name__}"
     if ok:
         text += ("\n조건 모두 충족 (saved >= 0.41·1위, 성사율 soft >= 기존 - 2%p, 주문 1건(다음 주문까지) soft < 기존, "
                  "soft 건당 절약률 >= 35%): soft_neg 주문 100%로 확대. 안전장치(saved < 0.397 또는 1위 상실 시 중지) 그대로, "

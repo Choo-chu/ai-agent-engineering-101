@@ -310,19 +310,22 @@ def ask_price(text, budget=None):
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
               force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None,
-              soft=None):
+              soft=None, shop=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
     from buyer import HEADERS
     from depts import buyer_speed                 # 11/09: card cache, 10 s first-reply limit, no thrown-away LLM call
     sp = buyer_speed.rules()
-    client = buyer_speed.client(url, A2AClient, HEADERS, r=sp)
+    lim, regular = buyer_speed.limit(shop, sp) if sp.get("enabled") else (None, False)
+    if regular:
+        log(f"[slow shop] {shop}: regular, card and first reply limit {lim:.0f} s")
+    client = buyer_speed.client(url, A2AClient, HEADERS, r=sp, lim=lim)
     skills = [s.get("name") for s in client.card.get("skills", [])]
     log(f"card: {client.card.get('name')} skills={skills} jsonrpc={client.url}")
 
     first = first or f"I want to buy a {item}"
-    task = buyer_speed.first_send(client, first, r=sp)
+    task = buyer_speed.first_send(client, first, r=sp, lim=lim)
     tid = task.get("id")
     history = [f"you: {first}"]
     last = None
@@ -652,7 +655,7 @@ def main():
                             force_first=variant_key is not None, kind=order.get("kind"),
                             need_hours=order.get("use_within_hours"), tactic_line=t_line,
                             market_avg=avg_now, no_warranty_cap=nw_cap if offers else None,
-                            soft=sn_rules if sn_arm == "soft" else None)
+                            soft=sn_rules if sn_arm == "soft" else None, shop=c["name"])
             res["secs"] = round(time.time() - t_neg, 1)
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
@@ -664,6 +667,7 @@ def main():
                 log(f"[slow shop] {c['name']}: {e} -> next candidate")
                 try:
                     __import__("decisions").record("buyer", "slow_shop_skip", c["name"], {"stage": e.stage, "secs": e.secs,
+                                                   "regular": e.secs > float(buyer_speed.rules().get("first_reply_s", 10)),
                                                    "item": args.item, "next": tries[i + 1]["name"] if i + 1 < len(tries) else None},
                                                    f"no {e.stage} within {e.secs} s")
                 except Exception:

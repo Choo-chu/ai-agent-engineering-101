@@ -97,8 +97,57 @@ def test_slow():
         assert e.stage == "first reply" and fc.http.timeout == 120
 
 
+def test_regulars():
+    """11/09 ~17:20: shops with >= 20 deals with us in 24 h get 20 s for the card and the first reply; refreshed hourly."""
+    import sqlite3
+    d = tempfile.mkdtemp()
+    db = os.path.join(d, "m.db")
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE buyer_deals (ts REAL, shop TEXT, outcome TEXT)")
+    now = 1_000_000
+    con.executemany("INSERT INTO buyer_deals VALUES (?,?,?)",
+                    [(now - 100, "reg", "deal")] * 20 + [(now - 100, "few", "deal")] * 19 + [(now - 90_000, "old", "deal")] * 30
+                    + [(now - 100, "fails", "fail")] * 40)
+    con.commit(); con.close()
+    R = dict(ON, regular_reply_s=20, regular_min_deals=20)
+    with mock.patch.object(bs, "REGULARS", os.path.join(d, "r.json")), mock.patch.object(bs, "rules", return_value=R):
+        assert bs.regulars(now=now, db_path=db) == {"reg": 20}
+        con = sqlite3.connect(db)
+        con.executemany("INSERT INTO buyer_deals VALUES (?,?,?)", [(now, "few", "deal")])
+        con.commit(); con.close()
+        assert bs.regulars(now=now + 3599, db_path=db) == {"reg": 20}               # cached for an hour
+        assert bs.regulars(now=now + 3601, db_path=db) == {"reg": 20, "few": 20}    # refreshed
+        with mock.patch.object(bs, "regulars", lambda: {"reg": 20}):
+            assert bs.limit("reg", R) == (20.0, True)
+            assert bs.limit("other", R) == (10.0, False)
+            assert bs.limit("reg", ON) == (10.0, False)                               # rule key missing: unchanged
+    # the limit reaches the card fetch and the first send
+    gets = []
+
+    class Resp:
+        def json(self):
+            return {"name": "s", "supportedInterfaces": [{"protocolBinding": "JSONRPC", "url": "https://s/a2a"}]}
+
+    def get(self, url, timeout=None):
+        gets.append(timeout)
+        return Resp()
+    with mock.patch.object(bs, "CACHE", os.path.join(d, "c.json")), mock.patch.object(httpx.Client, "get", get):
+        bs.client("https://s", buyer_biz.A2AClient, {}, now=1000, r=ON, lim=20.0)
+    assert gets == [20.0]
+    fc, seen = FakeClient(100), []
+    real = fc.send
+
+    def send(msg, tid=None):
+        seen.append(fc.http.timeout)
+        return real(msg, tid)
+    fc.send = send
+    bs.first_send(fc, "hi", r=ON, lim=20.0)
+    assert seen[0].read == 20.0 and fc.http.timeout == 120
+
+
 if __name__ == "__main__":
     test_same_first_offer()
     test_card_cache()
     test_slow()
+    test_regulars()
     print("ok")
