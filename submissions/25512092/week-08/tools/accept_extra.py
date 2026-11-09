@@ -52,6 +52,23 @@ def done():
         return any(("report sent" in ln and "[extra]" not in ln) or "stopped:" in ln for ln in f)
 
 
+def orders_lines(B, me, now=None):
+    """(person 11/09 ~11:35) orders and close rate (deals / orders) vs the top 10 by deals; deals = orders x rate, so
+    the gap splits in log terms into an orders part and a rate part; orders per hour since joining."""
+    import math
+    now = now or time.time()
+    top = sorted((b for b in B if b["name"] != ME), key=lambda b: -b["deals"])[:10]
+    avg = lambda k: sum(b[k] for b in top) / len(top)
+    o_t, d_t = avg("orders"), avg("deals")
+    r_me, r_t = me["deals"] / me["orders"], d_t / o_t
+    oh = lambda b: b["orders"] / max(1, (now - b["joined"]) / 3600)
+    lo, lr = math.log(o_t / me["orders"]), math.log(r_t / r_me)
+    return [f"- 주문 수(orders): 우리 {me['orders']:,} vs 상위 10명(deals 기준) 평균 {int(o_t):,} ({o_t / me['orders']:.1f}배); "
+            f"시간당 주문 우리 {oh(me):.1f} vs 상위 10명 중앙값 {sorted(oh(b) for b in top)[len(top) // 2]:.1f}",
+            f"- 성사율(deals/orders): 우리 {r_me:.1%} vs 상위 10명 {r_t:.1%} ({r_t / r_me:.1f}배)",
+            f"- deals 격차 {d_t / me['deals']:.1f}배 중 주문 수 몫 {lo / (lo + lr):.0%}, 성사율 몫 {lr / (lo + lr):.0%} (로그 분해)"]
+
+
 def text():
     t, b0, snap, sts = start()
     B = [b for b in httpx.get("https://market.ourolabs.ai/api/board", params={"round": 3}, timeout=30).json()["buyers"]
@@ -69,6 +86,7 @@ def text():
                      f"(1위 {fmt(vals[0])}, 10위 {fmt(vals[min(9, len(vals) - 1)])})")
     lines.append(f"- served/deals: {s0['served'] / s0['deals']:.1%} -> {me['served'] / me['deals']:.1%} "
                  f"(시작 served는 {datetime.fromtimestamp(sts):%H:%M} 스냅샷, deals {snap['deals']} 기준)")
+    lines += orders_lines(B, me)
     lines.append(f"- ALL {b0['all']} ({b0['all_rank']}위) -> {me['all']} ({1 + sum(1 for b in B if b['all'] > me['all'])}위); "
                  "시작 시점의 다른 buyer 값은 기록이 없어 시작 순위는 saved·ALL만 있음")
     return "\n".join(lines)
