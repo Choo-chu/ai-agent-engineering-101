@@ -10,6 +10,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 from depts import receipt_check, subst_exp  # noqa: E402
 
+os.environ.setdefault("HARNESS_CMD", "false")     # no LLM, and harness.py skips the live strict_mcp.json
 _spec = importlib.util.spec_from_file_location("seller_r3", os.path.join(HERE, "seller_r3.py"))
 seller = importlib.util.module_from_spec(_spec)
 _argv, sys.argv = sys.argv, ["seller_r3.py"]

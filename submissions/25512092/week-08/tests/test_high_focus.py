@@ -9,7 +9,12 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "tools"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import high_caps, line_rank as R, sofa  # noqa: E402
+from depts import overcost  # noqa: E402
+from _isolate import tmp_json  # noqa: E402
+
+overcost.RULES, overcost.SEEN = tmp_json({"units": []}, "overcost_high"), tmp_json({}, "overcost_units")   # not the live files
 
 
 def test_score():

@@ -8,7 +8,12 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import alerts  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import purchasing, sales, sofa  # noqa: E402
+from _isolate import policy, tmp_json  # noqa: E402
+
+policy()                                          # a temp policy.json (code defaults)
+purchasing.BUY_EXCLUDE = tmp_json({"skus": {}}, "buy_exclude")
 
 ON = {"enabled": True, "warranty": True, "since": 1, "warranty_since": 100}
 
@@ -83,9 +88,9 @@ def test_check_from_warranty_since():
 def test_excluded():
     with mock.patch("builtins.open", mock.mock_open(read_data='{"skus": {"G5e3784e6": "x"}}')):
         assert "G5e3784e6" in purchasing.excluded()
-    import json
-    real = json.load(open(purchasing.BUY_EXCLUDE, encoding="utf-8"))
-    assert "G5e3784e6" in real["skus"]
+    with mock.patch.object(purchasing, "BUY_EXCLUDE", tmp_json({"skus": {"G5e3784e6": "x", "G1": "y"}}, "buy_exclude")):
+        assert set(purchasing.excluded()) == {"G5e3784e6", "G1"}
+    assert not purchasing.excluded()                  # the module's temp file: empty
 
 
 if __name__ == "__main__":

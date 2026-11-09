@@ -7,7 +7,12 @@ import time
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import analyst_brain as B  # noqa: E402
+from _isolate import policy  # noqa: E402
+
+# a temp policy.json; high_share / high_max set so allowed_keys() does not fall back to the live market.db
+policy({"purchasing": {"high_share": 0.4, "high_max": 30}})
 
 
 def rep(waste, age=0):

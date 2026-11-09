@@ -7,7 +7,9 @@ import time
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import accept_rule, buyer_biz as B, buyer_speed, soft_neg as S  # noqa: E402
+from _isolate import tmp_path  # noqa: E402
 
 
 def tmp(obj):
@@ -19,7 +21,9 @@ def tmp(obj):
 
 buyer_speed.RULES = tmp({"enabled": False})
 accept_rule.RULES = tmp({"enabled": True, "since": 0, "until": None, "low": 0.5, "high": 1.0})
+accept_rule.LOG = tmp_path("accept_rule.jsonl")       # not the live files
 R = {"enabled": True, "since": 0, "until": time.time() + 3600, "share": 0.5, "first": 0.75, "haggles": 2, "accept": 1.0}
+S.RULES, S.LOG = tmp(R), tmp_path("soft_neg.jsonl")
 
 
 def test_moves():

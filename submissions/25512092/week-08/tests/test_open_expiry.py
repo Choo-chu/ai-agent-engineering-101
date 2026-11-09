@@ -8,19 +8,40 @@ import tempfile
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import b_warranty as bw, open_expiry as oe, sales, sofa  # noqa: E402
+from _isolate import policy, tmp_json, tmp_path  # noqa: E402
+
+policy()                                          # a temp policy.json (code defaults)
+sofa.RULES = tmp_json({"enabled": False}, "sofa_rules")   # not the live sofa_rules.json (is_sofa is mocked anyway)
 
 NOW = 1_800_000_000
 
 
 def test_stale():
-    op = {"a": {"unit": {"unit": "u1", "sku": "S1"}, "t": NOW - 601}, "b": {"unit": {"unit": "u2", "sku": "S2"}, "t": NOW - 599},
-          "c": {"subst": {"X": (1, 10)}, "x": "S3"}}
-    assert oe.stale(op, NOW) == ["a"]
-    assert op["c"]["t"] == NOW                      # first seen: now
-    assert oe.stale(op, NOW + 601) == ["a", "b", "c"]
-    oe.touch(op["b"], NOW + 601)
-    assert oe.stale(op, NOW + 601) == ["a", "c"]
+    # a temp open_expiry.json (the live one is 300 s since 11/09 18:07); 600 s here
+    with mock.patch.object(oe, "RULES", tmp_json({"expire_s": 600}, "open_expiry")):
+        op = {"a": {"unit": {"unit": "u1", "sku": "S1"}, "t": NOW - 601}, "b": {"unit": {"unit": "u2", "sku": "S2"}, "t": NOW - 599},
+              "c": {"subst": {"X": (1, 10)}, "x": "S3"}}
+        assert oe.stale(op, NOW) == ["a"]
+        assert op["c"]["t"] == NOW                      # first seen: now
+        assert oe.stale(op, NOW + 601) == ["a", "b", "c"]
+        oe.touch(op["b"], NOW + 601)
+        assert oe.stale(op, NOW + 601) == ["a", "c"]
+
+
+def test_expire_s():
+    """open_expiry.json "expire_s" is read on every call; no file or a bad one: EXPIRE_S (600)."""
+    with mock.patch.object(oe, "RULES", tmp_json({"expire_s": 300}, "open_expiry")):
+        assert oe.expire_s() == 300
+        op = {"a": {"unit": {"unit": "u1"}, "t": NOW - 301}, "b": {"unit": {"unit": "u2"}, "t": NOW - 299}}
+        assert oe.stale(op, NOW) == ["a"]
+    with mock.patch.object(oe, "RULES", tmp_path("missing.json")):
+        assert oe.expire_s() == oe.EXPIRE_S == 600
+    bad = tmp_path("bad.json")
+    open(bad, "w").write("not json")
+    with mock.patch.object(oe, "RULES", bad):
+        assert oe.expire_s() == 600
 
 
 def test_state_and_log():
@@ -71,6 +92,7 @@ def test_b_warranty():
 
 if __name__ == "__main__":
     test_stale()
+    test_expire_s()
     test_state_and_log()
     test_b_warranty()
     print("ok")

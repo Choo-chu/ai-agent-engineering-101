@@ -10,7 +10,11 @@ import tempfile
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import accept_rule, buyer_biz as bb, high_accept, saved_guard, second_shop as d2, soft_neg  # noqa: E402
+from _isolate import policy, tmp_path  # noqa: E402
+
+policy()                                          # a temp policy.json (code defaults)
 
 D2_ON = {"enabled": True, "since": 0}
 HA_ON = {"enabled": True, "since": 0, "min_list": 200_000, "factor": 1.05}
@@ -139,6 +143,7 @@ def test_apply_and_watch():
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
     import saved_guard_watch as gw
     import soft_neg_mid as mid
+    gw.LOG = tmp_path("saved_guard.log")             # not logs/saved_guard.log
     d = tempfile.mkdtemp()
     rec, sent = [], []
     dec = mock.Mock(record=lambda *a, **k: rec.append(a))

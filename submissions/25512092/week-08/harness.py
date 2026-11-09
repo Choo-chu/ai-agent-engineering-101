@@ -30,7 +30,8 @@ def _strict_mcp():
         return False
 
 
-CMD = os.environ.get("HARNESS_CMD", DEFAULT_CMD + (" --strict-mcp-config" if _strict_mcp() else ""))
+# strict_mcp.json is read only when HARNESS_CMD is not set (tests set it, 11/09 ~19:30)
+CMD = os.environ["HARNESS_CMD"] if "HARNESS_CMD" in os.environ else DEFAULT_CMD + (" --strict-mcp-config" if _strict_mcp() else "")
 _CWD = tempfile.mkdtemp(prefix="harness-")
 
 
