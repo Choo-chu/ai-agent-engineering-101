@@ -313,12 +313,15 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
-    client = A2AClient(url)
+    from buyer import HEADERS
+    from depts import buyer_speed                 # 11/09: card cache, 10 s first-reply limit, no thrown-away LLM call
+    sp = buyer_speed.rules()
+    client = buyer_speed.client(url, A2AClient, HEADERS, r=sp)
     skills = [s.get("name") for s in client.card.get("skills", [])]
     log(f"card: {client.card.get('name')} skills={skills} jsonrpc={client.url}")
 
     first = first or f"I want to buy a {item}"
-    task = client.send(first)
+    task = buyer_speed.first_send(client, first, r=sp)
     tid = task.get("id")
     history = [f"you: {first}"]
     last = None
@@ -398,6 +401,9 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                 res["ended"] = "walk"
                 client.cancel(tid)
                 return res
+        elif force_first and n_offers == 0 and ask is not None and buyer_speed.on("skip_first_llm", sp):
+            d = None                                  # 11/09: the code makes the opening offer just below; no call
+            res["harness_skipped"] = res.get("harness_skipped", 0) + 1
         else:
             d = ask_harness(prompt)
             res["harness_calls"] += 1
@@ -640,6 +646,15 @@ def main():
                 continue
             break
         except Exception as e:
+            from depts import buyer_speed
+            if isinstance(e, buyer_speed.SlowShop):     # 11/09: slow shop -> next candidate, decision slow_shop_skip
+                log(f"[slow shop] {c['name']}: {e} -> next candidate")
+                try:
+                    __import__("decisions").record("buyer", "slow_shop_skip", c["name"], {"stage": e.stage, "secs": e.secs,
+                                                   "item": args.item, "next": tries[i + 1]["name"] if i + 1 < len(tries) else None},
+                                                   f"no {e.stage} within {e.secs} s")
+                except Exception:
+                    pass
             log(f"shop {c['name']} failed: {e}")
             res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
                    "injection": False, "solicit": False, "last_state": "", "error": str(e)}
