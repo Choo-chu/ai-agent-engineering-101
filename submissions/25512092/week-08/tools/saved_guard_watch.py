@@ -74,6 +74,36 @@ def check(b, alerts, decisions):
     return off
 
 
+FLOOR = 20.6                                   # the order spacing floor (tools/order_speed2.py)
+
+
+def d_effect(R, cyc, h):
+    """D's cost and gain (11/09 ~18:00 person): time D added to its orders (2nd shop: order time - the first shop's
+    negotiation - ~0.5 s of pre-steps), the cycle (order to next order) with D vs without (the cycle without the 2nd
+    try, never under the ~20 s floor), and deals per hour net of the orders lost to the longer cycles (lost orders x the
+    first-shop close rate of the other orders). Returns text lines."""
+    D = [r for r in R if r.get("first_shop")]
+    if not D:
+        return ["- D 시간·순증: 시도 없음"]
+    added = {r["order"]: max(0.0, (r.get("order_secs") or 0) - ((r["first_shop"] or {}).get("secs") or 0) - 0.5) for r in D}
+    cd = [(cyc[o], a) for o, a in added.items() if o in cyc]
+    saved_t = sum(c - max(FLOOR, c - a) for c, a in cd)
+    allc = list(cyc.values())
+    mean_c = sum(allc) / len(allc) if allc else FLOOR
+    others = [r for r in R if not r.get("first_shop")]
+    p = sum(1 for r in others if r.get("deal")) / len(others) if others else 0
+    lost_orders = saved_t / mean_c
+    d_deals = sum(1 for r in D if r.get("deal"))
+    soft_other = [cyc[r["order"]] for r in others if r.get("arm") == "soft" and r["order"] in cyc]
+    f1 = lambda x: f"{x:.1f}"
+    return [f"- D로 늘어난 주문 1건 처리 시간: D 주문 평균 +{f1(sum(added.values()) / len(added))}초 (2번째 가게), 다음 주문까지 "
+            f"D 주문 {f1(sum(c for c, _ in cd) / len(cd)) if cd else '-'}초 vs 다른 soft 주문 "
+            f"{f1(sum(soft_other) / len(soft_other)) if soft_other else '-'}초; 20초 바닥을 넘겨 실제로 늘어난 시간 합 {saved_t:.0f}초 "
+            f"(전체 주문 평균 +{saved_t / max(1, len(allc)):.2f}초)",
+            f"- D가 없었을 때 대비 시간당 deals 순증: D 성사 {d_deals / h:+.1f}/h - 늘어난 시간 때문에 못 받은 주문 "
+            f"{lost_orders / h:.1f}/h x 첫 가게 성사율 {p:.0%} = {(d_deals - lost_orders * p) / h:+.1f}/h"]
+
+
 def report(t0, b0, b1, t1=None):
     import soft_neg_watch as w
     import surplus_bands
@@ -94,6 +124,10 @@ def report(t0, b0, b1, t1=None):
              f"{pct(sum((r['list_price'] - r['price']) / r['list_price'] for r in Dd) / len(Dd) if Dd else None)}; "
              f"첫 가게가 끝난 이유 " + ", ".join(f"{k} {v}" for k, v in sorted(
                  __import__('collections').Counter((r['first_shop'] or {}).get('ended') for r in D).items(), key=lambda x: -x[1])))
+    try:
+        L += d_effect(R, w.kit_cycles(t0, t1), h)
+    except Exception as e:
+        L.append(f"- D 시간·순증: 계산 실패 {type(e).__name__}")
     try:
         O = surplus_bands.orders(t0, t1)
         H = [r for r in O if (r["lp"] or r["budget"]) >= 200_000]

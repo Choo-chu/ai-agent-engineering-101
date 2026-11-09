@@ -84,12 +84,12 @@ def test_second_shop():
     assert len(run([res(), res(deal=True, price=1)], arm="control")[0]) == 1
     assert len(run([res(), res(deal=True, price=1)], n_shops=1)[0]) == 1
     assert len(run([res(ended="time_limit"), res(deal=True, price=1)])[0]) == 1      # timeout: not D's case
-    # no time left under the 20 s spacing
-    assert len(run([res(), res(deal=True, price=1)], d2r=dict(D2_ON, floor_s=5))[0]) == 1
+    # no time left within the 30 s limit
+    assert len(run([res(), res(deal=True, price=1)], d2r=dict(D2_ON, limit_s=5))[0]) == 1
 
 
 def test_fits():
-    assert d2.fits(7.0, {}) and not d2.fits(7.1, {})            # 7 + 9 + 1.5 + 2.5 = 20
+    assert d2.fits(17.0, {}) and not d2.fits(17.1, {})          # 17 + 9 + 1.5 + 2.5 = 30 s from the order start
     assert d2.qualifies(res(ended="turn_limit")) and not d2.qualifies(res(deal=True, price=1))
     assert not d2.qualifies(res(ended="precheck", skip="shelf")) and not d2.qualifies(res(injection=True))
 
@@ -160,7 +160,23 @@ def test_apply_and_watch():
         assert d2.rules()["enabled"] and not high_accept.rules() and "적용 안 함" in t
 
 
+def test_d_effect():
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+    import saved_guard_watch as gw
+    R = [{"order": "a", "arm": "soft", "deal": True, "order_secs": 18.0, "first_shop": {"secs": 6.5}},   # +11 s
+         {"order": "b", "arm": "soft", "deal": False, "order_secs": 10.0, "first_shop": {"secs": 5.5}}]  # +4 s
+    R += [{"order": f"o{i}", "arm": "soft", "deal": i < 3, "order_secs": 8.0} for i in range(10)]        # 30% close
+    cyc = {"a": 30.0, "b": 21.0}
+    cyc.update({f"o{i}": 21.0 for i in range(10)})
+    L = gw.d_effect(R, cyc, 1.0)
+    # a: 30 -> without D max(20.6, 19) = 20.6 (9.4 s); b: 21 -> max(20.6, 17) = 20.6 (0.4 s); 9.8 s / mean 21.75 s
+    assert "+7.5초" in L[0] and "합 10초" in L[0]
+    assert "D 성사 +1.0/h" in L[1] and "0.5/h x 첫 가게 성사율 30%" in L[1] and "= +0.9/h" in L[1], L[1]
+    assert gw.d_effect([], {}, 1.0) == ["- D 시간·순증: 시도 없음"]
+
+
 if __name__ == "__main__":
+    test_d_effect()
     test_second_shop(); test_fits(); test_high_accept(); test_accept_rule_factor(); test_soft_move_accept()
     test_saved_guard(); test_apply_and_watch()
     print("ok")
