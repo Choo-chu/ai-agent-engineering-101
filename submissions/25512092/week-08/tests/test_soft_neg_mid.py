@@ -27,6 +27,15 @@ def test_decide():
     assert m.decide(dict(k, rate=0.55, save=0.35), C, {"saved": 0.41, "saved_rank": 1})[0] is True   # bounds inclusive
 
 
+def test_chunks():
+    t = "\n".join(f"line {i} " + "x" * 50 for i in range(200))
+    parts = m.chunks(t, 1000)
+    assert all(len(p) <= 1000 for p in parts) and "\n".join(parts) == t
+    assert m.chunks("y" * 2500, 1000) == ["y" * 1000, "y" * 1000, "y" * 500]
+    assert m.chunks("short") == ["short"]
+
+
 if __name__ == "__main__":
     test_decide()
+    test_chunks()
     print("ok")

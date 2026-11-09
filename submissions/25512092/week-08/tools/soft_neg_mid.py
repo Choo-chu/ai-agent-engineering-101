@@ -85,6 +85,26 @@ def regular_text(now):
             f"{datetime.fromtimestamp(ta):%H:%M}): {out[0]}\n  적용 후 (~{datetime.fromtimestamp(now):%H:%M}): {out[1]}")
 
 
+def chunks(text, n=3800):
+    """Split at line ends into parts of at most n characters (a longer single line is cut)."""
+    out, cur = [], ""
+    for ln in text.split("\n"):
+        while len(ln) > n:
+            if cur:
+                out.append(cur)
+                cur = ""
+            out.append(ln[:n])
+            ln = ln[n:]
+        if cur and len(cur) + 1 + len(ln) > n:
+            out.append(cur)
+            cur = ln
+        else:
+            cur = f"{cur}\n{ln}" if cur else ln
+    if cur:
+        out.append(cur)
+    return out
+
+
 def b0_of(t0):
     """The board at the start, from the watcher's 'on, board {...}' log line."""
     import ast
@@ -136,8 +156,13 @@ def main():
         speed = order_speed2.report(t0, now, saved=b1["saved"], deals_total=b1["deals"])
     except Exception as e:
         speed = f"buyer 주문 속도 2차 분석 실패: {type(e).__name__}: {e}"
+    try:
+        import surplus_bands                          # 11/09 ~17:25: surplus by list price band, analysis only
+        surplus = surplus_bands.report(now, saved=b1["saved"], deals_total=b1["deals"])
+    except Exception as e:
+        surplus = f"buyer surplus 분석 실패: {type(e).__name__}: {e}"
     if dry:
-        print(text + "\n\n" + speed)
+        print(text + "\n\n" + speed + "\n\n" + surplus)
         return
     if ok:
         w.set_rule(share=1.0, widened=round(now))
@@ -146,6 +171,8 @@ def main():
         decisions.record("buyer", "soft_neg_keep", "soft_neg", b1, "6 h check not met: " + "; ".join(miss))
     alerts.send("info", f"soft_neg_mid:{int(t0)}", text, log=w.log)
     alerts.send("info", f"order_speed2:{int(t0)}", speed, log=w.log)
+    for i, part in enumerate(chunks(surplus)):        # Telegram cuts at 4,000 characters
+        alerts.send("info", f"surplus_bands:{int(t0)}:{i}", part, log=w.log)
     w.log(f"6h check sent, widen={ok} {miss}")
 
 
