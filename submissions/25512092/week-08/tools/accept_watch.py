@@ -4,6 +4,8 @@ its lead over the second best saved is <= LEAD_MIN; after 24 h (or the stop) swi
 accepts (logs/accept_rule.jsonl), deals among them, paid (a settle of that SKU at that price by my buyer within 20
 min), price / item / budget mismatches (judge flags), deals / surplus / saved / ranks on the board, start vs end.
     python tools/accept_watch.py            (log in logs/accept_watch.log)
+11/09 ~14:20 (person): always on until the round end, upper bound 100% of the market average, the same guard:
+    python tools/accept_watch.py --always   (a summary every 24 h, the rule stays on; a stop switches it off)
 """
 import json
 import os
@@ -35,6 +37,12 @@ def log(m):
 def board():
     j = httpx.get("https://market.ourolabs.ai/api/board", params={"round": 3}, timeout=30).json()
     B = [b for b in j["buyers"] if b.get("all") is not None]
+    try:
+        sys.path.insert(0, os.path.join(HERE, "tools"))
+        import board_rates
+        board_rates.save(B)                           # recent-window rates for the reports
+    except Exception:
+        pass
     me = next(b for b in B if b["name"] == ME)
     second = max(b["saved"] for b in B if b is not me)
     return {"saved": me["saved"], "deals": me["deals"], "surplus": me["surplus"], "all": me["all"], "second": second,
@@ -85,7 +93,7 @@ def report(t0, b0, b1, stopped=None):
         pass
     surplus_add = sum((a.get("list_price") or 0) - (a["receipt_price"] or a["price"]) for a in paid)
     return "\n".join([
-        f"buyer 수락 규칙(accept_rule_95) {'중단' if stopped else '24시간'} 결과 ({datetime.fromtimestamp(t0):%m-%d %H:%M} ~ {datetime.now():%m-%d %H:%M})"
+        f"buyer 수락 규칙({accept_rule.TAG}, 시장 평균 {accept_rule.rules().get('high', accept_rule.HIGH):.0%} 이하) {'중단' if stopped else '24시간'} 결과 ({datetime.fromtimestamp(t0):%m-%d %H:%M} ~ {datetime.now():%m-%d %H:%M})"
         + (f": {stopped}" if stopped else ""),
         f"- 규칙으로 수락 {len(A)}건 (walk 대신 {sum(a['instead_of'] == 'walk' for a in A)}, 시간 한도 {sum(a['instead_of'] == 'time_limit' for a in A)}, "
         f"턴 한도 {sum(a['instead_of'] == 'turn_limit' for a in A)}), 그중 성사 {len(deals)}, 결제 {len(paid)} "
@@ -98,7 +106,58 @@ def report(t0, b0, b1, stopped=None):
         f"{b1['all']} ({b1['all_rank']}위)"])
 
 
+def guard(b):
+    return (f"saved {b['saved']} < {SAVED_MIN}" if b["saved"] < SAVED_MIN else
+            f"2위와 차이 {b['saved'] - b['second']:.4f} <= {LEAD_MIN}" if b["saved"] - b["second"] <= LEAD_MIN else None)
+
+
+def always():
+    """On until ROUND_END; check every CHECK_S, stop at once on the guard; a 24 h summary each day (the rule stays on)."""
+    import alerts
+    import decisions
+    from limits import ROUND_END
+    t0 = time.time()
+    b0 = board()
+    set_rule(enabled=True, since=round(t0), until=None, low=accept_rule.LOW, high=accept_rule.HIGH, ended=None,
+             stopped=None, stop_reason=None, mode="always")
+    decisions.record("buyer", "accept_rule_on", "accept_rule", b0,
+                     "person 11/09 ~14:20: always on; walk / time / turn limit -> accept the last ask at 50-100% of the "
+                     "market average within the cap; stop at saved < 0.395 or lead <= 0.02")
+    alerts.send("info", "accept_rule_always", f"buyer 수락 규칙 상시 재가동 {datetime.now():%H:%M}: walk·시간·턴 한도 대신, 마지막 호가가 "
+                f"시장 평균의 50~100%이고 예산 안이면 수락 (코드, LLM 없음; 예전 95%). 시작 saved {b0['saved']} (2위 {b0['second']}). "
+                f"30분마다 확인, saved < {SAVED_MIN} 또는 2위와 차이 <= {LEAD_MIN}이면 즉시 끔. 24시간마다 요약", log=log)
+    log(f"always on, board {b0}")
+    day0, bd = t0, b0
+    while time.time() < ROUND_END:
+        time.sleep(CHECK_S)
+        if not accept_rule.on():
+            log("rule switched off elsewhere; watcher ends")
+            return
+        try:
+            b = board()
+        except Exception as e:
+            log(f"board failed: {type(e).__name__}")
+            continue
+        log(f"check {b}")
+        why = guard(b)
+        if why:
+            set_rule(enabled=False, stopped=round(time.time()), stop_reason=why)
+            decisions.record("buyer", "accept_rule_stop", "accept_rule", b, why)
+            alerts.send("urgent", "accept_rule_stop", f"buyer 수락 규칙(상시) 즉시 중단: {why}\n" + report(t0, b0, b, stopped=why), log=log)
+            log(f"stopped: {why}")
+            return
+        if time.time() >= day0 + 86400:
+            alerts.send("daily", f"accept_rule_day:{int(day0)}", report(day0, bd, b) + "\n상시 규칙 유지 중", log=log)
+            log("day report sent")
+            day0, bd = time.time(), b
+    set_rule(enabled=False, ended=round(time.time()))
+    log("round end: rule off")
+
+
 def main():
+    if "--always" in sys.argv:
+        always()
+        return
     import alerts
     import decisions
     t0 = time.time()

@@ -7,7 +7,12 @@ import time
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
-from depts import accept_rule, buyer_biz as B  # noqa: E402
+from depts import accept_rule, buyer_biz as B, buyer_speed  # noqa: E402
+
+_off = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+json.dump({"enabled": False}, _off)
+_off.close()
+buyer_speed.RULES = _off.name              # the live buyer_speed.json is on since 11/09 14:14; tests use the fake shop
 
 
 def task(state, text, receipt=None):
@@ -59,10 +64,38 @@ def test_walk_becomes_accept_at_90pct():
     assert r["deal"] and r["accept_rule"] == "walk" and r["accept_price"] == 9000 and r["receipt"]["price"] == 9000
 
 
-def test_no_accept_above_95pct():
-    setup(ask=9600)
+def test_accept_at_96pct_with_high_100():
+    setup(ask=9600)                       # 11/09: the upper bound is 100% of the market average
     r = run()
-    assert not r["deal"] and r["ended"] == "walk" and "accept_rule" not in r
+    assert r["deal"] and r["accept_price"] == 9600
+
+
+def test_accept_at_100pct():
+    setup(ask=10000)
+    r = run()
+    assert r["deal"] and r["accept_price"] == 10000
+
+
+def test_no_accept_above_100pct():
+    setup(ask=10100)
+    r = B.negotiate("http://fake", "G0000000a", 20000, time.time(), min_offers=1, market_avg=10000)
+    assert "accept_rule" not in r
+
+
+def test_file_high_095_still_honoured():
+    setup(ask=9600)
+    json.dump({"enabled": True, "since": 0, "until": None, "high": 0.95}, open(accept_rule.RULES, "w"))
+    r = run()
+    assert not r["deal"] and "accept_rule" not in r
+
+
+def test_always_on_without_until():
+    setup(ask=9000)
+    json.dump({"enabled": True, "since": 0, "until": None, "low": 0.5, "high": 1.0}, open(accept_rule.RULES, "w"))
+    assert accept_rule.on(time.time() + 10 * 86400)
+    assert run()["deal"]
+    json.dump({"enabled": True, "since": 0, "until": 1}, open(accept_rule.RULES, "w"))
+    assert not accept_rule.on()
 
 
 def test_no_accept_under_50pct():

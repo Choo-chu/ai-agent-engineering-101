@@ -7,7 +7,13 @@ import sys
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from depts import buyer_biz, buyer_break as bb  # noqa: E402
+from depts import buyer_biz, buyer_break as bb, buyer_speed  # noqa: E402
+import json as _json, tempfile as _tf  # noqa: E401,E402
+
+_off = _tf.NamedTemporaryFile("w", suffix=".json", delete=False)
+_json.dump({"enabled": False}, _off)
+_off.close()
+buyer_speed.RULES = _off.name              # live buyer_speed.json is on since 11/09 14:14; the test fakes the shop
 
 R = {"enabled": True, "cats": ["커튼/러그/쿠션/덮개"], "skus": ["G81ade83e"], "default_p": 0.10, "min_n": 30}
 CAT = {"G81ade83e": {"category": "가구>커튼/러그/쿠션/덮개", "list_price": 34740},

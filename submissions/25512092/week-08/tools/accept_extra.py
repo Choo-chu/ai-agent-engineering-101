@@ -20,6 +20,7 @@ import httpx
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(HERE, "tools"))
 os.chdir(HERE)
 ME = "choo-chu"
 LOG = os.path.join(HERE, "logs", "accept_watch.log")
@@ -52,19 +53,26 @@ def done():
         return any(("report sent" in ln and "[extra]" not in ln) or "stopped:" in ln for ln in f)
 
 
-def orders_lines(B, me, now=None):
+def orders_lines(B, me, now=None, snap=None):
     """(person 11/09 ~11:35) orders and close rate (deals / orders) vs the top 10 by deals; deals = orders x rate, so
-    the gap splits in log terms into an orders part and a rate part; orders per hour since joining."""
+    the gap splits in log terms into an orders part and a rate part. Orders per hour (person 11/09 ~14:20): over a
+    recent window from the board snapshots (tools/board_rates.py), not since joining."""
     import math
+    import board_rates
     now = now or time.time()
     top = sorted((b for b in B if b["name"] != ME), key=lambda b: -b["deals"])[:10]
     avg = lambda k: sum(b[k] for b in top) / len(top)
     o_t, d_t = avg("orders"), avg("deals")
     r_me, r_t = me["deals"] / me["orders"], d_t / o_t
-    oh = lambda b: b["orders"] / max(1, (now - b["joined"]) / 3600)
+    rt, h = board_rates.rates(B, now, path=snap)
+    if rt.get(ME) and any(b["name"] in rt for b in top):
+        med = sorted(rt[b["name"]]["orders"] for b in top if b["name"] in rt)
+        per_h = f"시간당 주문(최근 {h:.1f}시간) 우리 {rt[ME]['orders']:.1f} vs 상위 10명 중앙값 {med[len(med) // 2]:.1f}"
+    else:
+        per_h = "시간당 주문: 최근 구간 보드 기록 없음(20분 이상 된 스냅샷 필요)"
     lo, lr = math.log(o_t / me["orders"]), math.log(r_t / r_me)
-    return [f"- 주문 수(orders): 우리 {me['orders']:,} vs 상위 10명(deals 기준) 평균 {int(o_t):,} ({o_t / me['orders']:.1f}배); "
-            f"시간당 주문 우리 {oh(me):.1f} vs 상위 10명 중앙값 {sorted(oh(b) for b in top)[len(top) // 2]:.1f}",
+    return [f"- 주문 수(orders, 3라운드 누적): 우리 {me['orders']:,} vs 상위 10명(deals 기준) 평균 {int(o_t):,} "
+            f"({o_t / me['orders']:.1f}배); {per_h}",
             f"- 성사율(deals/orders): 우리 {r_me:.1%} vs 상위 10명 {r_t:.1%} ({r_t / r_me:.1f}배)",
             f"- deals 격차 {d_t / me['deals']:.1f}배 중 주문 수 몫 {lo / (lo + lr):.0%}, 성사율 몫 {lr / (lo + lr):.0%} (로그 분해)"]
 

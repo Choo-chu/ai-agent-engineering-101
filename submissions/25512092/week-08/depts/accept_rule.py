@@ -9,7 +9,10 @@ different unit or a mistyped price) keep the old way. The grade rules, the prech
 (depts/buyer_biz.judge / refuse_receipt: price, item, budget mismatches are not paid) do not change.
   11/08 replay of the last 24 h: 81 accepts (+3.0M surplus), saved ~0.404 after a day; accepting the moment a counter
   qualified instead would have closed 296 of the deals I won lower at a higher price (saved ~0.391)
-Every accept: decision accept_rule_95 and one line in logs/accept_rule.jsonl (tools/accept_watch.py reads them).
+11/09 ~14:20 (person): on again for good (until the round end, no 24 h limit), the upper bound 95% -> 100% of the
+market average (accept_rule.json "high"; the cap still keeps the ask within the order's budget and the average).
+The saved guard (tools/accept_watch.py --always) still switches it off.
+Every accept: decision accept_rule_100 (accept_rule_95 before 11/09) and one line in logs/accept_rule.jsonl (tools/accept_watch.py reads them).
 """
 import json
 import os
@@ -18,8 +21,8 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES = os.path.join(HERE, "accept_rule.json")
 LOG = os.path.join(HERE, "logs", "accept_rule.jsonl")
-LOW, HIGH = 0.50, 0.95
-TAG = "accept_rule_95"
+LOW, HIGH = 0.50, 1.00                     # 11/09: HIGH was 0.95
+TAG = "accept_rule_100"
 
 
 def rules():
@@ -32,14 +35,17 @@ def rules():
 
 def on(now=None):
     r, now = rules(), now or time.time()
-    return bool(r.get("enabled")) and (r.get("since") or 0) <= now < (r.get("until") or 0)
+    until = r.get("until", 0)                       # None: no end (11/09 always on)
+    return bool(r.get("enabled")) and (r.get("since") or 0) <= now and (until is None or now < until)
 
 
 def price(ask, budget, market_avg, injection=False, now=None):
     """The price to accept at instead of ending, or None."""
     if injection or ask is None or not market_avg or not on(now):
         return None
-    if LOW * market_avg <= ask <= HIGH * market_avg and ask <= budget:
+    r = rules()
+    lo, hi = r.get("low", LOW), r.get("high", HIGH)
+    if lo * market_avg <= ask <= hi * market_avg and ask <= budget:
         return int(ask)
     return None
 
