@@ -5,6 +5,9 @@
     buyer    one '[buyer] ... harness:' line per call (logs/market-kit.log)
     analyst  analyst_meta calls:<day> (per calendar day, analyst_brain.call_llm)
     forum    forum_meta flow:<day> (one call per day, forum_watch.flow)
+  12. (from 11/10 ~12:10, person) stock unsold over 12 h (cost and units, high-price / other) and storage paid
+      (the 5-min cash table's storage_per_day over time), 12 h and since the round start; --daily sends at 08:00
+      and 20:00 from then (the 12 h before each)
   9. (from 11/10) 우아미 소파 G5e3784e6 in the live buy_exclude.json, one line
     python tools/morning_summary.py [--dry | --daily]   (waits until AT; --dry: the last 12 h now, printed, not sent;
                                                          --daily: every day at 08:00 until the round end)
@@ -123,7 +126,42 @@ def summary(t0, t1):
             lines.append("10. " + shop_order_check.report(t_on, t_on + 6 * 3600))
     except Exception as e:
         lines.append(f"10. 가게 순서 6시간 점검 실패 {type(e).__name__}")
+    try:                                          # 11/10 ~12:10 (person): the brakes only warn, the person judges
+        lines.append("12. " + stock_line(t1))
+    except Exception as e:
+        lines.append(f"12. 12시간+ 미판매 재고·보관비 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
+
+
+STALE_H = 12
+
+
+def storage_paid(db, t0, t1):
+    """Storage paid in [t0, t1): storage_per_day of each 5-min cash snapshot times the time to the next one."""
+    rows = db.execute("SELECT ts, storage_per_day FROM cash WHERE ts>=? AND ts<? ORDER BY ts", (t0, t1)).fetchall()
+    return round(sum((b[0] - a[0]) * (a[1] or 0) for a, b in zip(rows, rows[1:])) / 86400)
+
+
+def stock_line(t1, inv_path=None, db_path=None):
+    """Held units (live .market/inventory.json) supplied over STALE_H before t1: cost and count, high-price
+    (cost > qc.HIGH_MIN) and other; storage paid in the last 12 h and since the first cash snapshot."""
+    from depts.qc import HIGH_MIN
+    with open(inv_path or os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8") as f:
+        inv = json.load(f)
+    old = [u for u in inv.get("units", []) if u.get("grade") != "expired" and u.get("supplied_at")
+           and u["supplied_at"] <= t1 - STALE_H * 3600]
+    hi = [u for u in old if (u.get("cost") or 0) > HIGH_MIN]
+    lo = [u for u in old if (u.get("cost") or 0) <= HIGH_MIN]
+    c = lambda us: sum(u.get("cost") or 0 for u in us)
+    db = sqlite3.connect(db_path or os.path.join(HERE, "market.db"), timeout=30)
+    try:
+        s12, sall = storage_paid(db, t1 - 12 * 3600, t1), storage_paid(db, 0, t1)
+        per_day = (db.execute("SELECT storage_per_day FROM cash WHERE ts<? ORDER BY ts DESC LIMIT 1", (t1,)).fetchone()
+                   or [0])[0]
+    finally:
+        db.close()
+    return (f"12시간 넘게 안 팔린 재고: 원가 {c(old):,} {len(old)}개 (고가 {c(hi):,} {len(hi)}개 / 일반 {c(lo):,} {len(lo)}개); "
+            f"보관비 누적 {sall:,} (최근 12시간 {s12:,}, 지금 하루 {per_day or 0:,})")
 
 
 WATCH_SKU = "G5e3784e6"                           # 우아미 소파, never bought again (person 11/09 ~11:10)
@@ -148,18 +186,18 @@ def daily():
     from limits import ROUND_END
     while True:
         n = datetime.now()
-        at = n.replace(hour=8, minute=0, second=0, microsecond=0)
-        if at <= n:
-            at += timedelta(days=1)
+        cands = [n.replace(hour=h, minute=0, second=0, microsecond=0) + timedelta(days=d) for d in (0, 1)
+                 for h in (8, 20)]                # 11/10 ~12:10 (person): 08:00 and 20:00
+        at = min(x for x in cands if x > n)
         if at.timestamp() > ROUND_END:
             return
         while time.time() < at.timestamp():
             time.sleep(min(60, max(1, at.timestamp() - time.time())))
         t = at.timestamp()
         try:
-            alerts.send("daily", f"morning_summary:{at:%Y%m%d}", summary(t - NIGHT_H * 3600, t))
+            alerts.send("daily", f"morning_summary:{at:%Y%m%d}" + ("" if at.hour == 8 else f"_{at:%H}"), summary(t - NIGHT_H * 3600, t))
         except Exception as e:
-            alerts.send("urgent", f"morning_summary_fail:{at:%Y%m%d}", f"밤사이 요약 실패: {type(e).__name__}: {e}")
+            alerts.send("urgent", f"morning_summary_fail:{at:%Y%m%d%H}", f"12시간 요약 실패: {type(e).__name__}: {e}")
         time.sleep(120)
 
 

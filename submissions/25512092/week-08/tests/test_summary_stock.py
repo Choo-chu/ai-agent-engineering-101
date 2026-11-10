@@ -1,0 +1,36 @@
+"""11/10 ~12:10 (person): summary line 12 (12 h+ unsold stock, high / other; storage paid). Temp files only.
+    python tests/test_summary_stock.py"""
+import json
+import os
+import sqlite3
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolate import tmp_json, tmp_path  # noqa: E402
+sys.argv = ["x"]
+import morning_summary as MS  # noqa: E402
+
+T = 1_000_000.0
+
+
+def test_stock_line():
+    inv = tmp_json({"units": [{"cost": 500_000, "supplied_at": T - 13 * 3600}, {"cost": 50_000, "supplied_at": T - 20 * 3600},
+                              {"cost": 50_000, "supplied_at": T - 3600}, {"cost": 900_000, "supplied_at": T - 30 * 3600,
+                                                                         "grade": "expired"}]}, "inv")
+    db = tmp_path("cash.db")
+    d = sqlite3.connect(db)
+    d.execute("CREATE TABLE cash (ts REAL, balance INTEGER, stock_cost INTEGER, units INTEGER, storage_per_day INTEGER)")
+    for i in range(3):                                   # 3 snapshots 12 h apart, 86,400 a day
+        d.execute("INSERT INTO cash VALUES (?, 0, 0, 0, 86400)", (T - 24 * 3600 + i * 12 * 3600 - 1,))
+    d.commit()
+    d.close()
+    s = MS.stock_line(T, inv, db)
+    assert "원가 550,000 2개" in s and "고가 500,000 1개" in s and "일반 50,000 1개" in s, s
+    assert "보관비 누적 86,400" in s and "지금 하루 86,400" in s, s
+
+
+if __name__ == "__main__":
+    test_stock_line()
+    print("ok")
