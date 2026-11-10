@@ -139,6 +139,11 @@ def summary(t0, t1):
         lines.append("14. " + b_refund_line(t0, t1))
     except Exception as e:
         lines.append(f"14. TV·냉방 B등급 보증 환불 계산 실패 {type(e).__name__}")
+    try:                                          # 11/10 ~12:30 (person): fast high-price SKUs held deeper
+        from depts import deep_high
+        lines.append("15. " + deep_high.line(t0, t1))
+    except Exception as e:
+        lines.append(f"15. 고가 깊게 쌓기 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 

@@ -206,6 +206,8 @@ def make_plan(inv, units, catalog, budget, log):
     no_buy = excluded()
     from depts import high_cost_exclude           # 11/09 ~23:40: our 48 h cost > 95% of the market average
     no_buy = dict(no_buy, **{k: 'high_cost_exclude' for k in high_cost_exclude.current(log=log)})
+    from depts import deep_high                   # 11/10 ~12:30: fast high-price SKUs held up to 2-5 (else 1)
+    deep = deep_high.current(log=log)
     from depts import line_rank                   # 11/09 ~14:35: lines after the request lines by expected profit
     rank = line_rank.on()
     if rank:
@@ -234,7 +236,8 @@ def make_plan(inv, units, catalog, budget, log):
             continue
         wide = leaf_of(sku) in breadth
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
-            if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku):
+            hold_max = deep_high.limit(sku, deep)  # 11/10 ~12:30: 1, or 2-5 for a fast-selling SKU
+            if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku, 0) >= hold_max:
                 continue
             try:                                  # 11/08 ~17:00: expected first ask above the market average
                 from depts import high_ask
@@ -254,7 +257,7 @@ def make_plan(inv, units, catalog, budget, log):
                 if high_room > 0:
                     log(f"[guard] {s['name'] or sku}: {g} -> skip")
                 continue
-            tier, qty = "high", min(1, high_room)
+            tier, qty = "high", min(hold_max - held.get(sku, 0), high_room)
         elif src == "breadth":                    # bundle 2 (13): a SKU I do not hold, 1-2 units
             if n_breadth >= int(C.get("breadth_max_lines", BREADTH_LINES)):
                 continue
@@ -353,9 +356,12 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     cash = inv.get("balance", 0)
     min_margin, max_break = policy.values("purchasing", "min_margin", "max_break")
     found = []
+    from depts import deep_high                     # 11/10 ~12:30: a fast-selling sofa SKU held up to 2-5 (else 1)
+    deep = deep_high.current(write=False)
     for sku, s in stats["skus"].items():
         c = catalog.get(sku) or {}
-        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku) or s.get("sold_30m", 0) < 1 or sku in excluded() or sku in _hce() \
+        if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku, 0) >= deep_high.limit(sku, deep) \
+                or s.get("sold_30m", 0) < 1 or sku in excluded() or sku in _hce() \
                 or c.get("kind") == "food" or c["list_price"] * COST_SHARE["goods"] < sofa_rules.MIN_COST:
             continue
         avg, n = price_of(sku, stats)
@@ -373,15 +379,24 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
             f">= 2/h, cost <= {sofa_rules.limits_now()[3]:,})")
         return None
     out = []
+    units_left = min(per_win - len(recent), unsold_max - len(unsold))   # the sofa unit limits stay
     for sku, cost, sold, avg, name in found[:room]:
         import limits
-        if held_cost + cost > limits.stock_cap_now(cash, held_cost)[0] or cash - cost < CASH_RESERVE:
-            log(f"[sofa trial] skip {name[:30]}: est. cost {int(cost):,} would pass STOCK_CAP or the cash reserve")
+        q = 0
+        while q < deep_high.limit(sku, deep) - held.get(sku, 0) and q < units_left:
+            if held_cost + cost > limits.stock_cap_now(cash, held_cost)[0] or cash - cost < CASH_RESERVE:
+                log(f"[sofa trial] skip {name[:30]}: est. cost {int(cost):,} would pass STOCK_CAP or the cash reserve")
+                break
+            held_cost, cash, q = held_cost + cost, cash - cost, q + 1
+        if not q:
             break
-        held_cost, cash = held_cost + cost, cash - cost
-        log(f"[sofa trial] {name[:40]} ({sku}): sold {sold}/30m, avg {avg}, est. cost {int(cost):,} -> buy 1 "
+        units_left -= q
+        log(f"[sofa trial] {name[:40]} ({sku}): sold {sold}/30m, avg {avg}, est. cost {int(cost):,}, held "
+            f"{held.get(sku, 0)} (limit {deep_high.limit(sku, deep)}) -> buy {q} "
             f"(trial {datetime.fromtimestamp(t0):%m-%d %H:%M} - {datetime.fromtimestamp(t1):%m-%d %H:%M})")
-        out.append({"sku": sku, "qty": 1})
+        out.append({"sku": sku, "qty": q})
+        if units_left <= 0:
+            break
     return out or None
 
 

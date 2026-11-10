@@ -1,0 +1,12 @@
+{
+ "enabled": true,
+ "since": 1794286643,
+ "window_h": 24,
+ "min_sold": 2,
+ "median_h": 3,
+ "min_margin": 0.1,
+ "recent_h": 12,
+ "min_hold": 2,
+ "max_hold": 5,
+ "why": "person's decision 11/10 ~12:30: fast high-price SKUs (incl. sofas) held up to max(2, 12 h sales), at most 5; others 1"
+}
