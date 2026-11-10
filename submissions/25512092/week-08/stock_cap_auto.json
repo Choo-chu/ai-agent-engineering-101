@@ -12,7 +12,8 @@
   "unsold_min": 5000000,
   "min_cost": 5000000,
   "consecutive": 2,
-  "old_h": 12
+  "old_h": 12,
+  "warn_only": true
  },
  "case_orig": {
   "median_h": 3,

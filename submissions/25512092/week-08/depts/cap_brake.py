@@ -16,6 +16,9 @@ trip 3 (cash) only pauses buying ("paused" in stock_cap_auto.json, restock.py bu
 resume_cash (3M), the cap stays automatic. From limits.CAP_END_AT the scheduled end cap keeps priority.
 Rules in cap_brake.json; the latest numbers in logs/cap_brake_state.json (read by the 3 h report). The brake fires
 once; raising the cap again is the person's decision.
+From 11/10 ~12:10 (person, "shop brakes minimised"): with "warn_only" in cap_brake.json the stock trips (1, 2) only
+send a Telegram warning (decision cap_brake_warn), at most once per WARN_EVERY_S while they last: no 20M, no auto cap
+off. The cash trip (buying paused until cash > 3M) still works.
 """
 import json
 import os
@@ -26,6 +29,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES = os.path.join(HERE, "cap_brake.json")
 STATE = os.path.join(HERE, "logs", "cap_brake_state.json")
 CHECK_S = 300
+WARN_EVERY_S = 3600
 ME = "choo-chu"
 _last = 0.0
 
@@ -150,6 +154,24 @@ def confirmed(r, trips, m, log=print):
     return False
 
 
+def warn_only(r, trips, m, log=print, now=None):
+    """11/10 ~12:10 (person): a stock trip is a Telegram warning only; once when it starts, then hourly while it lasts."""
+    import alerts
+    import decisions
+    now = now or time.time()
+    first = not r.get("warn_streak")
+    if first or now - (r.get("warn_last") or 0) >= WARN_EVERY_S:
+        r.update(warn_streak=(r.get("warn_streak") or 0) + 1, warn_last=round(now))
+        with open(RULES, "w", encoding="utf-8") as f:
+            json.dump(r, f, ensure_ascii=False, indent=1)
+        decisions.record("purchasing", "cap_brake_warn", "limits.STOCK_CAP", m.get("cap"),
+                         "warning only (person 11/10): " + "; ".join(trips))
+        alerts.send("info", f"cap_brake_warn:{int(now)}", f"STOCK_CAP 브레이크 경고 {time.strftime('%H:%M')} (경고만, 자동 조치 "
+                    f"없음): " + "; ".join(trips) + f"\n재고 원가 {m['stock']:,}, 현금 {m['cash']:,}, 상한 {m.get('cap', 0):,}"
+                    + ("" if first else " (계속 걸려 있음, 1시간마다 알림)"), log=log)
+        log(f"cap brake warning only: {trips}")
+
+
 def fire_auto(r, m, trips, log=print):
     """Automatic cap on, a stock trip (1 or 2): the automatic cap off, back to the fixed STOCK_CAP (r['low'])."""
     import alerts
@@ -256,8 +278,16 @@ def tick(log=print, now=None):
     m.update(cap=cap, trips=trips, auto=auto, paused=limits.buy_paused(now=now))
     with open(STATE, "w", encoding="utf-8") as f:
         json.dump(m, f, ensure_ascii=False)
+    stock_trips = [t for t in trips if not t.startswith("현금 ")]
+    if r.get("warn_only"):                             # 11/10 ~12:10 (person): stock trips warn only
+        if stock_trips:
+            warn_only(r, stock_trips, m, log, now)
+        else:
+            _streak(r, 0)
+        if auto:
+            cash_pause(r, m, log=log)
+        return
     if auto:
-        stock_trips = [t for t in trips if not t.startswith("현금 ")]
         if stock_trips and confirmed(r, stock_trips, m, log):
             fire_auto(r, m, stock_trips, log=log)
         elif not stock_trips:

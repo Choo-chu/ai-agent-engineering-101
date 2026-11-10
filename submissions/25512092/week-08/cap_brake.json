@@ -45,5 +45,7 @@
   "consecutive": 1
  },
  "consecutive": 2,
- "warn_streak": 0
+ "warn_streak": 2,
+ "warn_only": true,
+ "warn_last": 1794279610
 }

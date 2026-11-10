@@ -12,6 +12,8 @@ unsold_min, consecutive}).
 From 11/09 ~23:50 (person), the same as the cap brake: median 4 h, unsold share 35% AND unsold cost over 5M, and
 overstock only on `consecutive` (2) checks in a row at least MIN_GAP_S apart (the CEO case tick is every 5 min); the
 first hit sends a Telegram warning (decision overstock_warn) and the case stays normal. State: logs/turnover_case.json.
+From 11/10 ~12:10 (person, "shop brakes minimised"): with "warn_only" in the case rules the case is never overstock
+(no overstock floors): a hit only sends the Telegram warning, at most once per WARN_EVERY_S while it lasts.
 """
 import os
 import sqlite3
@@ -24,6 +26,7 @@ DEFAULT = {"median_h": 3, "window_h": 6, "min_sales": 10, "old_h": 6, "old_share
            "min_cost": 5_000_000, "unsold_min": 0, "consecutive": 1}
 STATE = os.path.join(HERE, "logs", "turnover_case.json")
 MIN_GAP_S = 240
+WARN_EVERY_S = 3600
 
 
 def _state():
@@ -63,12 +66,15 @@ def measure(now=None, since=0, c=None, db_path=None):
 
 
 def _warn(why, n, need):
+    """need 0: warning only (11/10, person), nothing ever changes."""
     try:
         import alerts
         import decisions
-        decisions.record("ceo", "overstock_warn", "shop case", n, f"check {n}/{need}: " + "; ".join(why) + " - warning only")
+        decisions.record("ceo", "overstock_warn", "shop case", n, (f"check {n}/{need}: " if need else "warning only: ")
+                         + "; ".join(why) + " - warning only")
         alerts.send("info", f"overstock_warn:{int(time.time())}", f"과재고(overstock) 판단 경고 {time.strftime('%H:%M')} "
-                    f"({n}/{need}회, 아직 normal 유지): " + "; ".join(why) + " - 다음 점검(5분 뒤)에도 걸리면 overstock")
+                    + ("(경고만, 자동 조치 없음, normal 유지): " + "; ".join(why) if not need else
+                       f"({n}/{need}회, 아직 normal 유지): " + "; ".join(why) + " - 다음 점검(5분 뒤)에도 걸리면 overstock"))
     except Exception:
         pass
 
@@ -87,6 +93,18 @@ def overstock(now=None, r=None, db_path=None):
         why.append(f"{c['old_h']} h+ unsold {m['old_share']:.1%} > {c['old_share']:.0%} and {m['old_unsold']:,} > "
                    f"{c['unsold_min']:,} (of {m['old_cost']:,})")
     now = now or time.time()
+    if c.get("warn_only"):                     # 11/10 ~12:10 (person): a warning only, never overstock
+        st = _state()
+        if why and (not st.get("streak") or now - (st.get("warned") or 0) >= WARN_EVERY_S):
+            st = {"ts": round(now), "streak": (st.get("streak") or 0) + 1, "why": why, "warned": round(now)}
+            _save(st)
+            _warn(why, st["streak"], 0)
+        elif not why and st.get("streak"):
+            _save({"ts": round(now), "streak": 0, "why": []})
+        if why:
+            return False, "turnover warning only (no overstock, person 11/10): " + "; ".join(why)
+        return False, (f"turnover ok: median {m['median_h']} h ({m['sales']} sales), {c['old_h']} h+ unsold "
+                       f"{'-' if m['old_share'] is None else f'{m['old_share']:.1%}'} of {m['old_cost']:,}")
     need = int(c.get("consecutive") or 1)
     if need > 1:
         st = _state()

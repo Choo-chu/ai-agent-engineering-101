@@ -349,6 +349,18 @@ def trip(why):
 
 
 BRAKE_SHARE, BRAKE_MAX = 0.7, 60     # 11/09 ~21:20 (person): the brake goes back to 0.7 / 60 (was 0.6 / 40)
+# 11/10 ~12:10 (person, "shop brakes minimised"): the brake only warns (Telegram, when a hit starts and hourly while it
+# lasts); high_max / high_share are never lowered by it
+WARN_ONLY, WARN_EVERY_S = True, 3600
+
+
+def warn_only(why, streak):
+    import alerts
+    import decisions
+    decisions.record("purchasing", "high_brake_warn", "high_focus", why, f"warning only (person 11/10), check {streak}")
+    alerts.send("info", f"high_brake_warn:{int(time.time())}", f"고가 브레이크 경고 {datetime.now():%H:%M} (경고만, high_max·"
+                f"high_share 자동 하향 없음): {why}" + ("" if streak == 1 else f" ({streak}회째 연속, 1시간마다 알림)"), log=log)
+    log(f"warn only (check {streak}): {why}")
 
 
 def main():
@@ -399,7 +411,11 @@ def brake_loop(t, base, reported):
             log("check " + " | ".join(f"{n}={'TRIP' if x else 'ok'}" for n, x, _ in st))
             streak = (load_state().get("warn_streak") or 0) + 1 if hit else 0
             save_state(warn_streak=streak)
-            if hit and streak >= CONSECUTIVE:
+            if WARN_ONLY:                       # 11/10 ~12:10 (person): a warning only, high_max / high_share stay
+                if hit and (streak == 1 or now - (load_state().get("warn_last") or 0) >= WARN_EVERY_S):
+                    save_state(warn_last=round(now))
+                    warn_only("; ".join(hit), streak)
+            elif hit and streak >= CONSECUTIVE:
                 trip("; ".join(hit) + f" ({streak}회 연속)")
             elif hit:
                 warn("; ".join(hit), streak)
