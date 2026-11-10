@@ -452,11 +452,21 @@ class Seller(AgentExecutor):
             move, raw = {"action": "accept"}, f"(code: offer {deal['offer']} >= {CODE_ACCEPT:.0%} of ask {deal['ask']})"
             print(f"[code] accept {deal['offer']} >= {CODE_ACCEPT:.0%} of ask {deal['ask']}, no harness call", flush=True)
         else:
-            move, raw = await harness_move(PROMPT.format(name=u["name"], list_price=u["list_price"], reserve=reserve,
-                                                         market=int(avg) if avg is not None else "an unknown price",
-                                                         transcript="\n".join(deal["lines"])))
-            deal["calls"] = deal.get("calls", 0) + 1
-            print(f"[harness] {raw}", flush=True)
+            try:
+                move, raw = await harness_move(PROMPT.format(name=u["name"], list_price=u["list_price"],
+                                                             reserve=reserve,
+                                                             market=int(avg) if avg is not None else "an unknown price",
+                                                             transcript="\n".join(deal["lines"])))
+                deal["calls"] = deal.get("calls", 0) + 1
+                print(f"[harness] {raw}", flush=True)
+            except Exception as e:                      # 11/10 ~15:00 (person): LLM down (limit, timeout) -> code haggle
+                nxt = sofa.next_counter(deal, reserve)
+                if deal["offer"] is not None and deal["offer"] >= max(reserve, nxt):
+                    move, raw = {"action": "accept"}, f"(harness failed {type(e).__name__}: code accept {deal['offer']})"
+                else:
+                    move, raw = {"action": "counter", "price": nxt}, (f"(harness failed {type(e).__name__}: code "
+                                                                       f"counter {nxt}, floor {reserve})")
+                print(f"[code fallback] {u['sku']} {raw}", flush=True)
         action = (move or {}).get("action")
         if action == "accept" and (deal["offer"] is None or deal["offer"] < reserve):
             print(f"[guard] accept of {deal['offer']} below floor {reserve} -> counter", flush=True)

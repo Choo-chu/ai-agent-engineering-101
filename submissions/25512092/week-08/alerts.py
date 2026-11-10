@@ -62,6 +62,33 @@ def telegram(text):
         return f"failed: {type(e).__name__}"             # never the exception text: it can carry the URL
 
 
+AUTO_MODE = os.path.join(HERE, "auto_mode.json")
+
+
+def held(level, key, now=None):
+    """11/10 ~15:00 (person, auto mode until auto_mode.json "until"): only urgent alerts and the scheduled summaries
+    (keys starting with one of "pass_keys") go to Telegram; warnings and info are kept in alerts.jsonl (telegram
+    "held") and listed in the summaries."""
+    try:
+        with open(AUTO_MODE, encoding="utf-8") as f:
+            a = json.load(f)
+    except (OSError, ValueError):
+        return False
+    if not (a.get("enabled") and (now or time.time()) < float(a.get("until") or 0)):
+        return False
+    return level != "urgent" and not any(key.startswith(p) for p in a.get("pass_keys") or [])
+
+
+def brakes_warn_only(now=None):
+    """True while auto mode (auto_mode.json) says the remaining brakes only warn (person 11/10 ~15:00)."""
+    try:
+        with open(AUTO_MODE, encoding="utf-8") as f:
+            a = json.load(f)
+    except (OSError, ValueError):
+        return False
+    return bool(a.get("enabled") and a.get("brakes_warn_only") and (now or time.time()) < float(a.get("until") or 0))
+
+
 def send(level, key, text, log=print, repeat_s=REPEAT_S):
     """level: urgent | daily | info. Returns the Telegram status (off / sent / ...) or 'repeat'.
     The same key goes out at most once per repeat_s (default 1 h)."""
@@ -69,7 +96,7 @@ def send(level, key, text, log=print, repeat_s=REPEAT_S):
     if level != "daily" and now - _seen(key) < repeat_s:
         return "repeat"
     _sent[key] = now
-    tg = telegram(f"[Choo Shop {level}] {text}")
+    tg = "held" if held(level, key, now) else telegram(f"[Choo Shop {level}] {text}")
     try:
         with open(PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": round(now, 1), "level": level, "key": key, "text": text, "telegram": tg},

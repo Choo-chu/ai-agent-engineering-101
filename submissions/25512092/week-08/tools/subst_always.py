@@ -31,6 +31,9 @@ def log(m):
         f.write(f"{datetime.now():%m-%d %H:%M:%S} {m}\n")
 
 
+_warned = {}
+
+
 def main():
     import alerts
     import decisions
@@ -58,6 +61,13 @@ def main():
         m = sw.metrics(L, max(t0, time.time() - WINDOW_H * 3600))
         log(json.dumps(m, ensure_ascii=False))
         why = sw.stop_reason(m)
+        if why and alerts.brakes_warn_only():          # 11/10 ~15:00 (person, auto mode): a warning only, A stays
+            if time.time() - _warned.get("t", 0) >= 3600:
+                _warned["t"] = time.time()
+                decisions.record("sales", "subst_exp_stop_warn", "subst_exp", "A", why + " - warning only (auto mode)")
+                alerts.send("info", f"subst_always_warn:{int(time.time())}", "대체 상품 A안 중단 조건 경고 (자동 모드: A 유지): "
+                            + why, log=log)
+            continue
         if why:
             sw.set_mode(mode="B", stopped=round(time.time()), stop_reason=why)
             decisions.record("sales", "subst_exp_stop", "subst_exp", "B", why)

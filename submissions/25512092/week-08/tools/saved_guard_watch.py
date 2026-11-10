@@ -82,6 +82,15 @@ def shop_order_check(alerts, decisions, now=None):
     why = so.guard(now)
     if not why:
         return None
+    if alerts.brakes_warn_only():                      # 11/10 ~15:00 (person, auto mode): a warning only, rules stay
+        st = state()
+        if time.time() - st.get("shop_order_warned", 0) >= 3600:
+            st["shop_order_warned"] = round(time.time())
+            save_state(st)
+            decisions.record("buyer", f"{shop_order.TAG}_warn", shop_order.TAG, None, why + " - warning only (auto mode)")
+            alerts.send("info", f"{shop_order.TAG}_warn:{int(time.time())}", f"buyer 가게 순서 중단 조건 경고 (자동 모드: 유지): {why}",
+                        log=log)
+        return None
     r = shop_order.rules()
     r.update(stock_first=False, rate_order=False, stopped=round(now or time.time()), stop_reason=why)
     with open(shop_order.RULES, "w", encoding="utf-8") as f:

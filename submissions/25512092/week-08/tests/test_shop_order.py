@@ -107,7 +107,8 @@ def test_guard():
     old_log = S.LOG
     with mock.patch.object(S, "RULES", rules), mock.patch.object(W, "LOG", tmp_path("sg.log")), \
             mock.patch.object(K, "guard", lambda now=None: "성사율 test"):
-        W.shop_order_check(mock.Mock(send=lambda *a, **k: sent.append(a)), mock.Mock(record=lambda *a, **k: rec.append(a)))
+        W.shop_order_check(mock.Mock(send=lambda *a, **k: sent.append(a), brakes_warn_only=lambda: False),
+                           mock.Mock(record=lambda *a, **k: rec.append(a)))
         j = json.load(open(rules, encoding="utf-8"))
     assert not j["stock_first"] and not j["rate_order"] and j["enabled"] and j["stop_reason"] == "성사율 test"
     assert sent and rec and S.LOG == old_log

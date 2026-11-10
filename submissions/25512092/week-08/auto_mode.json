@@ -1,0 +1,11 @@
+{
+ "enabled": true,
+ "until": 1794355800.0,
+ "pass_keys": [
+  "morning_summary",
+  "morning_0900",
+  "auto_0900"
+ ],
+ "brakes_warn_only": true,
+ "why": "person 11/10 ~15:00: unattended until 11/11 morning: Telegram urgent only (+ the 20:00 / 08:00 / 09:00 summaries); warnings and info held for the summaries; remaining brakes warn only"
+}

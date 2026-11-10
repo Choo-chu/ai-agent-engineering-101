@@ -39,19 +39,35 @@ LIMIT_RE = re.compile(r"hit your (session|weekly|opus|sonnet) limit|usage limit|
 FAIL_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "harness_failures.jsonl")
 
 
+STREAK_URGENT = 10      # 11/10 ~15:00 (person): urgent only after more than 10 failures in a row (per process)
+_streak = {"n": 0}
+
+
+def _ok():
+    _streak["n"] = 0
+
+
 def _failed(kind, code, out, err):
-    """Record a failed harness call (exit code and the first lines, to learn the exact limit wording) and send an
-    urgent alert at most every 10 min. Never raises."""
+    """Record a failed harness call (exit code and the first lines, to learn the exact limit wording). From 11/10
+    ~15:00 (person): an info alert per failure, an urgent one (at most every 10 min) once this process has had more
+    than STREAK_URGENT failures in a row (the seller then haggles by code, the buyer by soft_neg / the code guard).
+    Never raises."""
     try:
         import sys
         import time
+        _streak["n"] += 1
+        who = os.path.basename(sys.argv[0])
         with open(FAIL_LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"ts": round(time.time(), 1), "who": os.path.basename(sys.argv[0]), "kind": kind,
-                                "exit": code, "stdout": (out or "")[:300], "stderr": (err or "")[:300]},
+            f.write(json.dumps({"ts": round(time.time(), 1), "who": who, "kind": kind, "exit": code,
+                                "streak": _streak["n"], "stdout": (out or "")[:300], "stderr": (err or "")[:300]},
                                ensure_ascii=False) + "\n")
         import alerts
-        alerts.send("urgent", "harness_fail", f"harness ({os.path.basename(sys.argv[0])}) {kind}: exit {code}; "
-                    f"{((err or '') + ' ' + (out or '')).strip()[:200]}", log=lambda m: None, repeat_s=600)
+        txt = f"harness ({who}) {kind}: exit {code}; {((err or '') + ' ' + (out or '')).strip()[:200]}"
+        if _streak["n"] > STREAK_URGENT:
+            alerts.send("urgent", f"harness_fail_streak:{who}", f"LLM 호출 {_streak['n']}번 연속 실패 - {txt}. seller는 "
+                        "코드 흥정, buyer는 soft_neg·코드로 계속 동작", log=lambda m: None, repeat_s=600)
+        else:
+            alerts.send("info", "harness_fail", txt, log=lambda m: None, repeat_s=600)
     except Exception:
         pass
 
@@ -69,6 +85,8 @@ def ask(prompt: str, timeout: int = 180) -> str:
         raise RuntimeError(f"harness exit {out.returncode}: {se.strip()[:200]}")
     if LIMIT_RE.search(so) and not so.lstrip().startswith("{"):
         _failed("limit (exit 0)", 0, so, se)                 # the failure printed as the result
+    else:
+        _ok()
     return so.strip()
 
 

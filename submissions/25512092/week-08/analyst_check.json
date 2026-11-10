@@ -1,5 +1,5 @@
 {
- "no_revert_until": 1794268800.0,
+ "no_revert_until": 1794355200.0,
  "mixed_hold": true,
- "why": "person 11/09 ~23:55: overnight the 3 h check records only; other changes in the windows -> 판정 보류 (always)"
+ "why": "person 11/10 ~15:00: unattended until 11/11 morning: the 3 h check records its verdict only (no automatic revert)"
 }

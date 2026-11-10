@@ -149,6 +149,12 @@ def summary(t0, t1):
         lines.append("16. " + sales_trend.recovery_line(t1, 12))
     except Exception as e:
         lines.append(f"16. 일반 상품 회복 추이 계산 실패 {type(e).__name__}")
+    try:                                          # 11/10 ~15:00 (person, auto mode): warnings / info held from Telegram
+        import auto_0900
+        H = auto_0900.held_lines(auto_0900.alerts_in(t0, t1))
+        lines += ["17. " + H[0][3:]] + H[1:]
+    except Exception as e:
+        lines.append(f"17. 경고·정보 모음 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 
