@@ -53,7 +53,21 @@ def test_watchdog():
         assert any("kit restarted (seller)" in a for a in acts), acts
         acts = W.check(s, rows, NOW + 120, 9999)                        # buyer silent, but a restart 2 min ago
         assert "kit restart pending" in acts, acts
-        assert "keepalive missing" in W.check({}, rows[1:], NOW, 10)
+    with mock.patch.object(W, "urgent", lambda k, t: calls.append(k)),             mock.patch.object(W, "start_keepalive", lambda: calls.append("ka") or True):
+        s = {}
+        assert "keepalive restarted" in W.check(s, rows[1:], NOW, 10) and calls[-1].startswith("watchdog_restart:keep")
+        assert "keepalive start pending" in W.check(s, rows[1:], NOW + 60, 10)
+
+
+def test_restart_kit_spares_keepalive():
+    import watchdog as W
+    rows = [(10, 1, "venv python keepalive.py"), (11, 10, "python312 keepalive.py"),
+            (20, 11, "venv python market_kit.py join"), (21, 20, "python312 market_kit.py join"),
+            (30, 21, "python seller_r3.py")]
+    killed = []
+    with mock.patch("subprocess.run", lambda args, **k: killed.append(args[-1])):
+        assert W.restart_kit(rows)
+    assert killed == ["20"], killed                  # the top kit only: not 11 (keepalive) nor 21 (its child)
 
 
 def test_harness_streak():
@@ -72,8 +86,23 @@ def test_harness_streak():
         assert sent[-1][0] == "info"
 
 
+def test_kit_flapping():
+    import watchdog as W
+    calls = []
+    base = [(1, 0, "keepalive.py"), (4, 0, "analyst_main.py")]
+    with mock.patch.object(W, "urgent", lambda k, t: calls.append(k)):
+        s = {}
+        for i in range(5):                           # kit pid changes 4 times after the first sight
+            rows = base + [(100 + i, 1, "market_kit.py join"), (200 + i, 100 + i, "market_kit.py join"),
+                           (300 + i, 200 + i, "seller_r3.py")]
+            W.check(s, rows, NOW + i * 600, 10)
+        assert len(s["kit_starts"]) == 4 and calls.count("watchdog_kit_flapping") == 1, (s, calls)
+
+
 if __name__ == "__main__":
+    test_kit_flapping()
     test_held()
     test_watchdog()
     test_harness_streak()
+    test_restart_kit_spares_keepalive()
     print("ok")

@@ -37,7 +37,11 @@ def procs():
     out = subprocess.run(["powershell", "-NoProfile", "-Command",
                           "Get-CimInstance Win32_Process -Filter \"name='python.exe'\" | "
                           "ForEach-Object { \"$($_.ProcessId)`t$($_.ParentProcessId)`t$($_.CommandLine)\" }"],
-                         capture_output=True, text=True, timeout=60).stdout
+                         capture_output=True, timeout=60).stdout or b""
+    try:                                          # the console code page (cp949) or UTF-8; never fail on a byte
+        out = out.decode("utf-8")
+    except UnicodeDecodeError:
+        out = out.decode("cp949", "replace")
     rows = []
     for ln in out.splitlines():
         p = ln.split("\t", 2)
@@ -105,12 +109,33 @@ def start_analyst():
 
 
 def restart_kit(rows):
-    """Kill the kit (the keepalive's child tree); keepalive starts it again. True if a kit was found."""
-    kp = {r[0] for r in find(rows, "keepalive.py")}
-    kids = [r for r in rows if r[1] in kp] or find(rows, "market_kit.py join")
-    for pid, _, _ in kids:
+    """Kill the kit: the top market_kit process (its parent not a market_kit one) with its tree, never keepalive
+    (11/10 15:06: killing the keepalive's child tree took keepalive down too). keepalive starts the kit again."""
+    kit = find(rows, "market_kit.py join")
+    kit_pids = {r[0] for r in kit}
+    top = [r for r in kit if r[1] not in kit_pids and "keepalive.py" not in r[2]]
+    for pid, _, _ in top:
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True)
-    return bool(kids)
+    return bool(top)
+
+
+def start_keepalive():
+    """keepalive.py from the repo root with MARKET_OWNER from the Windows user environment (HKCU\\Environment), put
+    only into the child's environment: never printed, logged or written. False when it is not set there."""
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as k:
+            code = winreg.QueryValueEx(k, "MARKET_OWNER")[0]
+    except OSError:
+        return False
+    if not code:
+        return False
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
+    flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    subprocess.Popen([VENV_PY, "-X", "utf8", "submissions/25512092/week-08/keepalive.py"], cwd=repo,
+                     env=dict(os.environ, MARKET_OWNER=code), creationflags=flags,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+    return True
 
 
 def check(s, rows, now, buyer_age):
@@ -119,10 +144,21 @@ def check(s, rows, now, buyer_age):
     stopped = s.setdefault("stopped", {})
     if not find(rows, "keepalive.py"):
         acts.append("keepalive missing")
-        if not s.get("keepalive_alerted") or now - s["keepalive_alerted"] > 3600:
-            s["keepalive_alerted"] = round(now)
-            urgent("watchdog_keepalive", "keepalive.py가 꺼져 있음: 가게(kit) 자동 재시작 불가. 사람이 MARKET_OWNER로 "
-                   "keepalive를 다시 켜야 함")
+        if stopped.get("keepalive"):
+            pass
+        elif now - s.get("keepalive_start_at", 0) < 180:
+            acts.append("keepalive start pending")
+        elif allowed(s, "keepalive", now):
+            if start_keepalive():
+                s["keepalive_start_at"] = round(now)
+                acts.append("keepalive restarted")
+                urgent(f"watchdog_restart:keepalive:{int(now)}", "keepalive(가게 kit 관리) 꺼짐 -> 자동 재시작 (가게도 다시 켜짐)")
+            else:
+                urgent("watchdog_keepalive", "keepalive.py가 꺼져 있고 MARKET_OWNER(사용자 환경 변수)가 없어 재시작 불가: 사람이 "
+                       "keepalive를 다시 켜야 함")
+        else:
+            stopped["keepalive"] = round(now)
+            urgent("watchdog_stop:keepalive", f"keepalive가 1시간에 {MAX_RESTARTS}번 넘게 죽음: 자동 재시작 멈춤, 확인 필요")
     if not find(rows, "analyst_main.py"):
         acts.append("analyst missing")
         if stopped.get("analyst"):
@@ -156,6 +192,19 @@ def check(s, rows, now, buyer_age):
         else:
             stopped[name] = round(now)
             urgent(f"watchdog_stop:{name}", f"{name}이(가) 1시간에 {MAX_RESTARTS}번 넘게 죽음: 자동 재시작 멈춤, 확인 필요 ({txt})")
+    kit = find(rows, "market_kit.py join")           # 11/10 ~15:15 (person): every kit (re)start, whoever did it
+    kp = {r[0] for r in kit}
+    top = sorted(r[0] for r in kit if r[1] not in kp)
+    if top and top != s.get("kit_pids"):
+        if s.get("kit_pids") is not None:
+            s["kit_starts"] = [t for t in s.get("kit_starts", []) if now - t < 3600] + [round(now)]
+            acts.append(f"kit started again (pid {top})")
+        s["kit_pids"] = top
+    ks = [t for t in s.get("kit_starts", []) if now - t < 3600]
+    if len(ks) > MAX_RESTARTS and now - s.get("kit_alerted", 0) > 3600:
+        s["kit_alerted"] = round(now)
+        acts.append(f"kit restarted {len(ks)} times in an hour")
+        urgent("watchdog_kit_flapping", f"가게 kit가 1시간에 {len(ks)}번 재시작됨 (기준 {MAX_RESTARTS}번 초과): 터널·seller·buyer 확인 필요")
     for name in list(stopped):                       # an hour later the counter starts over
         if now - stopped[name] > 3600:
             del stopped[name]

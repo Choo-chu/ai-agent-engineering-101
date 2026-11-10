@@ -1,0 +1,10 @@
+11-10 15:06:09 start
+11-10 15:06:53 manual kit restart (person 11/10 ~15:00: seller code fallback, harness streak, alert filter)
+11-10 15:06:53 start
+11-10 15:06:55 [alert] urgent watchdog_keepalive: keepalive.py가 꺼져 있음: 가게(kit) 자동 재시작 불가. 사람이 MARKET_OWNER로 keepalive를 다시 켜야 함 (telegram sent)
+11-10 15:06:55 keepalive missing
+11-10 15:07:56 keepalive missing
+11-10 15:08:56 keepalive missing
+11-10 15:09:56 keepalive missing
+11-10 15:10:57 keepalive missing
+11-10 15:13:37 start
