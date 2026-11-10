@@ -6,11 +6,11 @@
  "old_h": 12,
  "old_cost": 3000000,
  "old_scope": "since",
- "cash_min": 2000000,
+ "cash_min": 4000000,
  "low": 20000000,
  "since": 1794279355,
  "pid": null,
- "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M; 11/09 ~23:10 automatic cap (cash + stock - 3M): stock trips -> auto off, 20M; cash trip -> buying paused until cash > 3M; 11/09 ~23:55 overnight: median 4 h, unsold 35% and 5M, 2 checks in a row (person decides at 09:00); person's decision 11/10 ~11:50: automatic cap on again, unsold at 12 h (35%, 5M, 2 in a row kept)",
+ "why": "person 11/07 ~20:40; 11/08 ~11:00 raised again, condition 2 = share of cost unsold > 25%; 11/08 ~20:35 cap 30M, a trip goes back to 20M; 11/09 ~11:20 cap 30M, a trip goes back to 20M; 11/09 ~19:00 cap 40M, condition 2 share > 25% AND unsold > 3M from 5M eligible, a trip goes back to 20M; 11/09 ~23:10 automatic cap (cash + stock - 3M): stock trips -> auto off, 20M; cash trip -> buying paused until cash > 3M; 11/09 ~23:55 overnight: median 4 h, unsold 35% and 5M, 2 checks in a row (person decides at 09:00); person's decision 11/10 ~11:50: automatic cap on again, unsold at 12 h (35%, 5M, 2 in a row kept); person 11/10 ~18:50 (freeze exception): cash_min 2M -> 4M",
  "old_share": 0.35,
  "min_old_n": 20,
  "history": [
@@ -45,7 +45,7 @@
   "consecutive": 1
  },
  "consecutive": 2,
- "warn_streak": 2,
+ "warn_streak": 0,
  "warn_only": true,
- "warn_last": 1794279610
+ "warn_last": 1794290796
 }
