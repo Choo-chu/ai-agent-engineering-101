@@ -90,3 +90,29 @@
 11-09 22:51:38 check {'saved': 0.4188, 'deals': 2368, 'surplus': 93958559, 'all': 0.863, 'second': 0.3714, 'saved_rank': 1, 'all_rank': 6}
 11-09 23:21:39 check {'saved': 0.4187, 'deals': 2393, 'surplus': 94492420, 'all': 0.864, 'second': 0.3715, 'saved_rank': 1, 'all_rank': 6}
 11-09 23:51:40 check {'saved': 0.4187, 'deals': 2428, 'surplus': 95927193, 'all': 0.864, 'second': 0.3716, 'saved_rank': 1, 'all_rank': 6}
+11-10 00:21:42 check {'saved': 0.4187, 'deals': 2457, 'surplus': 97576539, 'all': 0.864, 'second': 0.3717, 'saved_rank': 1, 'all_rank': 6}
+11-10 00:51:43 check {'saved': 0.4183, 'deals': 2481, 'surplus': 98132337, 'all': 0.865, 'second': 0.3718, 'saved_rank': 1, 'all_rank': 6}
+11-10 01:21:46 check {'saved': 0.4182, 'deals': 2507, 'surplus': 99361090, 'all': 0.866, 'second': 0.372, 'saved_rank': 1, 'all_rank': 6}
+11-10 01:51:47 check {'saved': 0.4178, 'deals': 2543, 'surplus': 100656745, 'all': 0.866, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:21:51 check {'saved': 0.4175, 'deals': 2564, 'surplus': 101840740, 'all': 0.868, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:51:54 check {'saved': 0.4173, 'deals': 2586, 'surplus': 103269386, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 03:21:55 check {'saved': 0.4168, 'deals': 2618, 'surplus': 104305644, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 03:51:58 check {'saved': 0.4162, 'deals': 2646, 'surplus': 105199497, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 04:22:02 check {'saved': 0.4161, 'deals': 2675, 'surplus': 106350822, 'all': 0.868, 'second': 0.3724, 'saved_rank': 1, 'all_rank': 6}
+11-10 04:52:04 check {'saved': 0.4158, 'deals': 2711, 'surplus': 107975826, 'all': 0.868, 'second': 0.3724, 'saved_rank': 1, 'all_rank': 6}
+11-10 05:22:05 check {'saved': 0.4154, 'deals': 2738, 'surplus': 108849096, 'all': 0.868, 'second': 0.3725, 'saved_rank': 1, 'all_rank': 6}
+11-10 05:52:12 check {'saved': 0.415, 'deals': 2758, 'surplus': 109380504, 'all': 0.868, 'second': 0.3726, 'saved_rank': 1, 'all_rank': 6}
+11-10 06:22:13 check {'saved': 0.4147, 'deals': 2793, 'surplus': 110431113, 'all': 0.87, 'second': 0.3727, 'saved_rank': 1, 'all_rank': 6}
+11-10 06:52:14 check {'saved': 0.4144, 'deals': 2820, 'surplus': 111059781, 'all': 0.87, 'second': 0.3728, 'saved_rank': 1, 'all_rank': 6}
+11-10 07:22:15 check {'saved': 0.4141, 'deals': 2841, 'surplus': 112002921, 'all': 0.87, 'second': 0.3729, 'saved_rank': 1, 'all_rank': 6}
+11-10 07:52:16 check {'saved': 0.414, 'deals': 2863, 'surplus': 112385464, 'all': 0.87, 'second': 0.373, 'saved_rank': 1, 'all_rank': 5}
+11-10 08:22:17 check {'saved': 0.4139, 'deals': 2882, 'surplus': 112638123, 'all': 0.87, 'second': 0.3731, 'saved_rank': 1, 'all_rank': 5}
+11-10 08:52:20 check {'saved': 0.4137, 'deals': 2910, 'surplus': 113502615, 'all': 0.87, 'second': 0.3732, 'saved_rank': 1, 'all_rank': 5}
+11-10 09:22:24 check {'saved': 0.4137, 'deals': 2925, 'surplus': 113825690, 'all': 0.87, 'second': 0.3734, 'saved_rank': 1, 'all_rank': 5}
+11-10 09:52:25 check {'saved': 0.4136, 'deals': 2950, 'surplus': 115515154, 'all': 0.87, 'second': 0.379, 'saved_rank': 1, 'all_rank': 5}
+11-10 10:22:26 check {'saved': 0.4133, 'deals': 2977, 'surplus': 117017082, 'all': 0.87, 'second': 0.3788, 'saved_rank': 1, 'all_rank': 5}
+11-10 10:52:28 check {'saved': 0.4131, 'deals': 2994, 'surplus': 117487238, 'all': 0.87, 'second': 0.3827, 'saved_rank': 1, 'all_rank': 5}
+11-10 11:22:35 check {'saved': 0.413, 'deals': 3025, 'surplus': 119087845, 'all': 0.87, 'second': 0.3849, 'saved_rank': 1, 'all_rank': 5}
+11-10 11:52:36 check {'saved': 0.4129, 'deals': 3045, 'surplus': 119448505, 'all': 0.87, 'second': 0.3877, 'saved_rank': 1, 'all_rank': 4}
+11-10 12:08:05 resumed (guard: 2nd + 0.008 or not first), since 11-09 14:27, until 11-10 14:27
+11-10 12:12:17 resumed (guard: 3rd + 0.006, depts/saved_guard.py), since 11-09 14:27, until 11-17 23:59

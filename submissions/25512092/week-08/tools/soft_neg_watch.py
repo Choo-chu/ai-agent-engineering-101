@@ -208,7 +208,7 @@ def resume(alerts, decisions):
         log("resume: soft_neg not on, nothing to watch")
         return
     t0, end = r["since"], r["until"]
-    log(f"resumed (guard: 2nd + 0.008 or not first), since {datetime.fromtimestamp(t0):%m-%d %H:%M}, "
+    log(f"resumed (guard: 3rd + 0.006, depts/saved_guard.py), since {datetime.fromtimestamp(t0):%m-%d %H:%M}, "
         f"until {datetime.fromtimestamp(end):%m-%d %H:%M}")
     loop(t0, start_board(), end, alerts, decisions)
 
@@ -231,7 +231,7 @@ def loop(t0, b0, end, alerts, decisions):
             return
     set_rule(enabled=False, ended=round(time.time()))
     b1 = board()
-    decisions.record("buyer", "soft_neg_end", "soft_neg", b1, "24 h done, off; keep it or not is the person's decision")
+    decisions.record("buyer", "soft_neg_end", "soft_neg", b1, "until reached, off; keep it or not is the person's decision")
     alerts.send("daily", f"soft_neg_report:{int(t0)}", report(t0, b0, b1) + "\n24시간 끝: soft_neg 꺼짐. 계속할지는 사람 결정",
                 log=log)
     log("report sent")
