@@ -155,6 +155,11 @@ def report(t, now=None):
          f"- 재고 원가 {start[0] + start[2]:,} -> {held[0] + held[2]:,}, 현금 {start[4]:,} -> {held[4]:,}; STOCK_CAP "
          f"{'자동' if src == 'auto' else '고정'} {cap:,} (나가는 기준 {ex:,})" + (", 현금 브레이크로 매입 중지 중" if a.get("paused") else ""),
          f"- 브레이크: STOCK_CAP {cb}; 과재고 판단 {oc}; 고가 {hb}"]
+    try:                                       # 11/10 ~14:00 (person): hourly sales, normal stock, "not in stock"
+        import sales_trend
+        L.append(sales_trend.text(t1, 12))
+    except Exception as e:
+        L.append(f"- 시간대별 판매·일반 재고 계산 실패 {type(e).__name__}: {e}")
     return "\n".join(L)
 
 
