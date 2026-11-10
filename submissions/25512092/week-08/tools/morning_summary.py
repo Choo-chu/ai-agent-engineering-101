@@ -130,6 +130,11 @@ def summary(t0, t1):
         lines.append("12. " + stock_line(t1))
     except Exception as e:
         lines.append(f"12. 12시간+ 미판매 재고·보관비 계산 실패 {type(e).__name__}")
+    try:                                          # 11/10 ~12:30 (person): saved target 0.39 at the round end
+        import buyer_proj
+        lines += ["13. " + x if i == 0 else "    " + x for i, x in enumerate(buyer_proj.summary_lines(t1))]
+    except Exception as e:
+        lines.append(f"13. buyer saved 예상 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 

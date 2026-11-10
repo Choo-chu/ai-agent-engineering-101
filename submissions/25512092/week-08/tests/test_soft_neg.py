@@ -127,14 +127,14 @@ def test_watch_report():
     try:
         W.kit_cycles = lambda a, b: {}
         W.orders_per_h = lambda a, b: {"orders": (80, 70), "deals": (30, 25)}
-        b = {"saved": 0.42, "second": 0.37, "saved_rank": 1, "deals": 2000, "all": 0.85, "all_rank": 6}
+        b = {"saved": 0.42, "second": 0.39, "third": 0.37, "saved_rank": 1, "deals": 2000, "all": 0.85, "all_rank": 6}
         t = W.report(now - 3600, b, b, now=now)
     finally:
         S.LOG = old
     assert "성사율 60.0% vs 40.0%" in t and "협상 1건 12.0 vs 28.0초" in t and "48.2%" in t
     assert "가게가 먼저 끝낸 비율 10.0% vs 10.0%" in t and "기존 주문 1건" in t
     # 11/09 ~17:40: staged by the 2nd best saved: off under 2nd + 0.008 or not first (was saved < 0.397)
-    assert W.guard(dict(b, saved=0.377)) and W.guard(dict(b, saved_rank=2)) and W.guard(b) is None
+    assert W.guard(dict(b, saved=0.3755)) and not W.guard(dict(b, saved_rank=2)) and W.guard(b) is None   # 3rd + 0.006 (11/10)
     assert W.guard(dict(b, saved=0.39)) is None
 
 

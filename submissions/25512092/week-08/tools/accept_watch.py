@@ -44,8 +44,9 @@ def board():
     except Exception:
         pass
     me = next(b for b in B if b["name"] == ME)
-    second = max(b["saved"] for b in B if b is not me)
-    return {"saved": me["saved"], "deals": me["deals"], "surplus": me["surplus"], "all": me["all"], "second": second,
+    others = sorted((b["saved"] for b in B if b is not me), reverse=True)
+    second = others[0]
+    return {"saved": me["saved"], "deals": me["deals"], "surplus": me["surplus"], "all": me["all"], "second": second, "third": others[1] if len(others) > 1 else None,
             "saved_rank": 1 + sum(1 for b in B if b["saved"] > me["saved"]),
             "all_rank": 1 + sum(1 for b in B if b["all"] > me["all"])}
 

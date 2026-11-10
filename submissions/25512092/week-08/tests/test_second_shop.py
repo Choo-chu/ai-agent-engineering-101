@@ -167,13 +167,15 @@ def test_soft_move_accept():
 
 
 def test_saved_guard():
-    b = lambda s, sec, rank=1: {"saved": s, "second": sec, "saved_rank": rank}
+    # 11/10 ~12:30 (person): against the 3rd best saved; losing 1st switches nothing off
+    b = lambda s, third, rank=1: {"saved": s, "second": 0.5, "third": third, "saved_rank": rank}
     w = saved_guard.why
-    assert w("high_accept", b(0.394, 0.37)) and not w("high_accept", b(0.395, 0.37))      # 2nd + 0.025
-    assert w("second_shop", b(0.384, 0.37)) and not w("second_shop", b(0.385, 0.37))      # 2nd + 0.015
-    assert w("soft_neg", b(0.377, 0.37)) and not w("soft_neg", b(0.378, 0.37))            # 2nd + 0.008
-    assert w("accept_rule", b(0.377, 0.37)) and not w("accept_rule", b(0.40, 0.37))
-    assert w("soft_neg", b(0.45, 0.37, rank=2))                                          # not first
+    assert w("high_accept", b(0.3895, 0.37)) and not w("high_accept", b(0.3905, 0.37))    # 3rd + 0.020
+    assert w("second_shop", b(0.3815, 0.37)) and not w("second_shop", b(0.3825, 0.37))    # 3rd + 0.012
+    assert w("soft_neg", b(0.3755, 0.37)) and not w("soft_neg", b(0.3765, 0.37))          # 3rd + 0.006
+    assert w("accept_rule", b(0.3755, 0.37)) and not w("accept_rule", b(0.40, 0.37))
+    assert not w("soft_neg", b(0.45, 0.37, rank=2))                                      # not first: stays on
+    assert not w("high_accept", {"saved": 0.3, "second": 0.4})                           # no 3rd: nothing
 
 
 def test_apply_and_watch():
@@ -188,18 +190,18 @@ def test_apply_and_watch():
     al = mock.Mock(send=lambda *a, **k: sent.append(a))
     with mock.patch.object(d2, "RULES", os.path.join(d, "d2.json")), \
             mock.patch.object(high_accept, "RULES", os.path.join(d, "ha.json")):
-        b = {"saved": 0.42, "second": 0.37, "saved_rank": 1}
+        b = {"saved": 0.42, "third": 0.37, "saved_rank": 1}
         t = mid.apply_d_high(b, 1000, dec)
         assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == high_accept.FACTOR
         assert "적용" in t and len(rec) == 2
-        # under 2nd + 0.025 but over + 0.015: high off, D stays
-        assert gw.check({"saved": 0.39, "second": 0.37, "saved_rank": 1}, al, dec) == ["high_accept"]
+        # under 3rd + 0.020 but over + 0.012: high off, D stays
+        assert gw.check({"saved": 0.385, "third": 0.37, "saved_rank": 1}, al, dec) == ["high_accept"]
         assert not high_accept.rules()["enabled"] and d2.rules()["enabled"] and len(sent) == 1
-        assert gw.check({"saved": 0.384, "second": 0.37, "saved_rank": 1}, al, dec) == ["second_shop"]
-        assert gw.check({"saved": 0.30, "second": 0.37, "saved_rank": 2}, al, dec) == []       # both already off
-        # at 20:27 already under 2nd + 0.025: high not switched on, D on
+        assert gw.check({"saved": 0.381, "third": 0.37, "saved_rank": 1}, al, dec) == ["second_shop"]
+        assert gw.check({"saved": 0.30, "third": 0.37, "saved_rank": 2}, al, dec) == []       # both already off
+        # at 20:27 already under 3rd + 0.020: high not switched on, D on
         os.remove(d2.RULES); os.remove(high_accept.RULES)
-        t = mid.apply_d_high({"saved": 0.39, "second": 0.37, "saved_rank": 1}, 1000, dec)
+        t = mid.apply_d_high({"saved": 0.385, "third": 0.37, "saved_rank": 1}, 1000, dec)
         assert d2.rules()["enabled"] and not high_accept.rules() and "적용 안 함" in t
 
 

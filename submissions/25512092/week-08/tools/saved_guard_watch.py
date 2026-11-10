@@ -67,7 +67,7 @@ def check(b, alerts, decisions):
         if why:
             set_rules(mod, enabled=False, stopped=round(time.time()), stop_reason=why)
             decisions.record("buyer", f"{mod.TAG}_stop", mod.TAG, b, why)
-            alerts.send("urgent", f"{mod.TAG}_stop", f"buyer {name} 끔: {why} (기준 2위 + {saved_guard.MARGINS[key]})",
+            alerts.send("urgent", f"{mod.TAG}_stop", f"buyer {name} 끔: {why} (기준 {saved_guard.REF_TEXT} + {saved_guard.MARGINS[key]})",
                         log=log)
             log(f"{key} off: {why}")
             off.append(key)
@@ -180,7 +180,7 @@ def report(t0, b0, b1, t1=None):
     if b0:
         L.append(f"- surplus +{b1['surplus'] - b0['surplus']:,} (시간당 {(b1['surplus'] - b0['surplus']) / h:,.0f}), saved "
                  f"{b0['saved']} -> {b1['saved']}, 2위 saved {b0['second']} -> {b1['second']} (차이 "
-                 f"{b1['saved'] - b1['second']:.4f}; 끄는 기준 고가 +0.025 / D +0.015 / soft_neg·수락 규칙 +0.008), deals "
+                 f"{b1['saved'] - b1['second']:.4f}; 끄는 기준 3위 saved + 고가 0.020 / D 0.012 / soft_neg·수락 규칙 0.006), deals "
                  f"{b0['deals']} -> {b1['deals']}")
     return "\n".join(L)
 
@@ -193,7 +193,7 @@ def main():
     import alerts
     import decisions
     from limits import ROUND_END
-    log("start (staged guard: high_accept 2nd + 0.025, second_shop 2nd + 0.015)")
+    log("start (staged guard by the 3rd best saved: high_accept + 0.020, second_shop + 0.012)")
     while time.time() < ROUND_END:
         st = state()
         ss = second_shop.rules()
