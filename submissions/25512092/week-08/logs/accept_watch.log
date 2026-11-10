@@ -91,3 +91,67 @@
 11-09 22:51:38 check {'saved': 0.4188, 'deals': 2368, 'surplus': 93958559, 'all': 0.863, 'second': 0.3714, 'saved_rank': 1, 'all_rank': 6}
 11-09 23:21:39 check {'saved': 0.4187, 'deals': 2393, 'surplus': 94492420, 'all': 0.864, 'second': 0.3715, 'saved_rank': 1, 'all_rank': 6}
 11-09 23:51:40 check {'saved': 0.4187, 'deals': 2428, 'surplus': 95927193, 'all': 0.864, 'second': 0.3716, 'saved_rank': 1, 'all_rank': 6}
+11-10 00:21:42 check {'saved': 0.4187, 'deals': 2457, 'surplus': 97576539, 'all': 0.864, 'second': 0.3717, 'saved_rank': 1, 'all_rank': 6}
+11-10 00:51:43 check {'saved': 0.4183, 'deals': 2481, 'surplus': 98132337, 'all': 0.865, 'second': 0.3718, 'saved_rank': 1, 'all_rank': 6}
+11-10 01:21:46 check {'saved': 0.4182, 'deals': 2507, 'surplus': 99361090, 'all': 0.866, 'second': 0.372, 'saved_rank': 1, 'all_rank': 6}
+11-10 01:51:47 check {'saved': 0.4178, 'deals': 2543, 'surplus': 100656745, 'all': 0.866, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:21:51 check {'saved': 0.4175, 'deals': 2564, 'surplus': 101840740, 'all': 0.868, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:51:53 check {'saved': 0.4173, 'deals': 2586, 'surplus': 103269386, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 03:21:54 check {'saved': 0.4168, 'deals': 2618, 'surplus': 104305644, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 03:51:58 check {'saved': 0.4162, 'deals': 2646, 'surplus': 105199497, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 04:22:02 check {'saved': 0.4161, 'deals': 2675, 'surplus': 106350822, 'all': 0.868, 'second': 0.3724, 'saved_rank': 1, 'all_rank': 6}
+11-10 04:52:04 check {'saved': 0.4158, 'deals': 2711, 'surplus': 107975826, 'all': 0.868, 'second': 0.3724, 'saved_rank': 1, 'all_rank': 6}
+11-10 05:22:05 check {'saved': 0.4154, 'deals': 2738, 'surplus': 108849096, 'all': 0.868, 'second': 0.3725, 'saved_rank': 1, 'all_rank': 6}
+11-10 05:52:12 check {'saved': 0.415, 'deals': 2758, 'surplus': 109380504, 'all': 0.868, 'second': 0.3726, 'saved_rank': 1, 'all_rank': 6}
+11-10 06:22:13 check {'saved': 0.4147, 'deals': 2793, 'surplus': 110431113, 'all': 0.87, 'second': 0.3727, 'saved_rank': 1, 'all_rank': 6}
+11-10 06:52:14 check {'saved': 0.4144, 'deals': 2820, 'surplus': 111059781, 'all': 0.87, 'second': 0.3728, 'saved_rank': 1, 'all_rank': 6}
+11-10 07:22:15 check {'saved': 0.4141, 'deals': 2841, 'surplus': 112002921, 'all': 0.87, 'second': 0.3729, 'saved_rank': 1, 'all_rank': 6}
+11-10 07:52:16 check {'saved': 0.414, 'deals': 2863, 'surplus': 112385464, 'all': 0.87, 'second': 0.373, 'saved_rank': 1, 'all_rank': 5}
+11-10 08:22:17 check {'saved': 0.4139, 'deals': 2882, 'surplus': 112638123, 'all': 0.87, 'second': 0.3731, 'saved_rank': 1, 'all_rank': 5}
+11-10 08:52:20 check {'saved': 0.4137, 'deals': 2910, 'surplus': 113502615, 'all': 0.87, 'second': 0.3732, 'saved_rank': 1, 'all_rank': 5}
+11-10 09:22:24 check {'saved': 0.4137, 'deals': 2925, 'surplus': 113825690, 'all': 0.87, 'second': 0.3734, 'saved_rank': 1, 'all_rank': 5}
+11-10 09:52:25 check {'saved': 0.4136, 'deals': 2950, 'surplus': 115515154, 'all': 0.87, 'second': 0.379, 'saved_rank': 1, 'all_rank': 5}
+11-10 10:22:26 check {'saved': 0.4133, 'deals': 2977, 'surplus': 117017082, 'all': 0.87, 'second': 0.3788, 'saved_rank': 1, 'all_rank': 5}
+11-10 10:52:28 check {'saved': 0.4131, 'deals': 2994, 'surplus': 117487238, 'all': 0.87, 'second': 0.3827, 'saved_rank': 1, 'all_rank': 5}
+11-10 11:22:35 check {'saved': 0.413, 'deals': 3025, 'surplus': 119087845, 'all': 0.87, 'second': 0.3849, 'saved_rank': 1, 'all_rank': 5}
+11-10 11:52:36 check {'saved': 0.4129, 'deals': 3045, 'surplus': 119448505, 'all': 0.87, 'second': 0.3877, 'saved_rank': 1, 'all_rank': 4}
+11-10 12:08:06 resumed (guard: 2nd + 0.008 or not first), since 11-09 14:19
+11-10 12:38:07 check {'saved': 0.4129, 'deals': 3085, 'surplus': 119805647, 'all': 0.871, 'second': 0.3914, 'third': 0.3741, 'saved_rank': 1, 'all_rank': 4}
+11-10 13:08:08 check {'saved': 0.413, 'deals': 3115, 'surplus': 120370848, 'all': 0.871, 'second': 0.394, 'third': 0.3742, 'saved_rank': 1, 'all_rank': 4}
+11-10 13:38:09 check {'saved': 0.413, 'deals': 3144, 'surplus': 120990054, 'all': 0.871, 'second': 0.3916, 'third': 0.3743, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:08:10 check {'saved': 0.4131, 'deals': 3168, 'surplus': 122022657, 'all': 0.871, 'second': 0.3927, 'third': 0.3756, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:38:12 check {'saved': 0.413, 'deals': 3202, 'surplus': 122788390, 'all': 0.871, 'second': 0.3937, 'third': 0.3785, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:38:14 [alert] daily accept_rule_day:1794201557: buyer 수락 규칙(accept_rule_100, 시장 평균 100% 이하) 24시간 결과 (11-09 14:19 ~ 11-10 14:38)
+- 규칙으로 수락 7건 (walk 대신 4, 시간 한도 0, 턴 한도 3), 그중 성사 2, 결제 2 (100%)
+- 등급·품목·가격 불일치(우리 buyer 판정) 0건 ; 그 밖의 판정 -
+- kit 결제 거절 사유(등급·유통기한 등): 없음
+- 결제된 수락 건의 정가 대비 절약 합 13,853.0
+- 보드: deals 2078 -> 3202, surplus 84,358,355 -> 122,788,390, saved 0.4193 -> 0.413 (2위 0.368 -> 0.3937), saved 순위 1 -> 1, ALL 0.856 (6위) -> 0.871 (3위)
+상시 규칙 유지 중 (telegram sent)
+11-10 14:38:14 day report sent
+11-10 15:06:08 resumed (guard: 2nd + 0.008 or not first), since 11-09 14:19
+11-10 15:36:10 check {'saved': 0.413, 'deals': 3243, 'surplus': 123573776, 'all': 0.872, 'second': 0.3987, 'third': 0.384, 'saved_rank': 1, 'all_rank': 3}
+11-10 16:06:12 check {'saved': 0.413, 'deals': 3277, 'surplus': 124309761, 'all': 0.874, 'second': 0.4001, 'third': 0.3862, 'saved_rank': 1, 'all_rank': 3}
+11-10 16:36:15 check {'saved': 0.4128, 'deals': 3306, 'surplus': 125799025, 'all': 0.874, 'second': 0.3998, 'third': 0.3883, 'saved_rank': 1, 'all_rank': 3}
+11-10 17:06:18 check {'saved': 0.4128, 'deals': 3326, 'surplus': 126051466, 'all': 0.874, 'second': 0.3999, 'third': 0.3895, 'saved_rank': 1, 'all_rank': 3}
+11-10 17:36:19 check {'saved': 0.4126, 'deals': 3355, 'surplus': 129031847, 'all': 0.874, 'second': 0.4012, 'third': 0.3914, 'saved_rank': 1, 'all_rank': 3}
+11-10 18:06:23 check {'saved': 0.4126, 'deals': 3382, 'surplus': 129319597, 'all': 0.874, 'second': 0.4022, 'third': 0.3934, 'saved_rank': 1, 'all_rank': 3}
+11-10 18:36:26 check {'saved': 0.4125, 'deals': 3400, 'surplus': 129466435, 'all': 0.875, 'second': 0.4026, 'third': 0.3945, 'saved_rank': 1, 'all_rank': 3}
+11-10 19:06:27 check {'saved': 0.4126, 'deals': 3416, 'surplus': 129699553, 'all': 0.875, 'second': 0.4039, 'third': 0.3955, 'saved_rank': 1, 'all_rank': 3}
+11-10 19:36:29 check {'saved': 0.4128, 'deals': 3439, 'surplus': 131498736, 'all': 0.875, 'second': 0.4047, 'third': 0.3969, 'saved_rank': 1, 'all_rank': 2}
+11-10 20:06:30 check {'saved': 0.4127, 'deals': 3464, 'surplus': 132364762, 'all': 0.875, 'second': 0.4055, 'third': 0.398, 'saved_rank': 1, 'all_rank': 2}
+11-10 20:36:31 check {'saved': 0.4126, 'deals': 3491, 'surplus': 132787014, 'all': 0.877, 'second': 0.4064, 'third': 0.3998, 'saved_rank': 1, 'all_rank': 2}
+11-10 21:06:34 check {'saved': 0.4126, 'deals': 3509, 'surplus': 132982471, 'all': 0.877, 'second': 0.4072, 'third': 0.4015, 'saved_rank': 1, 'all_rank': 2}
+11-10 21:36:35 check {'saved': 0.4125, 'deals': 3523, 'surplus': 133154267, 'all': 0.877, 'second': 0.4077, 'third': 0.4024, 'saved_rank': 1, 'all_rank': 2}
+11-10 22:06:37 check {'saved': 0.4124, 'deals': 3544, 'surplus': 133879183, 'all': 0.877, 'second': 0.4093, 'third': 0.4036, 'saved_rank': 1, 'all_rank': 2}
+11-10 22:36:38 check {'saved': 0.4124, 'deals': 3568, 'surplus': 134291532, 'all': 0.877, 'second': 0.4112, 'third': 0.4047, 'saved_rank': 1, 'all_rank': 2}
+11-10 23:06:41 check {'saved': 0.4121, 'deals': 3580, 'surplus': 134313447, 'all': 0.875, 'second': 0.4121, 'third': 0.4058, 'saved_rank': 1, 'all_rank': 2}
+11-10 23:36:44 check {'saved': 0.4122, 'deals': 3598, 'surplus': 134438871, 'all': 0.871, 'second': 0.414, 'third': 0.4068, 'saved_rank': 2, 'all_rank': 2}
+11-10 23:36:45 [alert] urgent accept_rule_stop: buyer 수락 규칙(상시) 즉시 중단: saved 0.4122 < 3위 0.4068 + 0.006 (차이 0.0054)
+buyer 수락 규칙(accept_rule_100, 시장 평균 100% 이하) 중단 결과 (11-09 14:19 ~ 11-10 23:36): saved 0.4122 < 3위 0.4068 + 0.006 (차이 0.0054)
+- 규칙으로 수락 8건 (walk 대신 4, 시간 한도 0, 턴 한도 4), 그중 성사 2, 결제 2 (100%)
+- 등급·품목·가격 불일치(우리 buyer 판정) 0건 ; 그 밖의 판정 -
+- kit 결제 거절 사유(등급·유통기한 등): 없음
+- 결제된 수락 건의 정가 대비 절약 합 13,853.0
+- 보드: deals 2078 -> 3598, surplus 84,358,355 -> 134,438,871, saved 0.4193 -> 0.4122 (2위 0.368 -> 0.414), saved 순위 1 -> 2, ALL 0.856 (6위) -> 0.871 (2위) (telegram sent)
+11-10 23:36:45 stopped: saved 0.4122 < 3위 0.4068 + 0.006 (차이 0.0054)

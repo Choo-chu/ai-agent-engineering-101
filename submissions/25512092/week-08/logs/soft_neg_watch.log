@@ -116,3 +116,36 @@
 11-10 11:52:36 check {'saved': 0.4129, 'deals': 3045, 'surplus': 119448505, 'all': 0.87, 'second': 0.3877, 'saved_rank': 1, 'all_rank': 4}
 11-10 12:08:05 resumed (guard: 2nd + 0.008 or not first), since 11-09 14:27, until 11-10 14:27
 11-10 12:12:17 resumed (guard: 3rd + 0.006, depts/saved_guard.py), since 11-09 14:27, until 11-17 23:59
+11-10 12:42:18 check {'saved': 0.4129, 'deals': 3089, 'surplus': 119831994, 'all': 0.87, 'second': 0.391, 'third': 0.3741, 'saved_rank': 1, 'all_rank': 4}
+11-10 13:12:20 check {'saved': 0.413, 'deals': 3120, 'surplus': 120490985, 'all': 0.871, 'second': 0.3934, 'third': 0.3742, 'saved_rank': 1, 'all_rank': 4}
+11-10 13:42:24 check {'saved': 0.4131, 'deals': 3149, 'surplus': 121082611, 'all': 0.871, 'second': 0.3917, 'third': 0.3743, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:12:25 check {'saved': 0.413, 'deals': 3176, 'surplus': 122136428, 'all': 0.871, 'second': 0.393, 'third': 0.3764, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:42:26 check {'saved': 0.413, 'deals': 3204, 'surplus': 122804073, 'all': 0.871, 'second': 0.3943, 'third': 0.3794, 'saved_rank': 1, 'all_rank': 3}
+11-10 15:06:08 resumed (guard: 3rd + 0.006, depts/saved_guard.py), since 11-09 14:27, until 11-17 23:59
+11-10 15:36:10 check {'saved': 0.413, 'deals': 3243, 'surplus': 123573776, 'all': 0.872, 'second': 0.3987, 'third': 0.384, 'saved_rank': 1, 'all_rank': 3}
+11-10 16:06:12 check {'saved': 0.413, 'deals': 3277, 'surplus': 124309761, 'all': 0.874, 'second': 0.4001, 'third': 0.3862, 'saved_rank': 1, 'all_rank': 3}
+11-10 16:36:15 check {'saved': 0.4128, 'deals': 3306, 'surplus': 125799025, 'all': 0.874, 'second': 0.3998, 'third': 0.3883, 'saved_rank': 1, 'all_rank': 3}
+11-10 17:06:18 check {'saved': 0.4128, 'deals': 3326, 'surplus': 126051466, 'all': 0.874, 'second': 0.3999, 'third': 0.3895, 'saved_rank': 1, 'all_rank': 3}
+11-10 17:36:19 check {'saved': 0.4126, 'deals': 3355, 'surplus': 129031847, 'all': 0.874, 'second': 0.4012, 'third': 0.3914, 'saved_rank': 1, 'all_rank': 3}
+11-10 18:06:23 check {'saved': 0.4126, 'deals': 3382, 'surplus': 129319597, 'all': 0.874, 'second': 0.4022, 'third': 0.3934, 'saved_rank': 1, 'all_rank': 3}
+11-10 18:36:26 check {'saved': 0.4125, 'deals': 3400, 'surplus': 129466435, 'all': 0.875, 'second': 0.4026, 'third': 0.3945, 'saved_rank': 1, 'all_rank': 3}
+11-10 19:06:27 check {'saved': 0.4126, 'deals': 3416, 'surplus': 129699553, 'all': 0.875, 'second': 0.4039, 'third': 0.3955, 'saved_rank': 1, 'all_rank': 3}
+11-10 19:36:29 check {'saved': 0.4128, 'deals': 3439, 'surplus': 131498736, 'all': 0.875, 'second': 0.4047, 'third': 0.3969, 'saved_rank': 1, 'all_rank': 2}
+11-10 20:06:30 check {'saved': 0.4127, 'deals': 3464, 'surplus': 132364762, 'all': 0.875, 'second': 0.4055, 'third': 0.398, 'saved_rank': 1, 'all_rank': 2}
+11-10 20:36:31 check {'saved': 0.4126, 'deals': 3491, 'surplus': 132787014, 'all': 0.877, 'second': 0.4064, 'third': 0.3998, 'saved_rank': 1, 'all_rank': 2}
+11-10 21:06:34 check {'saved': 0.4126, 'deals': 3509, 'surplus': 132982471, 'all': 0.877, 'second': 0.4072, 'third': 0.4015, 'saved_rank': 1, 'all_rank': 2}
+11-10 21:36:35 check {'saved': 0.4125, 'deals': 3523, 'surplus': 133154267, 'all': 0.877, 'second': 0.4077, 'third': 0.4024, 'saved_rank': 1, 'all_rank': 2}
+11-10 22:06:37 check {'saved': 0.4124, 'deals': 3544, 'surplus': 133879183, 'all': 0.877, 'second': 0.4093, 'third': 0.4036, 'saved_rank': 1, 'all_rank': 2}
+11-10 22:36:38 check {'saved': 0.4124, 'deals': 3568, 'surplus': 134291532, 'all': 0.877, 'second': 0.4112, 'third': 0.4047, 'saved_rank': 1, 'all_rank': 2}
+11-10 23:06:41 check {'saved': 0.4121, 'deals': 3580, 'surplus': 134313447, 'all': 0.875, 'second': 0.4121, 'third': 0.4058, 'saved_rank': 1, 'all_rank': 2}
+11-10 23:36:44 check {'saved': 0.4122, 'deals': 3598, 'surplus': 134438871, 'all': 0.871, 'second': 0.414, 'third': 0.4068, 'saved_rank': 2, 'all_rank': 2}
+11-10 23:36:45 [alert] urgent soft_neg_stop: buyer soft_neg 즉시 중단: saved 0.4122 < 3위 0.4068 + 0.006 (차이 0.0054)
+buyer soft_neg 중단 결과 (11-09 14:27 ~ 11-10 23:36, soft_neg vs 기존, 주문 50:50, 20:27부터 soft 100%): saved 0.4122 < 3위 0.4068 + 0.006 (차이 0.0054)
+- 주문 4184 vs 354건 (soft 규칙 실제 사용 3386건), 성사 1711 vs 102, 성사율 40.9% vs 28.8%
+- 협상 1건 7.4 vs 27.8초; 주문 1건 처리(buyer) 10.5 vs 29.5초, kit 기준 다음 주문까지 24.9 vs 36.9초 (4184/354건)
+- 시간당 주문 126.2 vs 10.7, 시간당 deals 51.6 vs 3.1 (전체 시간당 주문 138.3 vs 직전 같은 길이 78.3, deals 45.6 vs 23.7)
+- 건당 절약률(정가 대비, 결제된 건) 41.5% vs 46.3%; 절약률 합 709.4 vs 47.2
+- 가게가 먼저 끝낸 비율 14.1% vs 41.2%
+- 수락 규칙(100%) 실제 발동: 전체 8건, 그중 성사 2건 (soft 주문 6건, 기존 주문 2건 / 성사 2); 기존 쪽 실제 성사율 28.8% vs 시뮬레이션 기준선 48.2%
+- saved 0.4196 -> 0.4122 (2위 0.3681 -> 0.414), saved 순위 1 -> 2, deals 2082 -> 3598, ALL 0.856 (6위) -> 0.871 (2위) (telegram sent)
+11-10 23:36:45 stopped: saved 0.4122 < 3위 0.4068 + 0.006 (차이 0.0054)

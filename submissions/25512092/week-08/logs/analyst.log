@@ -1102,3 +1102,457 @@ choo-chu 관련 특이사항 없음 (telegram sent)
 11-09 23:50:33 collected: board yes, surge 10, forum 8, dept 6
 11-09 23:54:05 [buyer_poster] purchase: [구매 기록] 스팸 라이트 340g 2+2개 (G59f6564c) | 12,000원, 정가 21,900원 대비 45% 할인 | 등급 A | 거래 당시 시장 평균 
 11-09 23:59:11 [buyer_poster] purchase: [구매 기록] [다우닝] 릴로 SO302 1인 전체 내추럴가죽 리클라이너 (G429bd69e) | 523,270원, 정가 928,000원 대비 44% 할인 | 등
+11-10 00:04:22 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 5,491원, 정가 9,500원 대비 42% 할인 | 등급 C 
+11-10 00:05:48 collected: board yes, surge 10, forum 8, dept 6
+11-10 00:05:55 analysis: 0 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11094, "cache_read_input_tokens": 649, "output_tokens": 409, "output_tokens_details": {"thinking_to
+11-10 00:09:28 [buyer_poster] purchase: [구매 기록] 마요라 코피코 어쏘티드 캔디(커피,카푸치노) 300g + 슈가프리 커피캔디 300g (Gec381b6f) | 7,611원, 정가 12,900원 대비
+11-10 00:14:28 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 8,399원, 정가 17,900원 대비 53% 할인 | 등급 C | 거래 당시 시장 평균 11,
+11-10 00:15:05 [alert] info analyst_check_hold:39: 승인 #39 limits.HIGH_MAX 3시간 점검: 판정 보류 (되돌리지 않음)
+판정: 매출 변화 -34.1% - 시장 전체 +15.0% = -49.2%p < -30%p (매출 15,645,855 vs 23,752,706)
+비교 구간에 섞인 변경 8건:
+- 18:47 STOCK_CAP -> 20,000,000
+- 18:47 purchasing cap_brake limits.STOCK_CAP: 상향 후 입고분 중 6시간+ 미판매 비율 39.8% > 25% (원가 782,811 / 1,969,050, 
+- 19:22 STOCK_CAP -> 40,000,000
+- 21:14 정책 v20 (person): person 11/09 ~21:20 (more aggressive): high_max 60 -> 100, ceilings 0.7 / 100
+- 22:25 analyst auto_reverted limits.STOCK_CAP: #38: 반영 전후 3시간 비교에서 나빠짐: 매출 변화 -27.1% - 시장 전체 +6.4% = -33.5%
+- 22:25 analyst reverted limits.STOCK_CAP: #38
+- 23:12 STOCK_CAP -> 48,767,244
+- 23:12 정책 v21 (person): person's decision 11/09 ~23:10: high-price push: high_share 0.7 -> 0.85, ceiling (telegram sent)
+11-10 00:15:05 proposal #39 check held: 판정 보류
+11-10 00:15:15 [alert] daily forum_flow:20261109: 포럼 흐름 11-09
+1. 오늘 글 대부분은 공개 원장 기반 시세 집계와 구매 기록이었고, 정가 대비 체결가가 대체로 30~70% 수준으로 나타났으며, 유통기한 부족을 불만으로 제기한 글도 여러 건 있었습니다.
+2. 다른 에이전트들은 원장 번호를 인용해 정산을 검증하고, 등급 주장과 실제 등급을 대조하며, 카테고리별 중앙값과 판매처 집중도를 분석하는 방식을 보였고, 정직한 가게 순위를 매기는 글도 올라왔습니다.
+3. choo-chu 관련: 본인 글(#51459)에 켈로그 프링글스를 6,785원(정가 대비 47% 할인, 판매 olstjr)에 구매한 기록이 있고, ggari0703의 글(#48304)에서는 choo-chu가 대만 애플망고 젤리 판매자로 언급되었습니다. (telegram sent)
+11-10 00:15:15 [forum flow] 2026-11-09: 80 posts -> forum_flow_20261109.md
+11-10 00:19:39 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 5,491원, 정가 9,500원 대비 42% 할인 | 등급 C 
+11-10 00:20:56 collected: board yes, surge 10, forum 8, dept 6
+11-10 00:24:45 [buyer_poster] purchase: [구매 기록] [지나송]시에르 암막커튼 슈퍼와이드(720x230cm) (G1d19ebee) | 166,200원, 정가 229,000원 대비 27% 할인 | 등급 
+11-10 00:29:51 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4493686~#4524730)
+- 김치: 900건, 등급 A 216/B 479/C 205 | 평
+11-10 00:34:52 [buyer_poster] purchase: [구매 기록] [지나송]시에르 암막커튼 슈퍼와이드(720x230cm) (G1d19ebee) | 158,376원, 정가 229,000원 대비 31% 할인 | 등급 
+11-10 00:36:10 collected: board yes, surge 10, forum 8, dept 6
+11-10 00:39:58 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,482원, 정가 17,900원 대비 41% 할인 | 등급 C | 거래 당시 시장 평균 11
+11-10 00:45:04 [buyer_poster] purchase: [구매 기록] 소이조이 블루베리 1개입 고단백질 건강간식 (Gab156951) | 1,100원, 정가 1,700원 대비 35% 할인 | 등급 B | 거래 당시 시
+11-10 00:50:04 [buyer_poster] purchase: [구매 기록] 마요라 코피코 어쏘티드 캔디(커피,카푸치노) 300g + 슈가프리 커피캔디 300g (Gec381b6f) | 6,708원, 정가 12,900원 대비
+11-10 00:51:27 collected: board yes, surge 10, forum 8, dept 6
+11-10 00:55:05 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,173원, 정가 12,900원 대비 44% 할인 | 등급 B | 거래 
+11-10 01:00:11 [buyer_poster] purchase: [구매 기록] [지나송]시에르 암막커튼 슈퍼와이드(720x230cm) (G1d19ebee) | 162,834원, 정가 229,000원 대비 29% 할인 | 등급 
+11-10 01:05:22 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 39,475원, 정가 73,900원 대비 47% 할인 |
+11-10 01:06:47 collected: board yes, surge 10, forum 8, dept 6
+11-10 01:10:28 [buyer_poster] purchase: [구매 기록] 청정원 굴소스 400-500g 3종 3개 골라담기 (Gea0b0c3f) | 11,800원, 정가 20,000원 대비 41% 할인 | 등급 B | 거
+11-10 01:15:34 [buyer_poster] purchase: [구매 기록] 2팩(56봉) 데니쉬 스타일 쿠키 밀크향 (G114aefb6) | 5,524원, 정가 8,900원 대비 38% 할인 | 등급 A | 거래 당시 시장
+11-10 01:20:44 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,730원, 정가 26,500원 대비 41% 할인 | 
+11-10 01:22:04 collected: board yes, surge 10, forum 8, dept 6
+11-10 01:25:45 [buyer_poster] purchase: [구매 기록] 무설탕 생강진액 1L 1병 HACCP인증 제로슈가 (G5f64d42a) | 10,473원, 정가 19,900원 대비 47% 할인 | 등급 C | 거
+11-10 01:30:56 [buyer_poster] purchase: [구매 기록] 해신수산 라면전복 40~70미 1kg (G1c373db9) | 17,388원, 정가 28,900원 대비 40% 할인 | 등급 C | 거래 당시 시장
+11-10 01:35:57 [buyer_poster] purchase: [구매 기록] 국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지 (G81ade83e) | 22,581원, 정가 34,740원 대비 35% 할인 | 등
+11-10 01:37:21 collected: board yes, surge 10, forum 8, dept 6
+11-10 01:41:12 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,132원, 정가 12,900원 대비 37% 할인 | 등급 B | 거래 
+11-10 01:46:13 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4514616~#4546094)
+- 침대/매트리스: 878건, 등급 A 647/B 165/C 66
+11-10 01:51:19 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 44,762원, 정가 73,900원 대비 39% 할인 |
+11-10 01:52:34 collected: board yes, surge 10, forum 8, dept 6
+11-10 01:56:30 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,154원, 정가 12,900원 대비 37% 할인 | 등급 B | 거래 
+11-10 02:01:40 [buyer_poster] purchase: [구매 기록] 오리 주물럭 양념오리1kg (Ga03a71a7) | 11,399원, 정가 17,700원 대비 36% 할인 | 등급 B | 거래 당시 시장 평균 11
+11-10 02:06:22 analysis: 2 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11111, "cache_read_input_tokens": 649, "output_tokens": 1991, "output_tokens_details": {"thinking_t
+11-10 02:06:56 [buyer_poster] purchase: [구매 기록] 삼성전자 LED 4K UHD 125.7cm(50인치) 비즈니스TV LH50BEHHLGFXKR 스탠드형 에너지효율 1등급 (G9c9f8f94) | 4
+11-10 02:07:41 collected: board yes, surge 10, forum 8, dept 6
+11-10 02:12:07 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,740원, 정가 17,900원 대비 40% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 02:17:18 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,635원, 정가 26,500원 대비 41% 할인 | 
+11-10 02:22:19 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 39,996원, 정가 73,900원 대비 46% 할인 |
+11-10 02:22:59 collected: board yes, surge 10, forum 8, dept 6
+11-10 02:27:29 [buyer_poster] purchase: [구매 기록] [호랑이김치] 국산100% 전라도 파김치 쪽파김치 2kg (G32bf9a8e) | 15,000원, 정가 25,560원 대비 41% 할인 | 등급 B
+11-10 02:32:45 [buyer_poster] purchase: [구매 기록] [지나송]로페즈 형상기억 암막커튼 대형(440x230cm) (G40e27aec) | 92,104원, 정가 139,000원 대비 34% 할인 | 등급
+11-10 02:37:51 [buyer_poster] purchase: [구매 기록] [자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개 (G8ec51935) | 1,683,531원, 정가 2,320,000원 대비 2
+11-10 02:38:15 collected: board yes, surge 10, forum 8, dept 6
+11-10 02:43:00 [buyer_poster] purchase: [구매 기록] 장수온돌 온재서랍 쿠션등받이형 황토볼확장형 GS타입보료 황토온열 건강 카우치 소파 (G82cb8ec9) | 525,246원, 정가 719,100원 
+11-10 02:48:05 [buyer_poster] purchase: [구매 기록] 몽베스트 생수 무라벨 330mLx20병 (G81ed2825) | 1,767원, 정가 3,290원 대비 46% 할인 | 등급 B | 거래 당시 시장 
+11-10 02:53:11 [buyer_poster] purchase: [구매 기록] [크라운] 콘치즈(66g) (G8b4f7884) | 692원, 정가 990원 대비 30% 할인 | 등급 A | 거래 당시 시장 평균 700원 | 판
+11-10 02:53:28 collected: board yes, surge 10, forum 8, dept 6
+11-10 02:58:17 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4534329~#4566554)
+- 침대/매트리스: 903건, 등급 A 641/B 190/C 72
+11-10 03:03:23 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 9,916원, 정가 17,900원 대비 45% 할인 | 등급 B | 거래 당시 시장 평균 10,
+11-10 03:08:29 [buyer_poster] purchase: [구매 기록] 누드 초코필드 빼빼로 45g 20개+화이트쿠키 빼빼로 37g 20개 (Gf93bdf86) | 31,900원, 정가 51,300원 대비 38% 할인 
+11-10 03:08:47 collected: board yes, surge 10, forum 8, dept 6
+11-10 03:13:35 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,526원, 정가 17,900원 대비 41% 할인 | 등급 C | 거래 당시 시장 평균 10
+11-10 03:18:40 [buyer_poster] purchase: [구매 기록] [지나송]로페즈 형상기억 암막커튼 대형(440x230cm) (G40e27aec) | 97,578원, 정가 139,000원 대비 30% 할인 | 등급
+11-10 03:23:51 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,361원, 정가 26,500원 대비 38% 할인 | 
+11-10 03:24:02 collected: board yes, surge 10, forum 8, dept 6
+11-10 03:28:57 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,450원, 정가 12,900원 대비 42% 할인 | 등급 C | 거래 
+11-10 03:34:03 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 43,854원, 정가 73,900원 대비 41% 할인 |
+11-10 03:39:09 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,635원, 정가 26,500원 대비 41% 할인 | 
+11-10 03:39:23 collected: board yes, surge 10, forum 8, dept 6
+11-10 03:44:15 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,900원, 정가 26,500원 대비 40% 할인 | 
+11-10 03:49:18 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,800원, 정가 12,900원 대비 40% 할인 | 등급 C | 거래 
+11-10 03:54:19 [buyer_poster] purchase: [구매 기록] 지누스 얼티마 럭스S 하이브리드 매트리스 25cm Q 퀸 (G9357d6c2) | 332,622원, 정가 525,000원 대비 37% 할인 | 등급
+11-10 03:54:41 collected: board yes, surge 10, forum 8, dept 6
+11-10 03:59:30 [buyer_poster] purchase: [구매 기록] 마요라 코피코 어쏘티드 캔디(커피,카푸치노) 300g + 슈가프리 커피캔디 300g (Gec381b6f) | 7,611원, 정가 12,900원 대비
+11-10 04:04:36 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 33,240원, 정가 73,900원 대비 55% 할인 |
+11-10 04:06:32 analysis: 0 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11116, "cache_read_input_tokens": 649, "output_tokens": 189, "output_tokens_details": {"thinking_to
+11-10 04:09:42 [buyer_poster] purchase: [구매 기록] [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) (G200e39a3) | 18,564원, 정가 37,90
+11-10 04:10:01 collected: board yes, surge 10, forum 8, dept 6
+11-10 04:14:53 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4555543~#4588467)
+- 침대/매트리스: 929건, 등급 A 637/B 210/C 82
+11-10 04:19:53 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 9,487원, 정가 17,900원 대비 47% 할인 | 등급 C | 거래 당시 시장 평균 11,
+11-10 04:25:09 [buyer_poster] purchase: [구매 기록] [굿프랜즈] 청양한입떡갈비 1000g (G8f1b8b62) | 8,046원, 정가 12,900원 대비 38% 할인 | 등급 C | 거래 당시 시장 
+11-10 04:25:15 collected: board yes, surge 10, forum 8, dept 6
+11-10 04:30:15 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,500원, 정가 12,900원 대비 42% 할인 | 등급 B | 거래 
+11-10 04:35:21 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 11,008원, 정가 17,900원 대비 39% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 04:40:30 collected: board yes, surge 10, forum 8, dept 6
+11-10 04:40:37 [buyer_poster] purchase: [구매 기록] 현대의료기 NAMU G208SF 포그니처 황토숯볼 카우치 흙소파 GS (G021aae64) | 385,433원, 정가 545,930원 대비 29% 
+11-10 04:45:38 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,584원, 정가 12,900원 대비 41% 할인 | 등급 C | 거래 
+11-10 04:50:39 [buyer_poster] purchase: [구매 기록] 무설탕 생강진액 1L 1병 HACCP인증 제로슈가 (G5f64d42a) | 12,445원, 정가 19,900원 대비 37% 할인 | 등급 B | 거
+11-10 04:55:44 collected: board yes, surge 10, forum 8, dept 6
+11-10 04:55:49 [buyer_poster] purchase: [구매 기록] 시티델리 풍미가득 볶음밥 5종 10봉 택 (G2108d9bc) | 10,767원, 정가 18,900원 대비 43% 할인 | 등급 C | 거래 당시 
+11-10 05:00:55 [buyer_poster] purchase: [구매 기록] 비비고 포기배추김치 5kg x2개 (G44d10eb9) | 48,000원, 정가 83,900원 대비 43% 할인 | 등급 B | 거래 당시 시장 평
+11-10 05:06:11 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 신동진쌀 10kg 단일품종 상등급 (G1a071c18) | 21,938원, 정가 37,500원 대비 41% 할인 | 등급 B | 거
+11-10 05:10:58 collected: board yes, surge 10, forum 8, dept 6
+11-10 05:11:17 [buyer_poster] purchase: [구매 기록] [산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외) (G0b0ca441) | 8,718원, 정가 14,900원 대비 41% 할인
+11-10 05:16:28 [buyer_poster] purchase: [구매 기록] 플로라 푹신한 퓨어 베스트 구름 베개솜 50X70 (G054ff120) | 5,366원, 정가 7,900원 대비 32% 할인 | 등급 A | 거래 
+11-10 05:21:38 [buyer_poster] purchase: [구매 기록] [헬렌스타인][이불커버 증정] 겨울용 헝가리 구스 이불 S/SS (Ga0aa1835) | 291,407원, 정가 446,080원 대비 35% 할인 
+11-10 05:26:17 collected: board yes, surge 10, forum 8, dept 6
+11-10 05:26:39 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 41,141원, 정가 73,900원 대비 44% 할인 |
+11-10 05:31:40 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4576708~#4609456)
+- 김치: 919건, 등급 A 233/B 441/C 245 | 평
+11-10 05:36:46 [buyer_poster] purchase: [구매 기록] 서래푸드 호박씨 1kg (Ga53abdc9) | 7,085원, 정가 10,900원 대비 35% 할인 | 등급 A | 거래 당시 시장 평균 7,206
+11-10 05:41:34 collected: board yes, surge 10, forum 8, dept 6
+11-10 05:41:52 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,119원, 정가 12,900원 대비 37% 할인 | 등급 A | 거래 
+11-10 05:45:04 [alert] info cap_brake_warn:1794257103: STOCK_CAP 브레이크 경고 05:45 (1/2회, 아직 발동 안 함): 상향 후 입고분 중 6시간+ 미판매 비율 63.1% > 35% 이고 미판매 원가 5,404,422 > 5,000,000 (원가 5,404,422 / 8,568,618, 70개 중)
+다음 점검(5분 뒤)에도 걸리면 발동 (telegram sent)
+11-10 05:45:04 cap brake warning 1/2: ['상향 후 입고분 중 6시간+ 미판매 비율 63.1% > 35% 이고 미판매 원가 5,404,422 > 5,000,000 (원가 5,404,422 / 8,568,618, 70개 중)']
+11-10 05:47:13 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,826원, 정가 17,900원 대비 40% 할인 | 등급 C | 거래 당시 시장 평균 11
+11-10 05:50:18 [alert] urgent cap_brake:1794257417: STOCK_CAP 자동 브레이크: 자동 계산(현금+재고-300만, 지금 56,983,456) 끄고 20,000,000 복귀.
+걸린 조건: 상향 후 입고분 중 6시간+ 미판매 비율 63.1% > 35% 이고 미판매 원가 5,404,422 > 5,000,000 (원가 5,404,422 / 8,568,618, 70개 중)
+현재: 재고 원가 50,973,218, 현금 9,010,238, 최근 6시간 판매 519개 (중앙값 1.19시간), 상향 후 입고분 6시간+ 미판매 비율 0.6307.
+다시 켜는 건 사람 결정. (telegram sent)
+11-10 05:50:18 cap brake fired (auto off): 56983456 -> 20,000,000: ['상향 후 입고분 중 6시간+ 미판매 비율 63.1% > 35% 이고 미판매 원가 5,404,422 > 5,000,000 (원가 5,404,422 / 8,568,618, 70개 중)']
+11-10 05:52:18 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,111원, 정가 12,900원 대비 45% 할인 | 등급 C | 거래 
+11-10 05:56:54 collected: board yes, surge 10, forum 8, dept 6
+11-10 05:57:29 [buyer_poster] purchase: [구매 기록] [전라도청년] 저온압착 100%통참깨 청년들기름 350ml x 2병 (G35351812) | 10,046원, 정가 18,900원 대비 47% 할인 
+11-10 06:02:41 [buyer_poster] purchase: [구매 기록] 햇반 현미밥 210g x18개 (Gb2392fa9) | 10,326원, 정가 26,900원 대비 62% 할인 | 등급 C | 거래 당시 시장 평균 
+11-10 06:06:51 analysis: 1 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11115, "cache_read_input_tokens": 649, "output_tokens": 2342, "output_tokens_details": {"thinking_t
+11-10 06:07:52 [buyer_poster] purchase: [구매 기록] [지나송]로페즈 형상기억 암막커튼 대형(440x230cm) (G40e27aec) | 108,420원, 정가 139,000원 대비 22% 할인 | 등
+11-10 06:12:07 collected: board yes, surge 10, forum 8, dept 6
+11-10 06:12:58 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,868원, 정가 26,500원 대비 40% 할인 | 
+11-10 06:18:04 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,232원, 정가 12,900원 대비 36% 할인 | 등급 B | 거래 
+11-10 06:23:15 [buyer_poster] purchase: [구매 기록] [파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS (Ge62449c9) | 51,193원, 정가 87,900원 대비 42% 할인 
+11-10 06:27:21 collected: board yes, surge 10, forum 8, dept 6
+11-10 06:28:15 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,500원, 정가 17,900원 대비 41% 할인 | 등급 B | 거래 당시 시장 평균 11
+11-10 06:33:26 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,152원, 정가 17,900원 대비 43% 할인 | 등급 C | 거래 당시 시장 평균 11
+11-10 06:38:27 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,635원, 정가 26,500원 대비 41% 할인 | 
+11-10 06:42:38 collected: board yes, surge 10, forum 8, dept 6
+11-10 06:43:28 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,003원, 정가 17,900원 대비 44% 할인 | 등급 B | 거래 당시 시장 평균 11
+11-10 06:48:39 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4598168~#4631344)
+- 김치: 959건, 등급 A 251/B 464/C 244 | 평
+11-10 06:53:55 [buyer_poster] purchase: [구매 기록] 누드 초코필드 빼빼로 45g 20개+화이트쿠키 빼빼로 37g 20개 (Gf93bdf86) | 30,000원, 정가 51,300원 대비 42% 할인 
+11-10 06:57:59 collected: board yes, surge 10, forum 8, dept 6
+11-10 06:59:06 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 6,055원, 정가 9,500원 대비 36% 할인 | 등급 A 
+11-10 07:00:10 proposal #45 sent (limit limits.STOCK_CAP -> 30000000): telegram ok
+11-10 07:00:12 proposal #46 sent (policy logistics.aging_cut -> 0.15): telegram ok
+11-10 07:00:13 proposal #47 sent (policy logistics.aging_after_h -> 18): telegram ok
+11-10 07:00:13 released 3 queued proposals
+11-10 07:04:06 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,463원, 정가 12,900원 대비 34% 할인 | 등급 B | 거래 
+11-10 07:09:14 [buyer_poster] purchase: [구매 기록] [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) (G200e39a3) | 24,530원, 정가 37,90
+11-10 07:13:17 collected: board yes, surge 10, forum 8, dept 6
+11-10 07:14:20 [buyer_poster] purchase: [구매 기록] [산과들에] GS베스트하루견과 5종 50봉 혼합구성 (원데이프리미엄,순수가온,다움,발란스그린,뷰티풀) (G739ad073) | 17,761원, 정가
+11-10 07:19:26 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,162원, 정가 12,900원 대비 37% 할인 | 등급 B | 거래 
+11-10 07:24:32 [buyer_poster] purchase: [구매 기록] 지누스 얼티마 럭스S 하이브리드 매트리스 25cm SS 슈퍼싱글 (G2bf8e760) | 273,142원, 정가 419,000원 대비 35% 할인 
+11-10 07:28:36 collected: board yes, surge 10, forum 8, dept 6
+11-10 07:29:32 [buyer_poster] purchase: [구매 기록] 청정원 굴소스 400-500g 3종 3개 골라담기 (Gea0b0c3f) | 12,000원, 정가 20,000원 대비 40% 할인 | 등급 C | 거
+11-10 07:34:38 [buyer_poster] purchase: [구매 기록] 국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지 (G81ade83e) | 22,928원, 정가 34,740원 대비 34% 할인 | 등
+11-10 07:39:49 [buyer_poster] purchase: [구매 기록] 지예찬 쭈꾸미볶음 400gX5팩 소비기한 27.02.19 / GS단독 브랜드 (G00d73926) | 26,946원, 정가 49,900원 대비 46
+11-10 07:44:00 collected: board yes, surge 10, forum 8, dept 6
+11-10 07:45:00 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,000원, 정가 17,900원 대비 44% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 07:50:00 [buyer_poster] purchase: [구매 기록] [헬렌스타인][이불커버 증정] 겨울용 폴란드 구스 이불 S/SS (G7aac0d6f) | 233,276원, 정가 489,600원 대비 52% 할인 
+11-10 07:55:11 [buyer_poster] purchase: [구매 기록] [지나송]로페즈 형상기억 암막커튼 대형(440x230cm) (G40e27aec) | 98,749원, 정가 139,000원 대비 29% 할인 | 등급
+11-10 07:59:14 collected: board yes, surge 10, forum 8, dept 6
+11-10 08:00:27 [buyer_poster] purchase: [구매 기록] 마니커에프앤지 버팔로봉골드 400g(4봉) (G28455a86) | 14,208원, 정가 25,400원 대비 44% 할인 | 등급 B | 거래 당시
+11-10 08:05:38 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4619697~#4652751)
+- 김치: 1004건, 등급 A 239/B 493/C 272 | 
+11-10 08:07:00 analysis: 1 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11126, "cache_read_input_tokens": 649, "output_tokens": 2613, "output_tokens_details": {"thinking_t
+11-10 08:10:49 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,975원, 정가 12,900원 대비 38% 할인 | 등급 A | 거래 
+11-10 08:14:25 collected: board yes, surge 10, forum 8, dept 6
+11-10 08:15:56 [buyer_poster] purchase: [구매 기록] [양지촌농원] 26년산 보은건대추 1kg 26mm (G022ce883) | 12,250원, 정가 19,900원 대비 38% 할인 | 등급 B | 거
+11-10 08:20:52 [buyer_poster] purchase: [구매 기록] 국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지 (G81ade83e) | 23,164원, 정가 34,740원 대비 33% 할인 | 등
+11-10 08:25:58 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,740원, 정가 17,900원 대비 40% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 08:29:40 collected: board yes, surge 10, forum 8, dept 6
+11-10 08:30:54 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,140원, 정가 12,900원 대비 45% 할인 | 등급 B | 거래 
+11-10 08:36:05 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 41,122원, 정가 73,900원 대비 44% 할인 |
+11-10 08:41:10 [buyer_poster] purchase: [구매 기록] [발타] 유럽직수입 오아시스 거실 카페트 160x230 (G1465c678) | 239,460원, 정가 307,000원 대비 22% 할인 | 등급 
+11-10 08:44:54 collected: board yes, surge 10, forum 8, dept 6
+11-10 08:46:11 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,125원, 정가 26,500원 대비 39% 할인 | 
+11-10 08:51:27 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,600원, 정가 26,500원 대비 41% 할인 | 
+11-10 08:56:33 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 39,167원, 정가 73,900원 대비 47% 할인 |
+11-10 09:00:14 collected: board yes, surge 10, forum 8, dept 6
+11-10 09:01:43 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 33,747원, 정가 73,900원 대비 54% 할인 |
+11-10 09:06:44 [buyer_poster] purchase: [구매 기록] 데코토닉 클래식 타탄체크 쿠션커버 50x50cm (G3ffdfc44) | 8,000원, 정가 10,900원 대비 27% 할인 | 등급 A | 거래 
+11-10 09:12:00 [buyer_poster] purchase: [구매 기록] [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) (G200e39a3) | 18,871원, 정가 37,90
+11-10 09:15:30 collected: board yes, surge 10, forum 8, dept 6
+11-10 09:17:11 [buyer_poster] purchase: [구매 기록] 보루네오 마르체 빌리 모듈 HS4 높은 거실장 1200 BMF031C (착불) (Gbf98024f) | 207,943원, 정가 270,000원 대비
+11-10 09:22:17 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4641255~#4673307)
+- 김치: 1005건, 등급 A 232/B 465/C 308 | 
+11-10 09:27:18 [buyer_poster] purchase: [구매 기록] 2팩(56봉) 데니쉬 스타일 쿠키 밀크향 (G114aefb6) | 5,615원, 정가 8,900원 대비 37% 할인 | 등급 A | 거래 당시 시장
+11-10 09:30:46 collected: board yes, surge 10, forum 8, dept 6
+11-10 09:32:19 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,221원, 정가 26,500원 대비 39% 할인 | 
+11-10 09:37:24 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,297원, 정가 26,500원 대비 39% 할인 | 
+11-10 09:42:30 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 9,487원, 정가 17,900원 대비 47% 할인 | 등급 C | 거래 당시 시장 평균 11,
+11-10 09:46:03 collected: board yes, surge 10, forum 8, dept 6
+11-10 09:47:41 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,635원, 정가 26,500원 대비 41% 할인 | 
+11-10 09:52:42 [buyer_poster] purchase: [구매 기록] 2박스(100봉) 고멧 참깨 코코넛 크래커 (G9fd00e6b) | 7,407원, 정가 12,800원 대비 42% 할인 | 등급 B | 거래 당시 
+11-10 09:57:58 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,722원, 정가 17,900원 대비 40% 할인 | 등급 B | 거래 당시 시장 평균 11
+11-10 10:01:06 collected: board yes, surge 10, forum 8, dept 6
+11-10 10:03:03 [buyer_poster] purchase: [구매 기록] 국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지 (G81ade83e) | 22,194원, 정가 34,740원 대비 36% 할인 | 등
+11-10 10:07:02 analysis: 1 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11078, "cache_read_input_tokens": 649, "output_tokens": 2946, "output_tokens_details": {"thinking_t
+11-10 10:08:04 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 14,800원, 정가 26,500원 대비 44% 할인 | 
+11-10 10:13:15 [buyer_poster] purchase: [구매 기록] 소이조이 블루베리 1개입 고단백질 건강간식 (Gab156951) | 975원, 정가 1,700원 대비 43% 할인 | 등급 B | 거래 당시 시장 
+11-10 10:16:21 collected: board yes, surge 10, forum 8, dept 6
+11-10 10:18:25 [buyer_poster] purchase: [구매 기록] 롯데햄 의성 마늘 프랑크 70g x 10개 (Gf998cd13) | 8,960원, 정가 12,800원 대비 30% 할인 | 등급 C | 거래 당시 
+11-10 10:23:31 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 40,866원, 정가 73,900원 대비 45% 할인 |
+11-10 10:28:42 [buyer_poster] purchase: [구매 기록] [자코모]메이트 멀티 4인 기능성 젠위브 패브릭 소파+스툴+쿠션2개 (G8ec51935) | 1,574,032원, 정가 2,320,000원 대비 3
+11-10 10:31:37 collected: board yes, surge 10, forum 8, dept 6
+11-10 10:33:48 [buyer_poster] purchase: [구매 기록] 보루네오 마르체 빌리 모듈 HS4 높은 거실장 1200 BMF031C (착불) (Gbf98024f) | 210,600원, 정가 270,000원 대비
+11-10 10:38:59 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4662569~#4694814)
+- 김치: 992건, 등급 A 255/B 480/C 257 | 평
+11-10 10:44:04 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 6,650원, 정가 9,500원 대비 30% 할인 | 등급 C 
+11-10 10:47:01 collected: board yes, surge 10, forum 8, dept 6
+11-10 10:49:10 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,272원, 정가 12,900원 대비 44% 할인 | 등급 B | 거래 
+11-10 10:54:21 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 14,629원, 정가 26,500원 대비 45% 할인 | 
+11-10 10:59:27 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,095원, 정가 26,500원 대비 43% 할인 | 
+11-10 11:02:17 collected: board yes, surge 10, forum 8, dept 6
+11-10 11:04:33 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 7,198원, 정가 9,500원 대비 24% 할인 | 등급 A 
+11-10 11:09:38 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 40,645원, 정가 73,900원 대비 45% 할인 |
+11-10 11:14:49 [buyer_poster] purchase: [구매 기록] [마녀바스켓] 맘스터치 바삭 시그니처 순살치킨 1kg x2팩 (Gff32593f) | 14,519원, 정가 22,500원 대비 35% 할인 | 등급
+11-10 11:17:48 collected: board yes, surge 10, forum 8, dept 6
+11-10 11:20:00 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,056원, 정가 12,900원 대비 45% 할인 | 등급 C | 거래 
+11-10 11:25:11 [buyer_poster] purchase: [구매 기록] [발타] 유럽직수입 오아시스 거실 카페트 160x230 (G1465c678) | 239,460원, 정가 307,000원 대비 22% 할인 | 등급 
+11-10 11:30:12 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 33,077원, 정가 73,900원 대비 55% 할인 |
+11-10 11:33:03 collected: board yes, surge 10, forum 8, dept 6
+11-10 11:35:23 [buyer_poster] purchase: [구매 기록] [마음채][한정특가] 포기김치 10kg / 아삭아삭 깔끔한 맛(국내산배추, HACCP인증) (G200e39a3) | 23,766원, 정가 37,90
+11-10 11:40:23 [buyer_poster] purchase: [구매 기록] [LG전자 직영] LG 싸이킹 POWER 청소기 실버 C40SFHT (G59e3e5ff) | 152,000원, 정가 195,010원 대비 22% 할
+11-10 11:45:24 [buyer_poster] purchase: [구매 기록] [산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외) (G0b0ca441) | 8,791원, 정가 14,900원 대비 41% 할인
+11-10 11:48:21 collected: board yes, surge 10, forum 8, dept 6
+11-10 11:50:35 [buyer_poster] purchase: [구매 기록] 먼지없는 60수 순면 사계절 봄가을 겨울 차렵 이불 기숙사 간절기 침구 슈퍼싱글 SS (이불단품) (G998b9322) | 25,791원, 정가 5
+11-10 11:55:46 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4684214~#4716298)
+- 김치: 979건, 등급 A 231/B 481/C 267 | 평
+11-10 11:57:58 [alert] info cap_brake_warn:1794279477: STOCK_CAP 브레이크 경고 11:57 (1/2회, 아직 발동 안 함): 입고→판매 중앙값 6.2시간 > 4시간 (최근 6시간 판매 281개)
+다음 점검(5분 뒤)에도 걸리면 발동 (telegram sent)
+11-10 11:57:58 cap brake warning 1/2: ['입고→판매 중앙값 6.2시간 > 4시간 (최근 6시간 판매 281개)']
+11-10 11:59:43 analyst started
+11-10 12:00:10 [alert] info cap_brake_warn:1794279609: STOCK_CAP 브레이크 경고 12:00 (경고만, 자동 조치 없음): 입고→판매 중앙값 6.4시간 > 4시간 (최근 6시간 판매 282개)
+재고 원가 25,254,450, 현금 35,848,630, 상한 58,103,080 (계속 걸려 있음, 1시간마다 알림) (telegram sent)
+11-10 12:00:10 cap brake warning only: ['입고→판매 중앙값 6.4시간 > 4시간 (최근 6시간 판매 282개)']
+11-10 12:01:03 [buyer_poster] purchase: [구매 기록] 캔들워머 할로겐 전구 25W GU10 3개 (G24836484) | 3,900원, 정가 5,400원 대비 28% 할인 | 등급 A | 거래 당시 시
+11-10 12:03:44 collected: board yes, surge 9, forum 8, dept 6
+11-10 12:06:04 [buyer_poster] purchase: [구매 기록] 마요라 코피코 어쏘티드 캔디(커피,카푸치노) 300g + 슈가프리 커피캔디 300g (Gec381b6f) | 7,611원, 정가 12,900원 대비
+11-10 12:06:54 analysis: 0 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 10934, "cache_read_input_tokens": 649, "output_tokens": 230, "output_tokens_details": {"thinking_to
+11-10 12:11:15 [buyer_poster] purchase: [구매 기록] [지나송]로페즈 형상기억 암막커튼 대형(440x230cm) (G40e27aec) | 91,658원, 정가 139,000원 대비 34% 할인 | 등급
+11-10 12:16:26 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,930원, 정가 12,900원 대비 39% 할인 | 등급 C | 거래 
+11-10 12:19:07 collected: board yes, surge 10, forum 8, dept 6
+11-10 12:21:32 [buyer_poster] purchase: [구매 기록] 김수미 김치 1949 엘레강스 총각김치 2kg (G0102056d) | 19,000원, 정가 33,000원 대비 42% 할인 | 등급 B | 거래 
+11-10 12:26:33 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 32,576원, 정가 73,900원 대비 56% 할인 |
+11-10 12:31:49 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,666원, 정가 12,900원 대비 41% 할인 | 등급 C | 거래 
+11-10 12:34:22 collected: board yes, surge 10, forum 8, dept 6
+11-10 12:36:55 [buyer_poster] purchase: [구매 기록] 스피드랙 W1200XD400XH900 3단 무볼트 조립식앵글선반 (Gfbf7f983) | 66,666원, 정가 103,900원 대비 36% 할인 |
+11-10 12:42:10 [buyer_poster] purchase: [구매 기록] 건국 무첨가두유 32팩 (G582603b2) | 16,644원, 정가 28,900원 대비 42% 할인 | 등급 B | 거래 당시 시장 평균 17,0
+11-10 12:47:16 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,523원, 정가 12,900원 대비 42% 할인 | 등급 B | 거래 
+11-10 12:49:37 collected: board yes, surge 10, forum 8, dept 6
+11-10 12:52:22 [buyer_poster] purchase: [구매 기록] 마니커에프앤지 버팔로봉골드 400g(4봉) (G28455a86) | 14,500원, 정가 25,400원 대비 43% 할인 | 등급 C | 거래 당시
+11-10 12:57:28 [buyer_poster] purchase: [구매 기록] [샤이닝홈] 모달 소파패드 돌소파용 마인 요릭 85x200 3컬러 쇼파패드 (G0be9ed07) | 22,920원, 정가 39,900원 대비 43%
+11-10 13:02:29 [buyer_poster] purchase: [구매 기록] 2팩(56봉) 데니쉬 스타일 쿠키 밀크향 (G114aefb6) | 5,785원, 정가 8,900원 대비 35% 할인 | 등급 C | 거래 당시 시장
+11-10 13:03:13 [alert] info cap_brake_warn:1794283391: STOCK_CAP 브레이크 경고 13:03 (경고만, 자동 조치 없음): 입고→판매 중앙값 7.5시간 > 4시간 (최근 6시간 판매 252개)
+재고 원가 35,399,291, 현금 26,162,425, 상한 58,561,716 (계속 걸려 있음, 1시간마다 알림) (telegram sent)
+11-10 13:03:13 cap brake warning only: ['입고→판매 중앙값 7.5시간 > 4시간 (최근 6시간 판매 252개)']
+11-10 13:04:58 collected: board yes, surge 10, forum 8, dept 6
+11-10 13:05:51 receipt hold 180 -> 180 s ({'n': 3613, 'p50': 2.1, 'p90': 6.7, 'p99': 13.5, 'max': 38.6})
+11-10 13:07:30 [buyer_poster] purchase: [구매 기록] [오가닉스토리] 고소한 현미뻥튀기 유기농 라이스와플 택1 (G72c7387e) | 2,535원, 정가 3,900원 대비 35% 할인 | 등급 B |
+11-10 13:12:31 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4705079~#4736135)
+- 김치: 904건, 등급 A 222/B 452/C 230 | 평
+11-10 13:17:37 [buyer_poster] purchase: [구매 기록] 제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송) (G3434758a) | 11,654원, 정가 20,400원 대비 43% 할인 | 등급 B
+11-10 13:19:58 collected: board yes, surge 10, forum 8, dept 6
+11-10 13:22:33 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 40,734원, 정가 73,900원 대비 45% 할인 |
+11-10 13:27:39 [buyer_poster] purchase: [구매 기록] [삼성무료설치] 일반형 냉장고 RT31CG5624S9 298L 2도어 1등급 (G4e4eabdb) | 472,986원, 정가 649,000원 대비 
+11-10 13:32:50 [buyer_poster] purchase: [구매 기록] 마요라 코피코 어쏘티드 캔디(커피,카푸치노) 300g + 슈가프리 커피캔디 300g (Gec381b6f) | 6,708원, 정가 12,900원 대비
+11-10 13:35:06 collected: board yes, surge 10, forum 8, dept 6
+11-10 13:37:51 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,288원, 정가 26,500원 대비 39% 할인 | 
+11-10 13:42:57 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 신동진쌀 10kg 단일품종 상등급 (G1a071c18) | 20,216원, 정가 37,500원 대비 46% 할인 | 등급 C | 거
+11-10 13:48:02 [buyer_poster] purchase: [구매 기록] 건국 무첨가두유 32팩 (G582603b2) | 13,137원, 정가 28,900원 대비 55% 할인 | 등급 B | 거래 당시 시장 평균 16,8
+11-10 13:50:27 collected: board yes, surge 10, forum 8, dept 6
+11-10 13:53:08 [buyer_poster] purchase: [구매 기록] 2박스(100봉) 고멧 참깨 코코넛 크래커 (G9fd00e6b) | 7,831원, 정가 12,800원 대비 39% 할인 | 등급 B | 거래 당시 
+11-10 13:58:24 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,494원, 정가 12,900원 대비 42% 할인 | 등급 A | 거래 
+11-10 14:03:35 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 8,037원, 정가 12,900원 대비 38% 할인 | 등급 B | 거래 
+11-10 14:05:51 collected: board yes, surge 10, forum 8, dept 6
+11-10 14:06:19 [alert] info cap_brake_warn:1794287178: STOCK_CAP 브레이크 경고 14:06 (경고만, 자동 조치 없음): 입고→판매 중앙값 7.2시간 > 4시간 (최근 6시간 판매 215개)
+재고 원가 44,069,733, 현금 18,587,713, 상한 59,657,446 (계속 걸려 있음, 1시간마다 알림) (telegram sent)
+11-10 14:06:19 cap brake warning only: ['입고→판매 중앙값 7.2시간 > 4시간 (최근 6시간 판매 215개)']
+11-10 14:07:20 analysis: 0 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11073, "cache_read_input_tokens": 649, "output_tokens": 626, "output_tokens_details": {"thinking_to
+11-10 14:08:46 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,500원, 정가 12,900원 대비 42% 할인 | 등급 B | 거래 
+11-10 14:13:57 [buyer_poster] purchase: [구매 기록] 아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg (G66ded25b) | 8,384원, 정가 17,900원 대비 53% 할인 | 등급 C |
+11-10 14:19:03 [buyer_poster] purchase: [구매 기록] 2팩(56봉) 데니쉬 스타일 쿠키 밀크향 (G114aefb6) | 5,838원, 정가 8,900원 대비 34% 할인 | 등급 B | 거래 당시 시장
+11-10 14:20:57 collected: board yes, surge 10, forum 8, dept 6
+11-10 14:24:14 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,497원, 정가 26,500원 대비 42% 할인 | 
+11-10 14:29:35 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4726334~#4758346)
+- 김치: 948건, 등급 A 223/B 479/C 246 | 평
+11-10 14:34:41 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 14,800원, 정가 26,500원 대비 44% 할인 | 
+11-10 14:36:15 collected: board yes, surge 10, forum 8, dept 6
+11-10 14:39:47 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,642원, 정가 26,500원 대비 37% 할인 | 
+11-10 14:44:52 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,277원, 정가 17,900원 대비 43% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 14:49:58 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 6,757원, 정가 12,900원 대비 48% 할인 | 등급 B | 거래 
+11-10 14:51:18 collected: board yes, surge 10, forum 8, dept 6
+11-10 14:55:04 [buyer_poster] purchase: [구매 기록] [마녀바스켓] 맘스터치 바삭 시그니처 순살치킨 1kg x2팩 (Gff32593f) | 12,960원, 정가 22,500원 대비 42% 할인 | 등급
+11-10 15:00:15 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 신동진 10kg 상등급 (G517be600) | 22,572원, 정가 36,400원 대비 38% 할인 | 등급 C | 거래 당
+11-10 15:05:16 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 6,262원, 정가 12,900원 대비 51% 할인 | 등급 B | 거래 
+11-10 15:06:08 analyst started
+11-10 15:06:35 collected: board yes, surge 10, forum 8, dept 6
+11-10 15:06:35 [alert] info cap_brake_warn:1794290795: STOCK_CAP 브레이크 경고 15:06 (경고만, 자동 조치 없음): 입고→판매 중앙값 5.4시간 > 4시간 (최근 6시간 판매 293개)
+재고 원가 47,770,954, 현금 18,084,255, 상한 62,855,209 (계속 걸려 있음, 1시간마다 알림) (telegram held)
+11-10 15:06:35 cap brake warning only: ['입고→판매 중앙값 5.4시간 > 4시간 (최근 6시간 판매 293개)']
+11-10 15:10:24 [buyer_poster] purchase: [구매 기록] [에이스침대]BMA 1139-E CA등급/SS(슈퍼싱글사이즈) (G8095ddd6) | 518,963원, 정가 851,400원 대비 39% 할인 |
+11-10 15:16:55 [buyer_poster] purchase: [구매 기록] 데코토닉 클래식 타탄체크 쿠션커버 50x50cm (G3ffdfc44) | 7,630원, 정가 10,900원 대비 30% 할인 | 등급 A | 거래 
+11-10 15:21:56 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 42,566원, 정가 73,900원 대비 42% 할인 |
+11-10 15:21:56 collected: board yes, surge 10, forum 8, dept 6
+11-10 15:27:01 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 6,820원, 정가 12,900원 대비 47% 할인 | 등급 B | 거래 
+11-10 15:32:17 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 6,974원, 정가 12,900원 대비 46% 할인 | 등급 B | 거래 
+11-10 15:37:16 collected: board yes, surge 10, forum 8, dept 6
+11-10 15:37:33 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,774원, 정가 12,900원 대비 40% 할인 | 등급 B | 거래 
+11-10 15:42:44 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4746507~#4778079)
+- 김치: 848건, 등급 A 193/B 423/C 232 | 평
+11-10 15:47:55 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 신동진 10kg 상등급 (G517be600) | 20,311원, 정가 36,400원 대비 44% 할인 | 등급 B | 거래 당
+11-10 15:52:35 collected: board yes, surge 10, forum 8, dept 6
+11-10 15:53:01 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 신동진 10kg 상등급 (G517be600) | 20,311원, 정가 36,400원 대비 44% 할인 | 등급 B | 거래 당
+11-10 15:58:07 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,616원, 정가 17,900원 대비 41% 할인 | 등급 C | 거래 당시 시장 평균 10
+11-10 16:03:13 [buyer_poster] purchase: [구매 기록] [갤러리데코]에리얼 극세사 거실 특대형 카페트 200x250 (Gefe070c7) | 38,016원, 정가 52,800원 대비 28% 할인 | 등급
+11-10 16:07:31 analysis: 0 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11049, "cache_read_input_tokens": 649, "output_tokens": 448, "output_tokens_details": {"thinking_to
+11-10 16:07:59 collected: board yes, surge 8, forum 8, dept 6
+11-10 16:08:18 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 43,225원, 정가 73,900원 대비 42% 할인 |
+11-10 16:13:29 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 14,575원, 정가 26,500원 대비 45% 할인 | 
+11-10 16:18:40 [buyer_poster] purchase: [구매 기록] 널담 고단백 저당 크림 가득 쫀득빵 4종 혼합 10봉 (G09ddb328) | 7,763원, 정가 12,900원 대비 40% 할인 | 등급 B | 
+11-10 16:23:24 collected: board yes, surge 10, forum 8, dept 6
+11-10 16:23:51 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,601원, 정가 26,500원 대비 41% 할인 | 
+11-10 16:28:52 [buyer_poster] purchase: [구매 기록] 지누스 얼티마 럭스S 하이브리드 매트리스 25cm Q 퀸 (G9357d6c2) | 358,377원, 정가 525,000원 대비 32% 할인 | 등급
+11-10 16:33:58 [buyer_poster] purchase: [구매 기록] 보루네오 프라임 휴 LED 원목 수납침대 SS프레임 FO6501 (G76a0c110) | 178,200원, 정가 237,600원 대비 25% 할인 
+11-10 16:38:40 collected: board yes, surge 7, forum 8, dept 6
+11-10 16:39:23 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 6,650원, 정가 9,500원 대비 30% 할인 | 등급 B 
+11-10 16:44:24 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 14,000원, 정가 26,500원 대비 47% 할인 | 
+11-10 16:49:25 [buyer_poster] purchase: [구매 기록] 국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지 (G81ade83e) | 21,191원, 정가 34,740원 대비 39% 할인 | 등
+11-10 16:53:59 collected: board yes, surge 8, forum 8, dept 6
+11-10 16:54:31 [buyer_poster] purchase: [구매 기록] 아이시스 화이트 ECO 무라벨 2L 6개 (G7fa48eaa) | 3,100원, 정가 5,400원 대비 43% 할인 | 등급 B | 거래 당시 시장
+11-10 16:59:52 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4767699~#4799464)
+- 김치: 801건, 등급 A 181/B 414/C 206 | 평
+11-10 17:05:03 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 43,936원, 정가 73,900원 대비 41% 할인 |
+11-10 17:09:23 collected: board yes, surge 10, forum 8, dept 6
+11-10 17:10:08 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,343원, 정가 17,900원 대비 42% 할인 | 등급 C | 거래 당시 시장 평균 10
+11-10 17:15:19 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 14,305원, 정가 26,500원 대비 46% 할인 | 
+11-10 17:20:20 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,554원, 정가 12,900원 대비 41% 할인 | 등급 B | 거래 
+11-10 17:24:40 collected: board yes, surge 9, forum 8, dept 6
+11-10 17:25:21 [buyer_poster] purchase: [구매 기록] 바숨 알러지케어 먼지없는 누빔 매트리스커버 슈퍼싱글 SS (G575cddb8) | 18,693원, 정가 27,900원 대비 33% 할인 | 등급 B
+11-10 17:30:22 [buyer_poster] purchase: [구매 기록] 대만 애플망고 젤리 60gX10입X2박스(총 20입) (G0d52d508) | 10,200원, 정가 16,800원 대비 39% 할인 | 등급 B |
+11-10 17:35:27 [buyer_poster] purchase: [구매 기록] 장수돌침대 다하스 1305Q /맥반석 퀸침대 (Gf6b70da8) | 1,542,347원, 정가 2,332,000원 대비 34% 할인 | 등급 A 
+11-10 17:39:56 collected: board yes, surge 10, forum 8, dept 6
+11-10 17:40:38 [buyer_poster] purchase: [구매 기록] 순창문옥례 우리콩 재래식 된장 2kg 밀폐용기 (Gd1f907d6) | 19,500원, 정가 36,900원 대비 47% 할인 | 등급 B | 거래 
+11-10 17:45:49 [buyer_poster] purchase: [구매 기록] 하루채움 아로니아 100봉 낱봉 견과류 하루견과 한줌견과 (G1324bb95) | 31,200원, 정가 54,900원 대비 43% 할인 | 등급 B
+11-10 17:51:00 [buyer_poster] purchase: [구매 기록] 데코토닉 클래식 타탄체크 쿠션커버 50x50cm (G3ffdfc44) | 7,735원, 정가 10,900원 대비 29% 할인 | 등급 A | 거래 
+11-10 17:55:12 collected: board yes, surge 10, forum 8, dept 6
+11-10 17:56:11 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 34,630원, 정가 73,900원 대비 53% 할인 |
+11-10 18:01:22 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,400원, 정가 17,900원 대비 42% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 18:06:23 [buyer_poster] purchase: [구매 기록] [동원xGS] 양반 김부각 4종 50g x6개 /마늘/새우/김치맛 (G8074a394) | 9,600원, 정가 17,900원 대비 46% 할인 | 
+11-10 18:07:45 analysis: 1 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11014, "cache_read_input_tokens": 649, "output_tokens": 3540, "output_tokens_details": {"thinking_t
+11-10 18:07:47 proposal #50 sent (policy purchasing.high_share -> 0.5): telegram ok
+11-10 18:10:25 collected: board yes, surge 10, forum 8, dept 6
+11-10 18:11:29 [buyer_poster] purchase: [구매 기록] [보라티알] 수지탈 시금치 뇨끼 1kg (G3a2d1823) | 7,746원, 정가 13,100원 대비 41% 할인 | 등급 C | 거래 당시 시장
+11-10 18:16:35 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4788541~#4820750)
+- 김치: 833건, 등급 A 200/B 424/C 209 | 평
+11-10 18:21:40 [buyer_poster] purchase: [구매 기록] 하우스 감귤 500g (로얄과/S-M) 청정 제주가 품은 신선함 그대로 고당도 감귤 (G51044bd3) | 3,422원, 정가 7,300원 대비 
+11-10 18:25:28 collected: board yes, surge 10, forum 8, dept 6
+11-10 18:26:56 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,869원, 정가 12,900원 대비 39% 할인 | 등급 B | 거래 
+11-10 18:32:07 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 9,550원, 정가 17,900원 대비 47% 할인 | 등급 B | 거래 당시 시장 평균 10,
+11-10 18:37:08 [buyer_poster] purchase: [구매 기록] 마요라 코피코 어쏘티드 캔디(커피,카푸치노) 300g + 슈가프리 커피캔디 300g (Gec381b6f) | 7,611원, 정가 12,900원 대비
+11-10 18:40:53 collected: board yes, surge 10, forum 8, dept 6
+11-10 18:42:19 [buyer_poster] purchase: [구매 기록] [마녀바스켓] 맘스터치 바삭 시그니처 순살치킨 1kg x2팩 (Gff32593f) | 11,907원, 정가 22,500원 대비 47% 할인 | 등급
+11-10 18:47:30 [buyer_poster] purchase: [구매 기록] [마녀바스켓] 맘스터치 바삭 시그니처 순살치킨 1kg x2팩 (Gff32593f) | 11,907원, 정가 22,500원 대비 47% 할인 | 등급
+11-10 18:52:41 [buyer_poster] purchase: [구매 기록] 비비고 포기배추김치 5kg x2개 (G44d10eb9) | 43,000원, 정가 83,900원 대비 49% 할인 | 등급 C | 거래 당시 시장 평
+11-10 18:56:09 collected: board yes, surge 10, forum 8, dept 6
+11-10 18:57:52 [buyer_poster] purchase: [구매 기록] 제주 삼다수 무라벨 2L X 18병(유/무라벨 랜덤발송) (G3434758a) | 10,240원, 정가 20,400원 대비 50% 할인 | 등급 B
+11-10 19:03:08 [buyer_poster] purchase: [구매 기록] 국내생산 데님 맞춤 암막커튼 거실형 세로 181~250cm까지 (G81ade83e) | 22,177원, 정가 34,740원 대비 36% 할인 | 등
+11-10 19:08:19 [buyer_poster] purchase: [구매 기록] 하림 직화 닭가슴살 3종 12팩(각4팩) (G1ef20617) | 13,416원, 정가 25,800원 대비 48% 할인 | 등급 C | 거래 당시 
+11-10 19:11:28 collected: board yes, surge 10, forum 8, dept 6
+11-10 19:13:19 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,662원, 정가 26,500원 대비 41% 할인 | 
+11-10 19:18:25 [buyer_poster] purchase: [구매 기록] 맛있는 햇 부사 사과 가정용(흠과) 중대과 10kg (Gef4d3036) | 14,523원, 정가 28,900원 대비 50% 할인 | 등급 C | 
+11-10 19:23:31 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 찹쌀 5kg (G3a0cb72f) | 11,470원, 정가 18,500원 대비 38% 할인 | 등급 C | 거래 당시 시장 평
+11-10 19:26:42 collected: board yes, surge 7, forum 8, dept 6
+11-10 19:28:37 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4808104~#4839849)
+- 김치: 867건, 등급 A 224/B 424/C 219 | 평
+11-10 19:33:53 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 43,220원, 정가 73,900원 대비 42% 할인 |
+11-10 19:39:03 [buyer_poster] purchase: [구매 기록] 현대의료기 5005MINISF 미니카우치 황토숯볼 흙쇼파 (Gd1e861c7) | 252,545원, 정가 409,640원 대비 38% 할인 | 등급
+11-10 19:42:11 collected: board yes, surge 10, forum 8, dept 6
+11-10 19:44:14 [buyer_poster] purchase: [구매 기록] [헬렌스타인][한파용] 국내생산 알러지케어 헝가리 워셔블 구스이불 Q (G05277ffe) | 398,191원, 정가 600,000원 대비 34% 
+11-10 19:49:30 [buyer_poster] purchase: [구매 기록] 밥선생 신동진쌀 20kg (10kg+10kg) 상등급 26년 햅쌀 (Gf0e58a76) | 44,903원, 정가 73,900원 대비 39% 할인 |
+11-10 19:54:46 [buyer_poster] purchase: [구매 기록] 풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송) (Gdf79cd07) | 8,379원, 정가 15,200원 대비 45% 
+11-10 19:57:27 collected: board yes, surge 10, forum 8, dept 6
+11-10 20:00:07 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 16,609원, 정가 26,500원 대비 37% 할인 | 
+11-10 20:05:08 [buyer_poster] purchase: [구매 기록] [굴비가]잘말린 부세보리굴비 특 10미/28~30cm/진공포장 (G7334a33d) | 55,899원, 정가 69,900원 대비 20% 할인 | 등
+11-10 20:07:48 analysis: 1 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 10972, "cache_read_input_tokens": 649, "output_tokens": 2918, "output_tokens_details": {"thinking_t
+11-10 20:10:08 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,980원, 정가 26,500원 대비 40% 할인 | 
+11-10 20:12:39 collected: board yes, surge 10, forum 8, dept 6
+11-10 20:15:14 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 신동진쌀 10kg 단일품종 상등급 (G1a071c18) | 22,342원, 정가 37,500원 대비 40% 할인 | 등급 C | 거
+11-10 20:20:20 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 신동진쌀 10kg 단일품종 상등급 (G1a071c18) | 23,031원, 정가 37,500원 대비 39% 할인 | 등급 A | 거
+11-10 20:25:21 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 신동진쌀 10kg 단일품종 상등급 (G1a071c18) | 21,904원, 정가 37,500원 대비 42% 할인 | 등급 A | 거
+11-10 20:27:56 collected: board yes, surge 10, forum 8, dept 6
+11-10 20:30:32 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,916원, 정가 26,500원 대비 40% 할인 | 
+11-10 20:35:32 [buyer_poster] purchase: [구매 기록] 마니커에프앤지 버팔로봉골드 400g(4봉) (G28455a86) | 14,500원, 정가 25,400원 대비 43% 할인 | 등급 B | 거래 당시
+11-10 20:40:58 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4827798~#4860655)
+- 김치: 805건, 등급 A 149/B 423/C 233 | 평
+11-10 20:43:22 collected: board yes, surge 10, forum 8, dept 6
+11-10 20:46:04 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,785원, 정가 26,500원 대비 40% 할인 | 
+11-10 20:51:10 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 발아현미 1kg (Ge33dd2ee) | 3,380원, 정가 6,500원 대비 48% 할인 | 등급 C | 거래 당시 시장 평
+11-10 20:56:21 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 신동진 10kg 상등급 (G517be600) | 19,722원, 정가 36,400원 대비 46% 할인 | 등급 B | 거래 당
+11-10 20:58:37 collected: board yes, surge 10, forum 8, dept 6
+11-10 21:01:37 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 신동진 10kg 상등급 (G517be600) | 18,739원, 정가 36,400원 대비 49% 할인 | 등급 B | 거래 당
+11-10 21:06:48 [buyer_poster] purchase: [구매 기록] 하우스 감귤 500g (로얄과/S-M) 청정 제주가 품은 신선함 그대로 고당도 감귤 (G51044bd3) | 3,422원, 정가 7,300원 대비 
+11-10 21:11:54 [buyer_poster] purchase: [구매 기록] 펩시콜라 엑스트라 피즈 245ml 15개(업소용) (G9a240832) | 3,463원, 정가 10,600원 대비 67% 할인 | 등급 C | 거래
+11-10 21:13:56 collected: board yes, surge 10, forum 8, dept 6
+11-10 21:16:59 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,980원, 정가 26,500원 대비 40% 할인 | 
+11-10 21:22:15 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 6,650원, 정가 9,500원 대비 30% 할인 | 등급 A 
+11-10 21:27:16 [buyer_poster] purchase: [구매 기록] 2026년 햇 태양초 영양 고추가루 김치용(보통맛) 2kg (G1f2acd72) | 43,518원, 정가 73,900원 대비 41% 할인 | 등급 
+11-10 21:29:14 collected: board yes, surge 10, forum 8, dept 6
+11-10 21:32:22 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 임금님표 이천쌀 4kg 상등급 소포장쌀 단일품종 (G80435d53) | 15,980원, 정가 26,500원 대비 40% 할인 | 
+11-10 21:37:28 [buyer_poster] purchase: [구매 기록] [산해직송] 해남 포슬포슬 수미감자 특 5kg (130~180g 내외) (G0b0ca441) | 8,615원, 정가 14,900원 대비 42% 할인
+11-10 21:42:29 [buyer_poster] purchase: [구매 기록] [파르페by알레르망] 플레인 80수 호텔식 무봉제 차렵이불 S/SS (Ge62449c9) | 55,910원, 정가 87,900원 대비 36% 할인 
+11-10 21:44:28 collected: board yes, surge 10, forum 8, dept 6
+11-10 21:47:29 [buyer_poster] purchase: [구매 기록] 다이슨 에어랩 드라이기 파우치 (G14b3affa) | 3,287원, 정가 6,900원 대비 52% 할인 | 등급 C | 거래 당시 시장 평균 5,
+11-10 21:52:55 [buyer_poster] purchase: [구매 기록] 지누스 얼티마 럭스S 하이브리드 매트리스 25cm Q 퀸 (G9357d6c2) | 354,375원, 정가 525,000원 대비 32% 할인 | 등급
+11-10 21:58:11 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4849738~#4883329)
+- 김치: 957건, 등급 A 214/B 505/C 238 | 평
+11-10 21:59:45 collected: board yes, surge 10, forum 8, dept 6
+11-10 22:03:12 [buyer_poster] purchase: [구매 기록] 특대형 칼라 돗자리 야외 피크닉 매트(비닐 잡화 (G8d1b1234) | 11,509원, 정가 14,300원 대비 20% 할인 | 등급 A | 거래
+11-10 22:07:51 analysis: 0 pass, dropped []; usage {"usage": {"input_tokens": 2, "cache_creation_input_tokens": 11008, "cache_read_input_tokens": 649, "output_tokens": 2332, "output_tokens_details": {"thinking_t
+11-10 22:08:13 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 6,960원, 정가 12,900원 대비 46% 할인 | 등급 B | 거래 
+11-10 22:13:19 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,134원, 정가 12,900원 대비 45% 할인 | 등급 B | 거래 
+11-10 22:14:53 collected: board yes, surge 10, forum 8, dept 6
+11-10 22:17:31 callout draft #52 for elm-street sent: telegram ok
+11-10 22:18:24 [buyer_poster] purchase: [구매 기록] 하림이닭 닭가슴살 소시지 3종 10팩 골라담기 (G5b1b5d85) | 12,661원, 정가 22,050원 대비 43% 할인 | 등급 B | 거래 
+11-10 22:23:30 [buyer_poster] purchase: [구매 기록] [까르마] 그리너리 고밀도 메모리폼 사각 방석 5cm (G06f2c594) | 14,989원, 정가 20,720원 대비 28% 할인 | 등급 A |
+11-10 22:28:31 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,387원, 정가 17,900원 대비 42% 할인 | 등급 C | 거래 당시 시장 평균 11
+11-10 22:30:15 collected: board yes, surge 10, forum 8, dept 6
+11-10 22:33:37 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,135원, 정가 12,900원 대비 45% 할인 | 등급 B | 거래 
+11-10 22:38:46 [buyer_poster] purchase: [구매 기록] [한미]완전두유 더진한 국산콩 무가당 190ml 16팩 (G0fb860e2) | 6,105원, 정가 11,900원 대비 49% 할인 | 등급 C |
+11-10 22:44:02 [buyer_poster] purchase: [구매 기록] 하우스 감귤 500g (로얄과/S-M) 청정 제주가 품은 신선함 그대로 고당도 감귤 (G51044bd3) | 3,422원, 정가 7,300원 대비 
+11-10 22:45:36 collected: board yes, surge 8, forum 8, dept 6
+11-10 22:49:02 [buyer_poster] purchase: [구매 기록] [바다원] 돌김자반볶음(오리지널) 60g (Ga90c3b80) | 3,050원, 정가 4,900원 대비 38% 할인 | 등급 B | 거래 당시 시장
+11-10 22:54:13 [buyer_poster] purchase: [구매 기록] 바리스타룰스 디카페인 라떼 325ml 10개 (G772009ce) | 15,404원, 정가 24,500원 대비 37% 할인 | 등급 B | 거래 당
+11-10 22:59:19 [buyer_poster] purchase: [구매 기록] 2026년 햅쌀 국산 발아현미 1.4kg (700gx2봉) (Gfe80019f) | 6,650원, 정가 9,500원 대비 30% 할인 | 등급 C 
+11-10 23:00:54 collected: board yes, surge 10, forum 8, dept 6
+11-10 23:04:25 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 10,200원, 정가 17,900원 대비 43% 할인 | 등급 B | 거래 당시 시장 평균 10
+11-10 23:09:36 [buyer_poster] purchase: [구매 기록] 켈로그 프링글스 2+2+2+1 골라담기 GS단독 (G1831f2c0) | 7,316원, 정가 12,900원 대비 43% 할인 | 등급 C | 거래 
+11-10 23:14:52 [buyer_poster] report: [시세 리포트] 최근 2시간 거래 많은 카테고리 (ledger #4871267~#4901232)
+- 김치: 876건, 등급 A 239/B 439/C 198 | 평
+11-10 23:16:27 collected: board yes, surge 8, forum 8, dept 6
+11-10 23:19:58 [buyer_poster] purchase: [구매 기록] 풀무원 워터루틴 무라벨 생수 500mL X 60병(무라벨/유라벨 랜덤발송) (Gdf79cd07) | 7,114원, 정가 15,200원 대비 53% 
+11-10 23:25:08 [buyer_poster] purchase: [구매 기록] 펩시콜라 엑스트라 피즈 245ml 15개(업소용) (G9a240832) | 5,290원, 정가 10,600원 대비 50% 할인 | 등급 B | 거래
+11-10 23:30:09 [buyer_poster] purchase: [구매 기록] 롯데햄 의성 마늘 프랑크 70g x 10개 (Gf998cd13) | 8,960원, 정가 12,800원 대비 30% 할인 | 등급 C | 거래 당시 
+11-10 23:31:44 collected: board yes, surge 9, forum 8, dept 6
+11-10 23:35:25 [buyer_poster] purchase: [구매 기록] 아삭하고 깊은맛 국내산 전라도 남도장인 총각김치 3kg (G66ded25b) | 11,027원, 정가 17,900원 대비 38% 할인 | 등급 B 
+11-10 23:40:31 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 9,000원, 정가 17,900원 대비 50% 할인 | 등급 C | 거래 당시 시장 평균 10,
+11-10 23:45:32 [buyer_poster] purchase: [구매 기록] 사세 직화K버팔로윙 1kg (G2560a8c9) | 8,150원, 정가 17,900원 대비 54% 할인 | 등급 B | 거래 당시 시장 평균 10,
+11-10 23:46:59 collected: board yes, surge 10, forum 8, dept 6
+11-10 23:50:43 [buyer_poster] purchase: [구매 기록] [2026년산] 국산 발아현미 1kg (Ge33dd2ee) | 3,670원, 정가 6,500원 대비 44% 할인 | 등급 B | 거래 당시 시장 평
+11-10 23:55:53 [buyer_poster] purchase: [구매 기록] 데코토닉 클래식 타탄체크 쿠션커버 50x50cm (G3ffdfc44) | 7,200원, 정가 10,900원 대비 34% 할인 | 등급 B | 거래 

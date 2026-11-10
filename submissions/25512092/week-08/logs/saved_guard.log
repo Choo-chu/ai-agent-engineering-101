@@ -24,3 +24,66 @@
 11-09 22:56:26 check {'saved': 0.4188, 'deals': 2371, 'surplus': 94010284, 'all': 0.863, 'second': 0.3714, 'saved_rank': 1, 'all_rank': 6}
 11-09 23:26:27 check {'saved': 0.4187, 'deals': 2397, 'surplus': 94550522, 'all': 0.864, 'second': 0.3715, 'saved_rank': 1, 'all_rank': 6}
 11-09 23:56:28 check {'saved': 0.4187, 'deals': 2430, 'surplus': 95954317, 'all': 0.864, 'second': 0.3716, 'saved_rank': 1, 'all_rank': 6}
+11-10 00:26:29 check {'saved': 0.4187, 'deals': 2459, 'surplus': 97647039, 'all': 0.864, 'second': 0.3717, 'saved_rank': 1, 'all_rank': 6}
+11-10 00:56:32 check {'saved': 0.4183, 'deals': 2487, 'surplus': 98921814, 'all': 0.866, 'second': 0.3719, 'saved_rank': 1, 'all_rank': 6}
+11-10 01:26:36 check {'saved': 0.4181, 'deals': 2509, 'surplus': 100012635, 'all': 0.866, 'second': 0.372, 'saved_rank': 1, 'all_rank': 6}
+11-10 01:56:38 check {'saved': 0.4178, 'deals': 2546, 'surplus': 100666095, 'all': 0.867, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:26:39 check {'saved': 0.4175, 'deals': 2566, 'surplus': 101898196, 'all': 0.868, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:27:33 [alert] daily d_high_report:1794223650: buyer D·고가 수락 6.0시간 점검 (11-09 20:27 ~ 02:27)
+- D 2번째 가게: 시도 409건 (soft 주문 835건 중), 성사 81건, 결제 81건, 성사율 19.8%, 건당 절약률(정가 대비) 41.0%
+  첫 가게 종료 이유별 D 시도 / 성사율: 가격 266건 / 21%, 재고 49건 / 8%, 끊김 70건 / 24%, 무응답 24건 / 17%
+- D로 늘어난 주문 1건 처리 시간: D 주문 평균 +5.1초 (2번째 가게), 다음 주문까지 D 주문 23.7초 vs 다른 soft 주문 27.3초; 20초 바닥을 넘겨 실제로 늘어난 시간 합 1029초 (전체 주문 평균 +1.22초)
+- D가 없었을 때 대비 시간당 deals 순증: D 성사 +13.5/h - 늘어난 시간 때문에 못 받은 주문 6.7/h x 첫 가게 성사율 73% = +8.6/h
+- 비싼 주문(정가 20만 이상): 48건, 성사율 70.8%, 건당 surplus 279,046, high_accept_105로 성사(시장 평균 초과 가격) 24건 (그 surplus 6,803,847.0)
+- 전체 시간당 주문 135.7 vs 직전 같은 길이 120.5, 시간당 deals 49.3 vs 30.8
+- surplus +12,898,424 (시간당 2,149,653), saved 0.4196 -> 0.4175, 2위 saved 0.3707 -> 0.3721 (차이 0.0454; 끄는 기준 고가 +0.025 / D +0.015 / soft_neg·수락 규칙 +0.008), deals 2263 -> 2567 (telegram sent)
+11-10 02:27:33 6h report sent
+11-10 02:27:34 check {'saved': 0.4175, 'deals': 2567, 'surplus': 101938552, 'all': 0.868, 'second': 0.3721, 'saved_rank': 1, 'all_rank': 6}
+11-10 02:57:35 check {'saved': 0.4172, 'deals': 2587, 'surplus': 103204920, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 03:27:42 check {'saved': 0.4167, 'deals': 2623, 'surplus': 104362228, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 03:57:43 check {'saved': 0.4162, 'deals': 2650, 'surplus': 105222283, 'all': 0.868, 'second': 0.3723, 'saved_rank': 1, 'all_rank': 6}
+11-10 04:27:44 check {'saved': 0.4161, 'deals': 2685, 'surplus': 106634897, 'all': 0.868, 'second': 0.3724, 'saved_rank': 1, 'all_rank': 6}
+11-10 04:57:45 check {'saved': 0.4157, 'deals': 2718, 'surplus': 108089050, 'all': 0.868, 'second': 0.3724, 'saved_rank': 1, 'all_rank': 6}
+11-10 05:27:45 check {'saved': 0.4153, 'deals': 2743, 'surplus': 109085907, 'all': 0.868, 'second': 0.3725, 'saved_rank': 1, 'all_rank': 6}
+11-10 05:57:52 check {'saved': 0.415, 'deals': 2764, 'surplus': 109455330, 'all': 0.868, 'second': 0.3726, 'saved_rank': 1, 'all_rank': 6}
+11-10 06:27:55 check {'saved': 0.4146, 'deals': 2796, 'surplus': 110668371, 'all': 0.87, 'second': 0.3727, 'saved_rank': 1, 'all_rank': 6}
+11-10 06:57:56 check {'saved': 0.4142, 'deals': 2823, 'surplus': 111470639, 'all': 0.87, 'second': 0.3728, 'saved_rank': 1, 'all_rank': 6}
+11-10 07:27:57 check {'saved': 0.4141, 'deals': 2844, 'surplus': 112028681, 'all': 0.87, 'second': 0.3729, 'saved_rank': 1, 'all_rank': 6}
+11-10 07:58:06 check {'saved': 0.414, 'deals': 2868, 'surplus': 112462326, 'all': 0.87, 'second': 0.373, 'saved_rank': 1, 'all_rank': 5}
+11-10 08:28:07 check {'saved': 0.4139, 'deals': 2888, 'surplus': 112691007, 'all': 0.87, 'second': 0.3731, 'saved_rank': 1, 'all_rank': 5}
+11-10 08:58:08 check {'saved': 0.4137, 'deals': 2915, 'surplus': 113594739, 'all': 0.87, 'second': 0.3733, 'saved_rank': 1, 'all_rank': 5}
+11-10 09:28:09 check {'saved': 0.4137, 'deals': 2928, 'surplus': 113907296, 'all': 0.87, 'second': 0.3734, 'saved_rank': 1, 'all_rank': 5}
+11-10 09:58:10 check {'saved': 0.4135, 'deals': 2953, 'surplus': 115559421, 'all': 0.87, 'second': 0.3795, 'saved_rank': 1, 'all_rank': 5}
+11-10 10:28:13 check {'saved': 0.4133, 'deals': 2977, 'surplus': 117017082, 'all': 0.87, 'second': 0.3788, 'saved_rank': 1, 'all_rank': 5}
+11-10 10:58:14 check {'saved': 0.4131, 'deals': 3000, 'surplus': 117556629, 'all': 0.87, 'second': 0.383, 'saved_rank': 1, 'all_rank': 5}
+11-10 11:28:15 check {'saved': 0.413, 'deals': 3026, 'surplus': 119155385, 'all': 0.87, 'second': 0.3849, 'saved_rank': 1, 'all_rank': 5}
+11-10 11:58:18 check {'saved': 0.413, 'deals': 3049, 'surplus': 119507001, 'all': 0.87, 'second': 0.3885, 'saved_rank': 1, 'all_rank': 4}
+11-10 11:58:20 [alert] urgent high_accept_110_stop: buyer 비싼 주문 수락 기준 완화(high_accept_105) 끔: saved 0.413 < 2위 0.3885 + 0.025 (차이 0.0245) (기준 2위 + 0.025) (telegram sent)
+11-10 11:58:20 high_accept off: saved 0.413 < 2위 0.3885 + 0.025 (차이 0.0245)
+11-10 12:08:05 start (staged guard by the 3rd best saved: high_accept + 0.020, second_shop + 0.012)
+11-10 12:08:07 check {'saved': 0.4129, 'deals': 3056, 'surplus': 119637348, 'all': 0.87, 'second': 0.3895, 'third': 0.374, 'saved_rank': 1, 'all_rank': 4}
+11-10 12:38:08 check {'saved': 0.4129, 'deals': 3085, 'surplus': 119805647, 'all': 0.871, 'second': 0.3914, 'third': 0.3741, 'saved_rank': 1, 'all_rank': 4}
+11-10 13:08:12 check {'saved': 0.413, 'deals': 3115, 'surplus': 120370848, 'all': 0.871, 'second': 0.394, 'third': 0.3742, 'saved_rank': 1, 'all_rank': 4}
+11-10 13:38:13 check {'saved': 0.413, 'deals': 3144, 'surplus': 120990054, 'all': 0.871, 'second': 0.3916, 'third': 0.3743, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:08:18 check {'saved': 0.4131, 'deals': 3168, 'surplus': 122022657, 'all': 0.871, 'second': 0.3927, 'third': 0.3756, 'saved_rank': 1, 'all_rank': 3}
+11-10 14:38:24 check {'saved': 0.413, 'deals': 3202, 'surplus': 122788390, 'all': 0.871, 'second': 0.3938, 'third': 0.3788, 'saved_rank': 1, 'all_rank': 3}
+11-10 15:06:08 start (staged guard by the 3rd best saved: high_accept + 0.020, second_shop + 0.012)
+11-10 15:06:09 check {'saved': 0.4131, 'deals': 3224, 'surplus': 123363096, 'all': 0.872, 'second': 0.3962, 'third': 0.3814, 'saved_rank': 1, 'all_rank': 3}
+11-10 15:36:11 check {'saved': 0.413, 'deals': 3243, 'surplus': 123573776, 'all': 0.872, 'second': 0.3987, 'third': 0.384, 'saved_rank': 1, 'all_rank': 3}
+11-10 16:06:12 check {'saved': 0.413, 'deals': 3277, 'surplus': 124309761, 'all': 0.874, 'second': 0.4001, 'third': 0.3862, 'saved_rank': 1, 'all_rank': 3}
+11-10 16:36:15 check {'saved': 0.4128, 'deals': 3306, 'surplus': 125799025, 'all': 0.874, 'second': 0.3998, 'third': 0.3883, 'saved_rank': 1, 'all_rank': 3}
+11-10 17:06:18 check {'saved': 0.4128, 'deals': 3326, 'surplus': 126051466, 'all': 0.874, 'second': 0.3999, 'third': 0.3895, 'saved_rank': 1, 'all_rank': 3}
+11-10 17:36:19 check {'saved': 0.4126, 'deals': 3355, 'surplus': 129031847, 'all': 0.874, 'second': 0.4012, 'third': 0.3914, 'saved_rank': 1, 'all_rank': 3}
+11-10 18:06:23 check {'saved': 0.4126, 'deals': 3382, 'surplus': 129319597, 'all': 0.874, 'second': 0.4022, 'third': 0.3934, 'saved_rank': 1, 'all_rank': 3}
+11-10 18:06:24 [alert] urgent high_accept_110_stop: buyer 비싼 주문 수락 기준 완화(high_accept_105) 끔: saved 0.4126 < 3위 0.3934 + 0.02 (차이 0.0192) (기준 3위 + 0.02) (telegram sent)
+11-10 18:06:24 high_accept off: saved 0.4126 < 3위 0.3934 + 0.02 (차이 0.0192)
+11-10 18:36:25 check {'saved': 0.4125, 'deals': 3400, 'surplus': 129466435, 'all': 0.875, 'second': 0.4026, 'third': 0.3945, 'saved_rank': 1, 'all_rank': 3}
+11-10 19:06:26 check {'saved': 0.4126, 'deals': 3416, 'surplus': 129699553, 'all': 0.875, 'second': 0.4039, 'third': 0.3955, 'saved_rank': 1, 'all_rank': 3}
+11-10 19:36:27 check {'saved': 0.4128, 'deals': 3439, 'surplus': 131498736, 'all': 0.875, 'second': 0.4047, 'third': 0.3969, 'saved_rank': 1, 'all_rank': 2}
+11-10 20:06:29 check {'saved': 0.4127, 'deals': 3464, 'surplus': 132364762, 'all': 0.875, 'second': 0.4055, 'third': 0.398, 'saved_rank': 1, 'all_rank': 2}
+11-10 20:36:30 check {'saved': 0.4126, 'deals': 3491, 'surplus': 132787014, 'all': 0.877, 'second': 0.4064, 'third': 0.3998, 'saved_rank': 1, 'all_rank': 2}
+11-10 21:06:32 check {'saved': 0.4126, 'deals': 3509, 'surplus': 132982471, 'all': 0.877, 'second': 0.4072, 'third': 0.4015, 'saved_rank': 1, 'all_rank': 2}
+11-10 21:06:33 [alert] urgent second_shop_stop: buyer 2번째 가게 시도(D, second_shop) 끔: saved 0.4126 < 3위 0.4015 + 0.012 (차이 0.0111) (기준 3위 + 0.012) (telegram sent)
+11-10 21:06:33 second_shop off: saved 0.4126 < 3위 0.4015 + 0.012 (차이 0.0111)
+11-10 22:36:34 [alert] info shop_order_warn:1794317794: buyer 가게 순서 중단 조건 경고 (자동 모드: 유지): 성사율 27.7% < 적용 전 32.7% - 5%p (최근 2시간 285건) (telegram held)
+11-10 23:36:34 [alert] info shop_order_warn:1794321394: buyer 가게 순서 중단 조건 경고 (자동 모드: 유지): 성사율 26.2% < 적용 전 32.7% - 5%p (최근 2시간 302건) (telegram held)

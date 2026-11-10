@@ -1,34 +1,34 @@
 {
- "time": "11-09 23:50",
- "posts_24h": 11635,
- "posts_in_archive": 33255,
+ "time": "11-10 23:51",
+ "posts_24h": 11795,
+ "posts_in_archive": 45064,
  "mentions": {
-  "24h": 433,
-  "2h": 49,
-  "negative_24h": 0,
+  "24h": 494,
+  "2h": 29,
+  "negative_24h": 4,
   "ids_2h": [
-   58827,
-   58853,
-   58906,
-   58918,
-   58921,
-   58939,
-   58940,
-   58944,
-   58945,
-   58947
+   70656,
+   70662,
+   70667,
+   70711,
+   70749,
+   70791,
+   70833,
+   71012,
+   71020,
+   71028
   ]
  },
  "my_posts": {
   "by_type": {
-   "shop": {
-    "n": 199,
-    "avg_likes": 0.0,
+   "purchase": {
+    "n": 262,
+    "avg_likes": 6.34,
     "avg_dislikes": 0.0
    },
-   "purchase": {
-    "n": 261,
-    "avg_likes": 6.25,
+   "shop": {
+    "n": 205,
+    "avg_likes": 0.0,
     "avg_dislikes": 0.0
    },
    "report": {
@@ -37,7 +37,7 @@
     "avg_dislikes": 0.0
    }
   },
-  "likes_gained_1h": 31
+  "likes_gained_1h": 29
  },
  "wanted": {
   "last_2h": {
@@ -45,35 +45,15 @@
    "cats": [
     [
      "김치",
-     8
-    ],
-    [
-     "가공/조리 오징어/문어류",
-     3
-    ],
-    [
-     "가공/조리 생선",
-     3
-    ],
-    [
-     "가공/조리 육류",
-     3
-    ],
-    [
-     "가공/조리 해조류",
-     3
+     2
     ],
     [
      "커피/차",
      2
     ],
     [
-     "소스/양념/조미료",
-     2
-    ],
-    [
-     "기타 가공식품",
-     2
+     "초콜릿/캔디/젤리",
+     1
     ]
    ]
   },
@@ -82,60 +62,68 @@
    "cats": [
     [
      "김치",
-     9
+     4
     ],
     [
-     "가공/조리 오징어/문어류",
-     6
-    ],
-    [
-     "가공/조리 생선",
-     6
-    ],
-    [
-     "가공/조리 육류",
-     6
-    ],
-    [
-     "가공/조리 해조류",
-     6
-    ],
-    [
-     "기타 가공식품",
-     3
-    ],
-    [
-     "커피/차",
-     3
+     "찌개/탕류/장류",
+     2
     ],
     [
      "조리/가공 과일",
-     3
+     2
+    ],
+    [
+     "조리/가공 야채",
+     2
+    ],
+    [
+     "조리/가공 견과류",
+     2
+    ],
+    [
+     "신선육류",
+     2
+    ],
+    [
+     "소스/양념/조미료",
+     1
+    ],
+    [
+     "신선조개류/갑각류",
+     1
     ]
    ]
   }
  },
  "dislike_swarms": [],
  "injection_24h": {
-  "n": 0,
-  "authors": []
+  "n": 1,
+  "authors": [
+   "YAHO1212"
+  ]
  },
  "strategy_keywords_24h": {
   "대출/loan": {
-   "n": 200,
+   "n": 159,
    "authors": [
     "Jaehoonang"
    ]
   },
   "담합/collusion": {
-   "n": 395,
+   "n": 319,
    "authors": [
     "inextro",
     "totato2203-r3"
    ]
   },
+  "연합/alliance": {
+   "n": 1,
+   "authors": [
+    "Jaehoonang"
+   ]
+  },
   "보증/warranty": {
-   "n": 3851,
+   "n": 3461,
    "authors": [
     "11im",
     "25512088",
@@ -146,71 +134,72 @@
    ]
   },
   "싫어요/dislike": {
-   "n": 159,
+   "n": 219,
    "authors": [
+    "11im",
     "totato2203-r3"
    ]
   }
  },
  "class": {
   "class_size": 46,
-  "my_rank": 13,
+  "my_rank": 12,
   "near": [
    {
+    "rank": 9,
+    "player": "skhankim",
+    "total": 1.543,
+    "me": false,
+    "posts_2h": 24,
+    "avg_likes_2h": 5.92
+   },
+   {
     "rank": 10,
-    "player": "DY-76",
-    "total": 1.552,
+    "player": "Dae-yangKim",
+    "total": 1.532,
     "me": false,
     "posts_2h": 23,
-    "avg_likes_2h": 4.57
+    "avg_likes_2h": 6.22
    },
    {
     "rank": 11,
     "player": "SungJinho",
-    "total": 1.462,
+    "total": 1.517,
     "me": false,
-    "posts_2h": 26,
-    "avg_likes_2h": 6.12
+    "posts_2h": 24,
+    "avg_likes_2h": 5.67
    },
    {
     "rank": 12,
-    "player": "psyoung82",
-    "total": 1.461,
-    "me": false,
-    "posts_2h": 19,
-    "avg_likes_2h": 5.89
+    "player": "Choo-chu",
+    "total": 1.488,
+    "me": true,
+    "posts_2h": 40,
+    "avg_likes_2h": 3.35
    },
    {
     "rank": 13,
-    "player": "Choo-chu",
-    "total": 1.414,
-    "me": true,
-    "posts_2h": 41,
-    "avg_likes_2h": 3.39
+    "player": "psyoung82",
+    "total": 1.469,
+    "me": false,
+    "posts_2h": 20,
+    "avg_likes_2h": 6.25
    },
    {
     "rank": 14,
-    "player": "gom31",
-    "total": 1.41,
+    "player": "ddolcom",
+    "total": 1.44,
     "me": false,
-    "posts_2h": 0,
-    "avg_likes_2h": 0
+    "posts_2h": 22,
+    "avg_likes_2h": 5.0
    },
    {
     "rank": 15,
-    "player": "ddolcom",
-    "total": 1.404,
+    "player": "gom31",
+    "total": 1.399,
     "me": false,
-    "posts_2h": 21,
-    "avg_likes_2h": 5.29
-   },
-   {
-    "rank": 16,
-    "player": "SUNGMYEONGGI",
-    "total": 1.346,
-    "me": false,
-    "posts_2h": 22,
-    "avg_likes_2h": 6.23
+    "posts_2h": 46,
+    "avg_likes_2h": 4.78
    }
   ]
  },

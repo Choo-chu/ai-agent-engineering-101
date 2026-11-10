@@ -11,3 +11,28 @@
 11-09 21:06:16 {"ts": 1794225977, "state_age_s": 16, "open": 5, "held": 575, "locked": 5, "locked_cost": 1364418, "share": 0.0087, "expired_1h": 66}
 11-09 22:06:16 {"ts": 1794229577, "state_age_s": 17, "open": 6, "held": 591, "locked": 6, "locked_cost": 469584, "share": 0.0102, "expired_1h": 51}
 11-09 23:06:16 {"ts": 1794233177, "state_age_s": 35, "open": 11, "held": 521, "locked": 10, "locked_cost": 638137, "share": 0.0192, "expired_1h": 61}
+11-10 00:06:16 {"ts": 1794236777, "state_age_s": 32, "open": 8, "held": 544, "locked": 7, "locked_cost": 1806814, "share": 0.0129, "expired_1h": 64}
+11-10 01:06:16 {"ts": 1794240377, "state_age_s": 39, "open": 11, "held": 557, "locked": 11, "locked_cost": 620454, "share": 0.0197, "expired_1h": 63}
+11-10 02:06:16 {"ts": 1794243977, "state_age_s": 49, "open": 3, "held": 556, "locked": 3, "locked_cost": 28617, "share": 0.0054, "expired_1h": 70}
+11-10 03:06:16 {"ts": 1794247577, "state_age_s": 8, "open": 5, "held": 566, "locked": 5, "locked_cost": 503428, "share": 0.0088, "expired_1h": 59}
+11-10 04:06:16 {"ts": 1794251177, "state_age_s": 8, "open": 9, "held": 546, "locked": 8, "locked_cost": 378825, "share": 0.0147, "expired_1h": 66}
+11-10 05:06:16 {"ts": 1794254777, "state_age_s": 2, "open": 10, "held": 577, "locked": 9, "locked_cost": 819854, "share": 0.0156, "expired_1h": 94}
+11-10 06:06:16 {"ts": 1794258377, "state_age_s": 27, "open": 10, "held": 531, "locked": 9, "locked_cost": 1892037, "share": 0.0169, "expired_1h": 64}
+11-10 07:06:16 {"ts": 1794261977, "state_age_s": 25, "open": 7, "held": 467, "locked": 7, "locked_cost": 233973, "share": 0.015, "expired_1h": 52}
+11-10 08:06:16 {"ts": 1794265577, "state_age_s": 41, "open": 4, "held": 366, "locked": 4, "locked_cost": 154084, "share": 0.0109, "expired_1h": 41}
+11-10 09:06:16 {"ts": 1794269177, "state_age_s": 42, "open": 4, "held": 341, "locked": 4, "locked_cost": 513790, "share": 0.0117, "expired_1h": 37}
+11-10 10:06:16 {"ts": 1794272777, "state_age_s": 18, "open": 2, "held": 283, "locked": 2, "locked_cost": 29084, "share": 0.0071, "expired_1h": 43}
+11-10 11:06:16 {"ts": 1794276377, "state_age_s": 40, "open": 3, "held": 269, "locked": 3, "locked_cost": 95039, "share": 0.0112, "expired_1h": 19}
+11-10 12:06:16 {"ts": 1794279977, "state_age_s": 53, "open": 6, "held": 263, "locked": 6, "locked_cost": 1971975, "share": 0.0228, "expired_1h": 15}
+11-10 13:06:16 {"ts": 1794283577, "state_age_s": 17, "open": 4, "held": 296, "locked": 4, "locked_cost": 90303, "share": 0.0135, "expired_1h": 31}
+11-10 14:06:16 {"ts": 1794287177, "state_age_s": 11, "open": 0, "held": 313, "locked": 0, "locked_cost": 0, "share": 0.0, "expired_1h": 21}
+11-10 15:06:09 waiting for the seller state (14:00 restart)
+11-10 15:06:39 seller state seen
+11-10 16:06:39 {"ts": 1794294399, "state_age_s": 27, "open": 0, "held": 328, "locked": 0, "locked_cost": 0, "share": 0.0, "expired_1h": 22}
+11-10 17:06:39 {"ts": 1794297999, "state_age_s": 27, "open": 3, "held": 364, "locked": 3, "locked_cost": 68402, "share": 0.0082, "expired_1h": 29}
+11-10 18:06:39 {"ts": 1794301599, "state_age_s": 27, "open": 4, "held": 390, "locked": 3, "locked_cost": 68133, "share": 0.0077, "expired_1h": 39}
+11-10 19:06:39 {"ts": 1794305199, "state_age_s": 17, "open": 7, "held": 394, "locked": 7, "locked_cost": 1614467, "share": 0.0178, "expired_1h": 43}
+11-10 20:06:39 {"ts": 1794308799, "state_age_s": 25, "open": 1, "held": 363, "locked": 1, "locked_cost": 51863, "share": 0.0028, "expired_1h": 61}
+11-10 21:06:39 {"ts": 1794312399, "state_age_s": 33, "open": 2, "held": 354, "locked": 2, "locked_cost": 64725, "share": 0.0056, "expired_1h": 35}
+11-10 22:06:39 {"ts": 1794315999, "state_age_s": 158, "open": 1, "held": 401, "locked": 1, "locked_cost": 32383, "share": 0.0025, "expired_1h": 39}
+11-10 23:06:39 {"ts": 1794319599, "state_age_s": 8, "open": 1, "held": 420, "locked": 1, "locked_cost": 46516, "share": 0.0024, "expired_1h": 33}
