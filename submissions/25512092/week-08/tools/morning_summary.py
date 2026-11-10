@@ -135,10 +135,54 @@ def summary(t0, t1):
         lines += ["13. " + x if i == 0 else "    " + x for i, x in enumerate(buyer_proj.summary_lines(t1))]
     except Exception as e:
         lines.append(f"13. buyer saved 예상 계산 실패 {type(e).__name__}")
+    try:                                          # 11/10 ~12:20 (person): TV / 냉방 B grade warranty refunds
+        lines.append("14. " + b_refund_line(t0, t1))
+    except Exception as e:
+        lines.append(f"14. TV·냉방 B등급 보증 환불 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 
 STALE_H = 12
+
+
+def b_refunds(db, t0, t1, cats, since=0, me="choo-chu", catalog=None):
+    """My B grade sales with a warranty in `cats` (catalog leaf category) sold since `since`: (sales in [t0, t1),
+    refunds in [t0, t1) (n, amount), refunds since `since` (n, amount)). A refund (broken.refunded > 0, the amount)
+    belongs to my sale of that SKU to that buyer before it."""
+    if catalog is None:
+        with open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8") as f:
+            catalog = json.load(f)
+    leaf = lambda k: ((catalog.get(k) or {}).get("category") or "").split(">")[-1]
+    sales = db.execute("SELECT ts, sku, buyer FROM settles WHERE shop=? AND grade='B' AND warranty_hours>0 AND ts>=?",
+                       (me, since)).fetchall()
+    sales = [s for s in sales if leaf(s[1]) in cats]
+    n_sales = sum(1 for s in sales if t0 <= s[0] < t1)
+    keys = {}
+    for ts, sku, buyer in sales:
+        keys.setdefault((sku, buyer), []).append(ts)
+    win, tot = [0, 0], [0, 0]
+    for ts, sku, buyer, amt in db.execute("SELECT ts, sku, buyer, refunded FROM broken WHERE shop=? AND refunded>0 AND "
+                                          "ts>=? AND ts<?", (me, since, t1)):
+        if any(s <= ts for s in keys.get((sku, buyer), [])):
+            tot[0] += 1
+            tot[1] += amt
+            if ts >= t0:
+                win[0] += 1
+                win[1] += amt
+    return n_sales, win, tot
+
+
+def b_refund_line(t0, t1, db_path=None):
+    from depts import b_warranty
+    r = b_warranty.rules()
+    cats = r.get("on_cats") or []
+    db = sqlite3.connect(db_path or os.path.join(HERE, "market.db"), timeout=30)
+    try:
+        n, win, tot = b_refunds(db, t0, t1, cats, r.get("since") or 0)
+    finally:
+        db.close()
+    return (f"{'·'.join(cats)} B등급 보증 거래: 최근 12시간 판매 {n}건, 환불 {win[0]}건 {win[1]:,}; 보증 시작"
+            f"({datetime.fromtimestamp(r.get('since') or 0):%m/%d %H:%M}) 이후 환불 {tot[0]}건 {tot[1]:,}")
 
 
 def storage_paid(db, t0, t1):

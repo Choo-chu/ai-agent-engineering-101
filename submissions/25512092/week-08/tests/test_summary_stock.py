@@ -31,6 +31,24 @@ def test_stock_line():
     assert "보관비 누적 86,400" in s and "지금 하루 86,400" in s, s
 
 
+
+
+def test_b_refunds():
+    d = sqlite3.connect(":memory:")
+    d.execute("CREATE TABLE settles (ts REAL, sku TEXT, buyer TEXT, shop TEXT, grade TEXT, warranty_hours REAL)")
+    d.execute("CREATE TABLE broken (ts REAL, sku TEXT, buyer TEXT, shop TEXT, refunded INTEGER)")
+    cat = {"T": {"category": "가전>TV"}, "B": {"category": "가구>침대/매트리스"}}
+    for ts, sku, buyer, g, w in ((100, "T", "b1", "B", 48), (200, "T", "b2", "B", 48), (210, "B", "b3", "B", 48),
+                                 (220, "T", "b4", "A", 72), (50, "T", "b5", "B", 48)):
+        d.execute("INSERT INTO settles VALUES (?, ?, ?, 'choo-chu', ?, ?)", (ts, sku, buyer, g, w))
+    for ts, sku, buyer, amt in ((150, "T", "b1", 300), (250, "T", "b2", 400), (260, "B", "b3", 500), (270, "T", "b4", 600),
+                                (90, "T", "b2", 700)):       # b2's refund at 90 is before its sale: not counted
+        d.execute("INSERT INTO broken VALUES (?, ?, ?, 'choo-chu', ?)", (ts, sku, buyer, amt))
+    n, win, tot = MS.b_refunds(d, 180, 300, ["TV"], since=60, catalog=cat)
+    assert n == 1 and win == [1, 400] and tot == [2, 700], (n, win, tot)
+
+
 if __name__ == "__main__":
     test_stock_line()
+    test_b_refunds()
     print("ok")
