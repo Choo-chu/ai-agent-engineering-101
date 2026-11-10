@@ -43,6 +43,8 @@ def report(t, now=None):
     finally:
         db.close()
     held = c30.held()
+    import sales_trend
+    rl = sales_trend.request_lines_text()           # 11/10 ~14:15: request lines back to 4 inside this window
     pf = lambda x: "-" if x is None else f"{x:.1%}"
     md = lambda x: "-" if x is None else f"{x}시간"
     return "\n".join([
@@ -54,7 +56,8 @@ def report(t, now=None):
         f"- 대상 SKU 품절 시간 합계 {a['out_h']}시간 vs {b['out_h']}시간 (SKU {len(skus)}개 x {(t1 - t) / 3600:.1f}시간 중)",
         f"- 고가 전체: 매출 {ha['rev']:,} vs {hb['rev']:,}, 이익률 {pf(ha['margin_rate'])} vs {pf(hb['margin_rate'])}, 매입 "
         f"{ha['buy_n']}개 {ha['buy_cost']:,} vs {hb['buy_n']}개 {hb['buy_cost']:,}",
-        f"- 현금 {st['cash']:,} -> {held[4]:,}, 재고 원가 {st['stock']:,} -> {held[0] + held[2]:,}"])
+        f"- 현금 {st['cash']:,} -> {held[4]:,}, 재고 원가 {st['stock']:,} -> {held[0] + held[2]:,}"]
+        + ([rl + " (이 점검 구간 안의 변경)"] if rl else []))
 
 
 def main():

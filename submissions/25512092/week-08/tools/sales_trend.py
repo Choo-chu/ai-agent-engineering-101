@@ -146,3 +146,22 @@ def text(now=None, h=12):
 
 if __name__ == "__main__":
     print(text(h=int(sys.argv[1]) if len(sys.argv) > 1 else 12))
+
+
+def request_lines_text():
+    """'- 요청 기반 4줄 복귀 HH:MM (정식 3 + 시험 1)' from request_lines.json, or ''."""
+    try:
+        with open(os.path.join(HERE, "request_lines.json"), encoding="utf-8") as f:
+            r = json.load(f)
+        return (f"- 요청 기반 매입 {r['lines']}줄 복귀 {datetime.fromtimestamp(r['since']):%m-%d %H:%M} (정식 {r['regular']} + 새 SKU "
+                f"시험 {r['trial']}, 회전 1시간 이하 목표 8개 그대로)")
+    except (OSError, ValueError, KeyError):
+        return ""
+
+
+def recovery_line(now=None, h=12):
+    """The 08:00 / 20:00 summary line: normal stock units / SKUs and normal sales per hour, hour by hour."""
+    rows = hourly(now, h)
+    return ("일반 상품 회복 추이 (시각 판매/h · 재고 개수/SKU): "
+            + ", ".join(f"{datetime.fromtimestamp(r['t']):%H}시 {r['sales_low']}·{r['low_units']}/{r['low_skus']}" for r in rows)
+            + (" | " + request_lines_text()[2:] if request_lines_text() else ""))

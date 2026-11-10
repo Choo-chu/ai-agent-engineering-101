@@ -158,6 +158,8 @@ def report(t, now=None):
     try:                                       # 11/10 ~14:00 (person): hourly sales, normal stock, "not in stock"
         import sales_trend
         L.append(sales_trend.text(t1, 12))
+        if sales_trend.request_lines_text():
+            L.append(sales_trend.request_lines_text())
     except Exception as e:
         L.append(f"- 시간대별 판매·일반 재고 계산 실패 {type(e).__name__}: {e}")
     return "\n".join(L)

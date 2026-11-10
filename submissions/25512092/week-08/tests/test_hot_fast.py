@@ -41,7 +41,7 @@ def test_shares():
 
 
 def test_request_numbers():
-    assert (rb.FAST_TARGET, rb.TARGET, rb.MAX_LINES, rb.FAST_ONLY) == (8, 2, 2, True)   # 11/09 ~23:10: 4 -> 2, fast only
+    assert (rb.FAST_TARGET, rb.TARGET, rb.MAX_LINES, rb.FAST_ONLY) == (8, 2, 4, True)   # 11/10 ~14:15: 2 -> 4 (3 + 1 trial), fast only
     assert rb.target("A", {"A": 0.9}) == 8 and rb.target("B", {"B": 1.5}) == 2 and rb.target("C", {}) == 2
 
 

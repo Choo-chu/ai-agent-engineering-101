@@ -11,6 +11,8 @@ Target: TARGET units held per SKU, FAST_TARGET (8; 5 until 11/08 ~20:35) for a S
 supply to sale in FAST_H (1 h) or less at the median (person's decision 11/08 ~16:50; an unsold unit counts with its
 age so far); at most MAX_LINES lines a run (the run has 10 lines in all).
 From 11/09 ~23:10 (person): MAX_LINES 2 and FAST_ONLY: only SKUs with a measured median of FAST_H or less stay.
+From 11/10 ~14:15 (person, normal goods ran short): MAX_LINES 4 again = 3 regular lines + TRIAL_LINES (1) trial; the
+return time in request_lines.json (shown in the 15:00 and the deep-high 3 h checks).
 From 11/09 ~23:40 (person): one of the two lines (TRIAL_LINES) tries a SKU with no turnover record, target
 TRIAL_TARGET (2); TRIAL_H after its first trial buy it becomes regular (trial_ok) if its median is <= FAST_H, else
 it is dropped (dropped_why trial). With no trial candidate the regular SKUs may use both lines.
@@ -32,7 +34,7 @@ TARGET = 2
 FAST_TARGET = 8                 # 11/08 ~20:35 person: 5 -> 8
 FAST_H = 1.0
 FOOD_SHELF_H = 72
-MAX_LINES = 2                   # 11/09 ~23:10 person (high focus): 4 -> 2; 11/08 ~20:35: 3 -> 4
+MAX_LINES = 4                   # 11/10 ~14:15 person: 2 -> 4 (3 regular + 1 trial); 11/09 ~23:10: 4 -> 2; 11/08: 3 -> 4
 FAST_ONLY = True                # 11/09 ~23:10 person: only SKUs whose supply -> sale median is <= FAST_H
 TRIAL_LINES = 1                 # 11/09 ~23:40 person: 1 of the 2 lines tries a SKU with no turnover record yet
 TRIAL_TARGET = 2

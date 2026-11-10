@@ -154,14 +154,14 @@ def test_request_fast_only():
             mock.patch("market_db.sku_avg", lambda db, sku, now: (20_000, 10)), \
             mock.patch("decisions.record", lambda *a, **k: rec.append(a)):
         out = rb.candidates(cat, {}, {}, log=lambda *_: None, now=now)
-        # 11/09 ~23:40: 1 regular (fast, target 8) + 1 trial of the new SKU N1 (target 2)
-        assert [s for s, *_ in out][1:] == ["N1"] and out[0][0] in ("F1", "F2", "F3") and out[0][1] == rb.FAST_TARGET, out
-        assert out[1][1] == rb.TRIAL_TARGET
+        # 11/09 ~23:40: 3 regular (fast, target 8; 11/10 2 -> 4 lines) + 1 trial of the new SKU N1 (target 2)
+        assert [s for s, *_ in out] == ["F1", "F2", "F3", "N1"] and out[0][1] == rb.FAST_TARGET, out   # 11/10: 3 + 1 trial
+        assert out[3][1] == rb.TRIAL_TARGET
         rb.bought(["N1"], now=now)
         j = json.load(open(st, encoding="utf-8"))
         assert j["N1"]["trial"] == round(now) and "trial_pending" not in j["N1"]
         out = rb.candidates(cat, {"N1": 2}, {}, log=lambda *_: None, now=now + 60)       # trial bought up: keeps
-        assert len(out) == 1 and out[0][0] != "N1", out                                  # its slot, 1 regular line
+        assert len(out) == 3 and "N1" not in [s for s, *_ in out], out                   # its slot kept, 3 regular lines
         # 6 h later: N1 sold within 0.5 h -> regular
         db = sqlite3.connect(os.path.join(d, "market.db"))
         db.execute("INSERT INTO my_stock VALUES (?,?,?,?)", ("N1u", "N1", 1000, now + 120))

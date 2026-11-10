@@ -144,6 +144,11 @@ def summary(t0, t1):
         lines.append("15. " + deep_high.line(t0, t1))
     except Exception as e:
         lines.append(f"15. 고가 깊게 쌓기 계산 실패 {type(e).__name__}")
+    try:                                          # 11/10 ~14:15 (person): normal goods recovery after the 4 lines
+        import sales_trend
+        lines.append("16. " + sales_trend.recovery_line(t1, 12))
+    except Exception as e:
+        lines.append(f"16. 일반 상품 회복 추이 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 
