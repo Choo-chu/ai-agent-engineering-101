@@ -130,3 +130,4 @@ STOCK_CAP_CHANGES.append((1794219768, 40_000_000))   # 11/09 19:22 analyst #38, 
 HIGH_MAX_CHANGES.append((1794226437, 1_500_000))   # 11/09 21:13 analyst #39, approved
 STOCK_CAP_CHANGES.append((1794230694, 20_000_000))   # 11/09 22:24 analyst #38, approved
 STOCK_CAP_CHANGES.append((1794233530, 48_767_244))   # 11/09 23:12 automatic cap on (cash + stock - 3M; person 11/09 ~23:10)
+STOCK_CAP_CHANGES.append((1794279355, 58_042_837))   # 11/10 11:55 automatic cap on again (cash + stock - 3M; person 11/10 ~11:50)

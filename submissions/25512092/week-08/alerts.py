@@ -387,21 +387,38 @@ def sofa_text(o):
             f"이익 {o['profit']:,}), 보증 환불 {o['refunds']}건 {o['refund_amount']:,}")
 
 
+def sofa_off_trip(r, now=None):
+    """(trip, numbers, rule text). From 11/10 ~11:50 (person), with "off_rule" {window_h, share} in sofa_rules.json: off
+    when the sofa warranty refunds of the last window_h (48 h) are over share (30%) of the profit on sofa sales of the
+    same window_h (any refund with no positive profit trips). Without it: 3 refunds or refunds > profit since
+    warranty_since (the 11/07 rule)."""
+    now = now or time.time()
+    rule = r.get("off_rule") or {}
+    if rule.get("window_h"):
+        o = sofa_numbers(now - rule["window_h"] * 3600, now)
+        lim = rule["share"] * max(o["profit"], 0)
+        return (bool(o["refunds"]) and o["refund_amount"] > lim, o,
+                f"최근 {rule['window_h']}시간 소파 환불액 > 소파 이익의 {rule['share']:.0%}")
+    o = sofa_numbers(r.get("warranty_since") or r["since"], now)   # 11/09: counted from the grade rule
+    return (o["refunds"] >= SOFA_REFUND_MAX or bool(o["refunds"] and o["refund_amount"] > o["profit"]), o,
+            "환불 누적 3건 또는 환불액 > 소파 이익")
+
+
 def sofa_warranty_check(seen, log=print, now=None):
-    """C safety: sofa warranty refunds >= SOFA_REFUND_MAX, or refund amount > profit on sofa sales (both since the
-    rules went on) -> warranty off in sofa_rules.json (the seller reads it per negotiation) + urgent alert. Once."""
+    """C safety: sofa_off_trip -> warranty off in sofa_rules.json (the seller reads it per negotiation) + urgent
+    alert. Once."""
     import json as _j
     from depts import sofa
     r = sofa.rules()
     if not (r.get("enabled") and r.get("warranty") and r.get("since")):
         return None
-    o = sofa_numbers(r.get("warranty_since") or r["since"], now)   # 11/09: counted from the grade rule
-    if o["refunds"] >= SOFA_REFUND_MAX or (o["refunds"] and o["refund_amount"] > o["profit"]):
+    trip, o, rule = sofa_off_trip(r, now)
+    if trip:
         r.update(warranty=False, warranty_off_at=round(time.time()),
-                 warranty_off_reason=f"{o['refunds']} refunds, {o['refund_amount']:,} vs sofa profit {o['profit']:,}")
+                 warranty_off_reason=f"{rule}: {o['refunds']} refunds, {o['refund_amount']:,} vs sofa profit {o['profit']:,}")
         with open(sofa.RULES, "w", encoding="utf-8") as f:
             _j.dump(r, f, ensure_ascii=False)
-        send("urgent", f"sofa_warranty_off:{int(r['since'])}", "소파 보증 자동 해제 (환불 누적 3건 또는 환불액 > 소파 이익). "
+        send("urgent", f"sofa_warranty_off:{int(r.get('warranty_since') or r['since'])}", f"소파 보증 자동 해제 ({rule}). "
              + sofa_text(o) + ". 가격/코드 흥정 규칙은 유지", log)
     return None
 

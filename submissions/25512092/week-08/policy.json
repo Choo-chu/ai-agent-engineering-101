@@ -12,7 +12,7 @@
   "sofa_trial_start": 1793951508,
   "sofa_trial_end": 1794797940,
   "high_max": 100,
-  "high_share": 0.85
+  "high_share": 0.7
  },
  "sales": {
   "warranty_enabled": true,
@@ -44,8 +44,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 21,
- "ts": 1794233531,
+ "version": 22,
+ "ts": 1794279356,
  "by": "person",
- "reason": "person's decision 11/09 ~23:10: high-price push: high_share 0.7 -> 0.85, ceilings 0.85 / 100"
+ "reason": "person's decision 11/10 ~11:50: high_share 0.7, pinned 24 h"
 }
