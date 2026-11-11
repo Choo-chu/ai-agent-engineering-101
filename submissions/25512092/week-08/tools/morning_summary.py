@@ -15,6 +15,7 @@
 import glob
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -165,7 +166,133 @@ def summary(t0, t1):
         lines.append("19. " + shop_avoid.summary_line(t1, t0))
     except Exception as e:
         lines.append(f"19. 회피 가게 계산 실패 {type(e).__name__}")
+    try:                                          # 11/11 ~22:00 (person): the night's additions
+        lines += night_lines(t0, t1)
+    except Exception as e:
+        lines.append(f"20. 야간 점검 요약 실패 {type(e).__name__}: {e}")
     return "\n".join(lines)
+
+
+CHECK_KEYS = (("check_top15", "23:35 150만 초과 고가 점검"), ("check_release", "00:31 차단 해제 가게 점검"))
+
+
+def last_alert(prefix, t0, t1, path=None):
+    """The newest alert whose key starts with prefix in [t0, t1) (a retry's text wins), or None."""
+    best = None
+    try:
+        with open(path or os.path.join(HERE, "logs", "alerts.jsonl"), encoding="utf-8") as f:
+            for ln in f:
+                if prefix not in ln:
+                    continue
+                a = json.loads(ln)
+                if a["key"].startswith(prefix) and t0 <= a["ts"] < t1:
+                    best = a
+    except (OSError, ValueError):
+        pass
+    return best
+
+
+def needs_items(t0, t1, now=None):
+    """The decisions needed: logs/needs.jsonl rows in [t0, t1) plus the checks of the person's 11/11 settings."""
+    out = []
+    try:
+        with open(os.path.join(HERE, "logs", "needs.jsonl"), encoding="utf-8") as f:
+            for ln in f:
+                e = json.loads(ln)
+                if t0 <= e["ts"] < t1:
+                    out.append(e["item"])
+    except (OSError, ValueError):
+        pass
+    now = now or t1
+    from datetime import datetime as _dt
+    end = _dt(2026, 11, 13, 12, 0).timestamp()
+    try:
+        pins = json.load(open(os.path.join(HERE, "policy_pins.json"), encoding="utf-8"))
+        pol = json.load(open(os.path.join(HERE, "policy.json"), encoding="utf-8")).get("purchasing") or {}
+        for k, want in (("high_share", 0.7), ("high_max", 100)):
+            if float(pins.get(f"purchasing.{k}") or 0) < end or pol.get(k) != want:
+                out.append(f"{k} {want} 고정 11/13 12:00까지가 적용 안 됨 (고정 {pins.get(f'purchasing.{k}')}, 값 {pol.get(k)})")
+    except (OSError, ValueError) as e:
+        out.append(f"고가 비중·high_max 고정 확인 실패 {type(e).__name__}")
+    try:
+        nm = json.load(open(os.path.join(HERE, "normal_min.json"), encoding="utf-8"))
+        if not nm.get("enabled"):
+            out.append("일반 상품 run당 최소 4줄 보장이 꺼져 있음")
+    except (OSError, ValueError):
+        out.append("일반 상품 run당 최소 4줄 보장 설정(normal_min.json) 없음")
+    return out
+
+
+def normal_runs(t0, t1):
+    """(runs with the normal-lines rule logged, runs under 4 in a sent chunk) from the kit log's restock lines."""
+    import stall_watch
+    n, short = 0, 0
+    for t, x in stall_watch.kit_tail(t1, size=60_000_000):
+        if t0 <= t < t1 and "[normal min] normal lines per run:" in x:
+            n += 1
+            short += any(int(v) < 4 for v in re.findall(r"\d+", x.split("per run:", 1)[1]))
+    return n, short
+
+
+def trend_line(t1):
+    """Shop Book / revenue per hour and rank, buyer ALL / saved / deals per hour, in 3 h steps over 12 h (board_read)."""
+    import board_read as BR
+    pts = [BR.at(t1 - h * 3600) for h in (12, 9, 6, 3)] + [BR.now()]
+    segs = []
+    for a, b in zip(pts, pts[1:]):
+        if not (a.ok and b.ok):
+            segs.append(f"{datetime.fromtimestamp(b.ts or t1):%H}시 {BR.FAIL}")
+            continue
+        segs.append(f"~{datetime.fromtimestamp(b.ts):%H:%M} Book/h {BR.show(BR.per_h(a, b, 's', 'book'), ',.0f')} "
+                    f"매출/h {BR.show(BR.per_h(a, b, 's', 'revenue'), ',.0f')} 가게 {BR.show(b.get('s', 'rank'))}위 | "
+                    f"buyer ALL {BR.show(b.get('b', 'all'))} ({BR.show(b.get('b', 'rank'))}위) saved "
+                    f"{BR.show(b.get('b', 'saved'))} deals/h {BR.show(BR.per_h(a, b, 'b', 'deals'), '.1f')}")
+    return "; ".join(segs)
+
+
+def night_lines(t0, t1):
+    L = []
+    for i, (key, label) in enumerate(CHECK_KEYS):
+        a = last_alert(key + ":", t0, t1)
+        L.append(f"{20 + i}. {label}: " + (a["text"].replace("\n", " / ")[:900] if a else "결과 없음 (아직 안 옴)"))
+    try:
+        import check_release as CR
+        rel, tr = CR.released()
+        if rel:
+            names = sorted(rel)
+            tries = CR.tries(names, max(t0, tr), t1)
+            mm = CR.mismatches(names, max(t0, tr), t1)
+            L.append(f"22. 차단 해제 가게({len(names)}곳, {datetime.fromtimestamp(tr):%m-%d %H:%M} 해제) 거래: 시도 "
+                     f"{sum(v['tries'] for v in tries.values())}건 성사 {sum(v['deals'] for v in tries.values())}건, 품목 불일치 "
+                     f"{mm['item_mismatch']}건, 금액 불일치 {mm['receipt_mismatch']}건, 수락 전 품목 확인 거절 "
+                     f"{sum(v['wrong_item'] for v in tries.values())}건"
+                     + (": " + ", ".join(f"{s} {v['tries']}/{v['deals']}" for s, v in sorted(
+                         tries.items(), key=lambda x: -x[1]["tries"])[:8]) if tries else ""))
+    except Exception as e:
+        L.append(f"22. 차단 해제 가게 계산 실패 {type(e).__name__}")
+    try:
+        import stall_watch
+        L.append("23. " + stall_watch.summary_line(t0, t1))
+    except Exception as e:
+        L.append(f"23. 멈춤 감지 계산 실패 {type(e).__name__}")
+    try:
+        import json as _j
+        pins = _j.load(open(os.path.join(HERE, "policy_pins.json"), encoding="utf-8"))
+        pol = _j.load(open(os.path.join(HERE, "policy.json"), encoding="utf-8")).get("purchasing") or {}
+        n, short = normal_runs(t0, t1)
+        L.append(f"24. 고정: 고가 비중 {pol.get('high_share')} / high_max {pol.get('high_max')}, 고정 "
+                 f"{datetime.fromtimestamp(float(pins.get('purchasing.high_share') or 0)):%m-%d %H:%M} / "
+                 f"{datetime.fromtimestamp(float(pins.get('purchasing.high_max') or 0)):%m-%d %H:%M}까지; 일반 상품 최소 4줄: "
+                 f"run {n}번 기록, 그중 4줄 미만 묶음이 있던 run {short}번")
+    except Exception as e:
+        L.append(f"24. 고정·최소 4줄 확인 실패 {type(e).__name__}")
+    try:
+        L.append("25. 추이 (3시간 단위): " + trend_line(t1))
+    except Exception as e:
+        L.append(f"25. 추이 계산 실패 {type(e).__name__}")
+    need = needs_items(t0, t1)
+    L.append("26. 결정 필요: " + ("; ".join(need) if need else "없음"))
+    return L
 
 
 def all_line(j, me="choo-chu"):
