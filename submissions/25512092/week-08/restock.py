@@ -17,6 +17,7 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+C_WINDOW = os.path.join(HERE, "logs", "restock_c_window.json")   # the window whose first plan is made
 sys.path.insert(0, HERE)
 import alerts  # noqa: E402
 import decisions  # noqa: E402
@@ -49,6 +50,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=".market")
     state = ap.parse_args().state
+    try:                                             # 11/11 ~15:20 (person): the window's 2nd plan, made with the
+        from depts import supply_window              # 1st, goes out at once (no refresh, ticks or planning first)
+        plan2 = supply_window.take_second(state, log=log)
+        if plan2 is not None:
+            print(json.dumps({"buy": plan2}))
+            return
+    except Exception as e:
+        log(f"[window] second plan failed, normal run: {type(e).__name__}: {e}")
     try:
         refresh(log=log)
     except Exception as e:
@@ -140,9 +149,10 @@ def main():
         print(json.dumps({"buy": []}))
         return
     budget = min((inv.get("balance", 0) - CUSHION) * spend_share(), cap_now - held_cost)
+    first_run = False
     try:                                             # bundle 2 (15): the first plan of a window spends all cash
         from depts.purchasing import c_rules         # above the reserve (restock_c.json, from 11/07 10:00)
-        C, wpath = c_rules(), os.path.join(HERE, "logs", "restock_c_window.json")
+        C, wpath = c_rules(), C_WINDOW
         win = r.get("opens_at")
         if C.get("max_first_run") and win:
             last = json.load(open(wpath)).get("opens_at") if os.path.exists(wpath) else None
@@ -152,6 +162,7 @@ def main():
                 log(f"[window] first plan of the window opening {time.strftime('%H:%M', time.localtime(win))}: "
                     f"budget {int(budget):,} -> {int(full):,} ({share:.0%} of the cash above the reserve, within STOCK_CAP)")
                 budget = max(budget, full)
+                first_run = True
                 json.dump({"opens_at": win, "ts": now, "budget": int(budget)}, open(wpath, "w"))
     except Exception as e:
         log(f"[window] full first run failed, normal budget: {type(e).__name__}: {e}")
@@ -167,7 +178,18 @@ def main():
     def plan_log(m):
         log(m)
         lines.append(m)
-    plan = make_plan(inv, units, catalog, budget, plan_log)
+    if first_run and r.get("closes_at"):             # 11/11 ~15:20 (person): one plan of up to 2 x MAX_LINES, so the
+        from depts import purchasing as PU           # 2nd plan knows the 1st (no SKU twice, one budget, one high room)
+        import limits as LM
+        PU.MAX_LINES = 2 * LM.MAX_LINES
+        try:
+            plan = make_plan(inv, units, catalog, budget, plan_log)
+        finally:
+            PU.MAX_LINES = LM.MAX_LINES
+        plan, plan2 = plan[:LM.MAX_LINES], plan[LM.MAX_LINES:]
+        supply_window.save_second(plan2, r, log=log)
+    else:
+        plan = make_plan(inv, units, catalog, budget, plan_log)
     plan, dropped = supply_window.fit(plan, r, log=log)
     if dropped:
         decisions.record("purchasing", "window_fit", "supply window", len(dropped),

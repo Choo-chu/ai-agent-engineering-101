@@ -52,8 +52,42 @@ def test_high_margin():
     assert rows[-1]["sku"] == "GA" and rows[-1]["qty"] == 2 and "logs" not in PU.BAND_LOG.replace("\\", "/").split("/")[-2:-1]
 
 
+def test_second_plan():
+    import tempfile
+    d = tempfile.mkdtemp()
+    path = tmp_path("plan2.json")
+    W.save_second(L[:3], {"opens_at": 1000, "closes_at": 1180}, log=lambda m: None, path=path)
+    with open(os.path.join(d, "inventory.json"), "w", encoding="utf-8") as f:
+        json.dump({"restock": {"open": True, "opens_at": 1000, "closes_at": 1180}}, f)
+    import limits
+    from unittest import mock
+    from depts import supply_window as SW
+    with mock.patch.object(limits, "buy_paused", lambda now=None: False),             mock.patch("decisions.record", lambda *a, **k: None):
+        assert SW.take_second(d, log=lambda m: None, now=1120, path=path) == L[:3]      # 1123 + 2 x 12 <= 1175
+        assert SW.take_second(d, log=lambda m: None, now=1120, path=path) is None       # used once
+        W.save_second(L[:6], {"opens_at": 1000, "closes_at": 1180}, log=lambda m: None, path=path)
+        assert SW.take_second(d, log=lambda m: None, now=1140, path=path) == L[:3]      # fitted: 3 of 6
+        W.save_second(L[:3], {"opens_at": 1000, "closes_at": 1180}, log=lambda m: None, path=path)
+        assert SW.take_second(d, log=lambda m: None, now=1190, path=path) is None       # window closed
+        W.save_second(L[:3], {"opens_at": 1000, "closes_at": 1180}, log=lambda m: None, path=path)
+        with open(os.path.join(d, "inventory.json"), "w", encoding="utf-8") as f:
+            json.dump({"restock": {"open": False, "opens_at": 2200, "closes_at": 2380}}, f)
+        assert SW.take_second(d, log=lambda m: None, now=1100, path=path) is None       # another window
+    W.save_second([], {}, path=path)
+    assert not os.path.exists(path)
+
+
+def test_split_no_twice():
+    """One plan of 2 x MAX_LINES split in two: the halves never share a SKU."""
+    plan = [{"sku": f"G{i}", "qty": 1} for i in range(17)]
+    a, b = plan[:10], plan[10:]
+    assert not ({p["sku"] for p in a} & {p["sku"] for p in b}) and len(a) == 10
+
+
 if __name__ == "__main__":
     test_soon_and_wait()
     test_fit()
     test_high_margin()
+    test_second_plan()
+    test_split_no_twice()
     print("ok")
