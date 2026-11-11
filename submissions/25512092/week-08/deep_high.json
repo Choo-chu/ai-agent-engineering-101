@@ -7,6 +7,6 @@
  "min_margin": 0.1,
  "recent_h": 12,
  "min_hold": 2,
- "max_hold": 3,
- "why": "person's decision 11/10 ~12:30: fast high-price SKUs (incl. sofas) held up to max(2, 12 h sales), at most 5; others 1; person 11/11 ~10:30: at most 3 (was 5)"
+ "max_hold": 5,
+ "why": "person's decision 11/10 ~12:30: fast high-price SKUs (incl. sofas) held up to max(2, 12 h sales), at most 5; others 1; person 11/11 ~10:30: at most 3 (was 5); person 11/11 ~14:50: at most 5 again (target conditions unchanged)"
 }

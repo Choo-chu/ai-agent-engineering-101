@@ -110,7 +110,8 @@ def main():
     case = strategy.shop_case(inv)
     r = inv.get("restock") or {}
     now = time.time()
-    soon = r.get("open") or (r.get("opens_at") or now) - now <= 60
+    from depts import supply_window                  # 11/11 ~14:50 (person): plan up to 150 s early, fit the close
+    soon = supply_window.soon(r, now)
     if case in ("cash_low", "overstock") or pricing.restock_stopped():
         if (inv.get("restock") or {}).get("open"):
             log(f"case {case}{', last 36 h' if pricing.restock_stopped() else ''}: no restock")
@@ -122,6 +123,10 @@ def main():
         return
     if not soon:
         print(json.dumps({"buy": []}))           # window not open soon: nothing to plan yet
+        return
+    if supply_window.n_fit(r, now + 20) == 0:      # not even one line would reach the market before the close
+        log("[window] too close to the close for one line: no plan (next window)")
+        print(json.dumps({"buy": []}))
         return
 
     held_cost = pricing.held_cost(inv)
@@ -163,6 +168,11 @@ def main():
         log(m)
         lines.append(m)
     plan = make_plan(inv, units, catalog, budget, plan_log)
+    plan, dropped = supply_window.fit(plan, r, log=log)
+    if dropped:
+        decisions.record("purchasing", "window_fit", "supply window", len(dropped),
+                         f"{len(dropped)} lines would arrive after the close: dropped to the next window "
+                         + ", ".join(f"{p['sku']} x{p['qty']}" for p in dropped))
     for m in lines:                                  # one decision per planned / skipped / merged line
         kind = ("buy_guard_skip" if m.startswith("[guard]") else "sofa_trial" if m.startswith("[sofa trial]")
                 else "dedup" if m.startswith("[dedup]")
@@ -170,6 +180,8 @@ def main():
         if kind:
             decisions.record("purchasing", kind, m.split(":")[0][:60], m.rsplit("-> ", 1)[-1], m[:300])
     safe(cap_record, inv, units, catalog, budget, plan, case)
+    if plan:
+        supply_window.wait_open(r, log=log)      # planned early: the first line goes in at the opening
     print(json.dumps({"buy": plan}))
 
 

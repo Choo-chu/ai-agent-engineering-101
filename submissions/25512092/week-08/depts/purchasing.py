@@ -214,6 +214,7 @@ def make_plan(inv, units, catalog, budget, log):
         k0, real_left, real_room = len(plan), dict(left), high_room
         left, high_room = {"high": 1e15, "low": 1e15}, 10 ** 6
         m24, cands = line_rank.market_24h(), {}
+    band = []                                    # high SKUs with an expected margin of 8-10% (high_margin.json)
     for sku, src in order:                       # a wanted SKU is also in rest: one line per SKU (see [dedup])
         s = stats["skus"].get(sku)
         c = catalog.get(sku) or {}
@@ -229,7 +230,9 @@ def make_plan(inv, units, catalog, budget, log):
         if kind == "food" and time.time() >= FOOD_TO_END_FROM                 and time.time() + (c.get("shelf_hours") or 0) * 3600 < ROUND_END:
             continue                              # 11/15 23:59 on: food that would expire before the round ends
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
-        if cost > HIGH_MAX or avg < cost * (1 + MIN_MARGIN):
+        # 11/11 ~14:50 (person): high price (cost > HIGH_MIN) needs 8% (high_margin.json), the rest MIN_MARGIN (10%)
+        mm = high_margin(MIN_MARGIN) if cost > HIGH_MIN else MIN_MARGIN
+        if cost > HIGH_MAX or avg < cost * (1 + mm):
             continue
         if sofa_rules.on() and sofa_rules.is_sofa(sku) and kind != "food" and cost >= sofa_rules.MIN_COST \
                 and not sofa_rules.buy_ok(sku, cost)[0]:   # sofa buying rule E
@@ -258,6 +261,8 @@ def make_plan(inv, units, catalog, budget, log):
                     log(f"[guard] {s['name'] or sku}: {g} -> skip")
                 continue
             tier, qty = "high", min(hold_max - held.get(sku, 0), high_room)
+            if avg < cost * (1 + MIN_MARGIN):     # 11/11 ~14:50: in the 8-10% band only thanks to high_margin.json
+                band.append(sku)
         elif src == "breadth":                    # bundle 2 (13): a SKU I do not hold, 1-2 units
             if n_breadth >= int(C.get("breadth_max_lines", BREADTH_LINES)):
                 continue
@@ -313,6 +318,8 @@ def make_plan(inv, units, catalog, budget, log):
         req = {p["sku"] for p in plan[:k0]}
         left, high_room = real_left, real_room
         plan += line_rank.pick([c for c in cands.values() if c["sku"] not in req], left, high_room, MAX_LINES - k0, log=log)
+    if band:
+        note_band([p for p in plan if p["sku"] in band], log)
     try:
         sofa = sofa_trial(inv, units, catalog, stats, held, surge, plan, log)
     except Exception as e:                         # the trial must never cost the run its plan
@@ -322,6 +329,32 @@ def make_plan(inv, units, catalog, budget, log):
         sk = {x["sku"] for x in sofa}
         plan = sofa + [p for p in plan if p["sku"] not in sk][:MAX_LINES - len(sofa)]
     return plan
+
+
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HIGH_MARGIN = os.path.join(HERE, "high_margin.json")
+BAND_LOG = os.path.join(HERE, "logs", "high_margin_band.jsonl")
+
+
+def high_margin(default):
+    """11/11 ~14:50 (person): the high-price buying margin filter (high_margin.json min_margin while enabled)."""
+    try:
+        with open(HIGH_MARGIN, encoding="utf-8") as f:
+            r = json.load(f)
+    except (OSError, ValueError):
+        return default
+    return float(r.get("min_margin", default)) if r.get("enabled") else default
+
+
+def note_band(lines, log=print):
+    """Planned high lines with an expected margin of 8-10% (bought only because of the 8% filter): one row each."""
+    try:
+        with open(BAND_LOG, "a", encoding="utf-8") as f:
+            for p in lines:
+                f.write(json.dumps({"ts": round(time.time()), "sku": p["sku"], "qty": p["qty"]}) + "\n")
+        log(f"[high margin] {len(lines)} lines in the 8-10% band: {', '.join(p['sku'] for p in lines)}")
+    except OSError:
+        pass
 
 
 SOFA_CAT = "소파/의자/스툴"

@@ -28,4 +28,9 @@ def policy(data=None):
     P.PATH = tmp_json(data or {}, "policy")
     P.HISTORY = tmp_path("policy_history.jsonl")
     P._cache.update(mtime=None, data=None, clipped=set())
+    try:                                          # 11/11: the high margin filter file and its band log
+        from depts import purchasing as PU
+        PU.HIGH_MARGIN, PU.BAND_LOG = tmp_json({}, "high_margin"), tmp_path("high_margin_band.jsonl")
+    except Exception:
+        pass
     return P
