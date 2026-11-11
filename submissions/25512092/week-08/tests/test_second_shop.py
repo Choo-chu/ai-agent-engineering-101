@@ -153,6 +153,26 @@ def test_high_accept():
     assert run([res()], har=HA_ON, lp=300_000, avg=250_000, budget=255_000)[0][0]["cap"] == 255_000
 
 
+def test_soft_105():
+    """11/11 (person): soft orders accept at once up to 1.05 x the market average, within the budget; list >= 200,000
+    keeps 1.10 (high_accept); control orders keep the cap at the average."""
+    global SN
+    old = SN
+    SN = dict(old, accept=1.05)
+    try:
+        calls = run([res()], lp=50_000, avg=40_000, budget=60_000)[0]
+        assert calls[0]["cap"] == 42_000 and calls[0]["soft"]["accept"] == 1.05
+        assert soft_neg.move(42_000, None, 0, calls[0]["cap"], 40_000, calls[0]["soft"])["action"] == "accept"
+        assert soft_neg.move(42_001, None, 0, calls[0]["cap"], 40_000, calls[0]["soft"])["action"] == "offer"
+        assert run([res()], lp=50_000, avg=40_000, budget=41_000)[0][0]["cap"] == 41_000          # budget bounds it
+        calls = run([res()], har=dict(HA_ON, factor=1.10), lp=300_000, avg=250_000, budget=400_000)[0]
+        assert calls[0]["cap"] == 275_000 and calls[0]["soft"]["accept"] == 1.10                # 200,000+: x 1.10
+        calls = run([res()], lp=50_000, avg=40_000, budget=60_000, arm="control")[0]
+        assert calls[0]["cap"] == 40_000 and calls[0]["soft"] is None                          # control: unchanged
+    finally:
+        SN = old
+
+
 def test_accept_rule_factor():
     with mock.patch.object(accept_rule, "rules", lambda: {"enabled": True, "since": 0, "until": None, "low": 0.5, "high": 1.0}):
         assert accept_rule.price(104, 200, 100) is None
@@ -243,5 +263,5 @@ def test_d_effect():
 if __name__ == "__main__":
     test_d_effect()
     test_second_shop(); test_fits(); test_high_accept(); test_accept_rule_factor(); test_soft_move_accept()
-    test_saved_guard(); test_apply_and_watch(); test_by_reason()
+    test_saved_guard(); test_apply_and_watch(); test_by_reason(); test_soft_105()
     print("ok")

@@ -648,6 +648,8 @@ def main():
             sku = o["sku"]
             if avg is not None and case == "normal":
                 cap = min(args.budget, int(avg))      # endgame: the budget is the cap
+                if sn_arm == "soft" and sn_rules.get("accept", soft_neg.ACCEPT) > 1:   # 11/11 person: soft_neg x 1.05
+                    cap = min(args.budget, int(avg * sn_rules["accept"]))
             lp = (catalog.get(o["sku"]) or {}).get("list_price")
             mine = stats.get("my_buys", {}).get(o["sku"])
             market = (f"Market data for this item: list price {lp}; "
@@ -657,7 +659,7 @@ def main():
                       + "Pay less than the market average.")
             hf = high_accept.factor(lp) if avg is not None and case == "normal" else None
             if hf:                                     # 11/09 high_accept: list >= 200,000 -> up to 1.10 x avg (was 1.05)
-                cap = min(args.budget, int(avg * hf))
+                cap = max(cap, min(args.budget, int(avg * hf)))
                 log(f"[{high_accept.TAG}] {o['sku']} list {lp}: accept up to {hf} x market avg")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
             nw_cap = None

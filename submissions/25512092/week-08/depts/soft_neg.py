@@ -58,7 +58,7 @@ def move(ask, last, n_offers, budget, market_avg, r=None):
         return None
     lim = min(budget, r.get("accept", ACCEPT) * market_avg)
     if ask <= lim:
-        return {"action": "accept", "why": "ask <= market avg"}
+        return {"action": "accept", "why": f"ask <= {r.get('accept', ACCEPT)} x market avg"}
     if n_offers == 0:
         p = min(int(r.get("first", FIRST) * market_avg), int(budget), ask - 1)
         return {"action": "offer", "price": max(1, p), "why": "first"}
