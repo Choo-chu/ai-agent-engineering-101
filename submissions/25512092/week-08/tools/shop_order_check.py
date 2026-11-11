@@ -1,7 +1,7 @@
 """shop_order (depts/shop_order.py, person's decision 11/09 ~21:30): the guard and the 6 h check.
   guard(now)   from GUARD_AFTER_H after the switch-on, the last GUARD_H: close rate (orders, logs/soft_neg.jsonl) under
                the base - RATE_DROP (5 %p) or paid deals per hour under base x (1 - DPH_DROP) (20%), with at least
-               MIN_ORDERS orders -> the reason (tools/saved_guard_watch.py switches only stock_first / rate_order off)
+               MIN_ORDERS orders, only while soft_neg is on (from its last switch-on; off -> no judgement, 11/11) -> the reason (tools/saved_guard_watch.py switches only stock_first / rate_order off)
   report(t_on) the 6 h after vs the 6 h before: close rate, the share of orders that failed on no stock, deals per
                hour, saved change, each shop's share of our tries (in the 08:00 summary, tools/morning_summary.py)
     python tools/shop_order_check.py [--dry]
@@ -51,19 +51,32 @@ def base(now, path=None):
     return stats(now - 6 * 3600, now, path)
 
 
-def guard(now=None, r=None, path=None):
-    """The reason to switch both off, or None."""
+def soft_since(sn=None, now=None):
+    """11/11 ~10:45 (person): the start of soft_neg's current on stretch (its last switch-on: guard_on by the saved
+    guard, else since), or None while soft_neg is off. The guard uses only orders from then on."""
+    sn = soft_neg.rules() if sn is None else sn
+    if not soft_neg.on(now=now, r=sn):
+        return None
+    return max(sn.get("guard_on") or 0, sn.get("since") or 0)
+
+
+def guard(now=None, r=None, path=None, sn=None):
+    """The reason to switch both off, or None. 11/11 ~10:45 (person): only orders while soft_neg is on (from its last
+    switch-on), at least MIN_ORDERS of them in the window; soft_neg off -> no judgement."""
     now = now or time.time()
     r = shop_order.rules() if r is None else r
     if not shop_order.on(r, now) or now - (r.get("since") or now) < GUARD_AFTER_H * 3600 or not r.get("base"):
         return None
-    b, s = r["base"], stats(now - GUARD_H * 3600, now, path)
+    t_sn = soft_since(sn, now)
+    if t_sn is None:
+        return None
+    b, s = r["base"], stats(max(now - GUARD_H * 3600, t_sn), now, path)
     if s["n"] < MIN_ORDERS or s["rate"] is None or b.get("rate") is None:
         return None
     if s["rate"] < b["rate"] - RATE_DROP:
-        return f"성사율 {s['rate']:.1%} < 적용 전 {b['rate']:.1%} - {RATE_DROP * 100:.0f}%p (최근 {GUARD_H}시간 {s['n']}건)"
+        return f"성사율 {s['rate']:.1%} < 적용 전 {b['rate']:.1%} - {RATE_DROP * 100:.0f}%p (최근 {GUARD_H}시간 중 soft_neg 켜진 구간 {s['n']}건)"
     if s["dph"] < b["dph"] * (1 - DPH_DROP):
-        return f"시간당 deals {s['dph']:.1f} < 적용 전 {b['dph']:.1f} x {1 - DPH_DROP:.0%} (최근 {GUARD_H}시간)"
+        return f"시간당 deals {s['dph']:.1f} < 적용 전 {b['dph']:.1f} x {1 - DPH_DROP:.0%} (최근 {GUARD_H}시간 중 soft_neg 켜진 구간 {s['n']}건)"
     return None
 
 

@@ -93,11 +93,22 @@ def test_guard():
         for i in range(120):                                   # last 2 h: 120 orders, 30% close, 18 paid / h
             f.write(json.dumps({"ts": now - 60 * (i % 110) - 30, "deal": i < 36, "paid_ok": i < 36}) + "\n")
     r = dict(ON, since=now - 3 * 3600, base={"rate": 0.40, "dph": 20.0})
-    assert "성사율" in K.guard(now, r, p)                      # 30% < 40% - 5%p
-    assert K.guard(now, dict(r, base={"rate": 0.33, "dph": 20.0}), p) is None   # within 5 %p, 18 >= 16
-    assert "deals" in K.guard(now, dict(r, base={"rate": 0.30, "dph": 30.0}), p)  # 18 < 24
-    assert K.guard(now, dict(r, since=now - 3600), p) is None                     # under 2 h on: not judged
-    assert K.guard(now, dict(r, stock_first=False, rate_order=False), p) is None  # already off
+    S0 = {"enabled": True, "since": 1, "until": now + 3600}                     # soft_neg on all along (not the live file)
+    assert "성사율" in K.guard(now, r, p, sn=S0)                      # 30% < 40% - 5%p
+    assert K.guard(now, dict(r, base={"rate": 0.33, "dph": 20.0}), p, sn=S0) is None   # within 5 %p, 18 >= 16
+    assert "deals" in K.guard(now, dict(r, base={"rate": 0.30, "dph": 30.0}), p, sn=S0)  # 18 < 24
+    assert K.guard(now, dict(r, since=now - 3600), p, sn=S0) is None                     # under 2 h on: not judged
+    assert K.guard(now, dict(r, stock_first=False, rate_order=False), p, sn=S0) is None  # already off
+    # 11/11 (person): only orders while soft_neg is on, from its last switch-on; >= 100 of them; off -> no judgement
+    SN = {"enabled": True, "since": 1, "until": now + 3600}
+    assert "성사율" in K.guard(now, r, p, sn=dict(SN, guard_on=now - 3 * 3600))
+    assert K.guard(now, r, p, sn=dict(SN, guard_on=now - 1800)) is None             # 30 orders since: held
+    assert K.guard(now, r, p, sn=dict(SN, enabled=False)) is None                   # soft_neg off: held
+    q = tmp_path("sn_guard2.jsonl")                                                 # 100 since the switch-on: judged
+    with open(q, "w", encoding="utf-8") as f:
+        for i in range(100):
+            f.write(json.dumps({"ts": now - 20 * i - 10, "deal": i < 30, "paid_ok": i < 30}) + "\n")
+    assert "성사율" in K.guard(now, r, q, sn=dict(SN, guard_on=now - 2100))
     # the watcher switches only the two rules off
     rules = tmp_path("so_rules.json")
     json.dump(r, open(rules, "w", encoding="utf-8"))
