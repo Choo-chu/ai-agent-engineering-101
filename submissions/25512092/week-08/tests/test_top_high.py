@@ -95,7 +95,9 @@ def test_plan_caps():
 
 
 def test_warranty_through_strategy():
-    st = {"cat_break": {"TV": 0.05, "소파/의자/스툴": 0.0776}, "cat_n": {"TV": 500, "소파/의자/스툴": 26000}}
+    # the A grade rate decides (11/11 ~20:50); the whole category's rate (cat_break) is ignored
+    st = {"cat_break_a": {"TV": 0.05, "소파/의자/스툴": 0.0776}, "cat_n_a": {"TV": 500, "소파/의자/스툴": 26000},
+          "cat_break": {"TV": 0.09}, "cat_n": {"TV": 900}}
     u = lambda g, cost, cat=CAT, sku="T0": {"unit": "u1", "sku": sku, "cost": cost, "grade": g, "kind": "goods",
                                             "category": cat}
     b_rules = {"enabled": True, "on_cats": ["TV"]}
@@ -107,12 +109,15 @@ def test_warranty_through_strategy():
         assert strategy.warranty_hours(u("B", 1_000_000), "normal", st) == 48        # B under 1.5M: b_warranty as before
         assert strategy.warranty_hours(u("C", 2_000_000), "normal", st) == 0
         assert strategy.warranty_hours(u("A", 2_000_000), "markdown", st) == 0
-        st2 = dict(st, cat_break={"TV": 0.07, "소파/의자/스툴": 0.0776})
+        st2 = dict(st, cat_break_a={"TV": 0.07, "소파/의자/스툴": 0.0776})
         assert strategy.warranty_hours(u("A", 2_000_000), "normal", st2) == 0        # TV 7% > 6%
-        st3 = dict(st, cat_n={"TV": 10})
+        st3 = dict(st, cat_n_a={"TV": 29})
         assert strategy.warranty_hours(u("A", 2_000_000), "normal", st3) == 0        # too few market sales
         with mock.patch.object(sofa, "is_sofa", lambda sku: True):
             assert strategy.warranty_hours(u("A", 2_000_000, "가구>소파/의자/스툴", "S1"), "normal", st) == 0   # 7.8%
+            st4 = dict(st, cat_break_a={"소파/의자/스툴": 0.0593}, cat_n_a={"소파/의자/스툴": 18000})
+            assert strategy.warranty_hours(u("A", 2_000_000, "가구>소파/의자/스툴", "S1"), "normal", st4) == 72  # sofa hours
+            assert strategy.warranty_hours(u("B", 2_000_000, "가구>소파/의자/스툴", "S1"), "normal", st4) == 0
     with mock.patch.object(top_high, "RULES", tmp_json({}, "top_high")), \
             mock.patch.object(b_warranty, "RULES", tmp_json(b_rules, "b_warranty")):
         assert strategy.warranty_hours(u("B", 2_000_000), "normal", st) == 48        # rule off: as before
@@ -127,6 +132,26 @@ def test_cat_break():
     d.executemany("INSERT INTO broken VALUES (?)", [("T0",)] * 4 + [("T1",)])
     r, n = top_high.cat_break(d, catalog())
     assert n["TV"] == 100 and r["TV"] == 0.05
+
+
+def test_cat_break_a():
+    """A break counts for the grade of the buyer's last purchase of the SKU before it."""
+    p = os.path.join(tempfile.mkdtemp(), "m.db")
+    d = sqlite3.connect(p)
+    d.execute("CREATE TABLE settles (ts, buyer, sku, grade)")
+    d.execute("CREATE TABLE broken (ts, buyer, sku)")
+    rows = [(i, f"b{i}", "T0", "A") for i in range(40)] + [(i, f"c{i}", "T1", "B") for i in range(10)]
+    d.executemany("INSERT INTO settles VALUES (?,?,?,?)", rows + [(50, "b0", "T0", "B")])
+    d.executemany("INSERT INTO broken VALUES (?,?,?)", [(45, "b1", "T0"), (46, "b2", "T0"),     # A purchases: A breaks
+                                                       (60, "b0", "T0"),                       # b0's last buy was B
+                                                       (20, "c1", "T1")])                      # B
+    r, n = top_high.cat_break_a(d, catalog())
+    assert n["TV"] == 40 and r["TV"] == 0.05
+    c = os.path.join(tempfile.mkdtemp(), "c.json")
+    assert top_high.cat_break_a_cached(d, catalog(), path=c) == (r, n)
+    d.execute("INSERT INTO broken VALUES (70, 'b3', 'T0')")
+    assert top_high.cat_break_a_cached(d, catalog(), path=c)[0]["TV"] == 0.05             # cached (30 min)
+    assert top_high.cat_break_a_cached(d, catalog(), path=c, max_age=0)[0]["TV"] == 0.075
 
 
 def test_check_top15_report():
@@ -173,5 +198,6 @@ if __name__ == "__main__":
     test_plan_caps()
     test_warranty_through_strategy()
     test_cat_break()
+    test_cat_break_a()
     test_check_top15_report()
     print("ok")

@@ -2,8 +2,10 @@
 (read on every call; off without it):
   holding   at most max_units (10) units with cost > min_cost held at once (stock + this plan), at most max_per_sku (2)
             per SKU even for a deep-stock SKU (deep_high's 2-5 is cut to 2 for these)
-  warranty  only A grade, and only in a leaf category whose market break rate (all shops' sales, broken / sold, at least
-            min_n sales) is at most max_break (6%); B and C grade: none. This decides before the sofa and B grade
+  warranty  only A grade, and only in a leaf category whose market A grade break rate is at most max_break (6%) with at
+            least min_n (30) A grade market sales (11/11 ~20:50 person: the A grade rate, not the whole category's; a
+            break counts for the grade of the buyer's last purchase of that SKU before it, as market_db grade_break);
+            B and C grade: none. This decides before the sofa and B grade
             rules (depts/sales.warranty_hours). Normal shop case only, like the A grade warranty.
 """
 import json
@@ -87,6 +89,43 @@ def cat_break(db, catalog):
     return {k: round(broke.get(k, 0) / n, 4) for k, n in sold.items() if n}, sold
 
 
+def cat_break_a(db, catalog):
+    """({leaf: market A grade break rate}, {leaf: market A grade sales}): A grade sales of all shops by catalog leaf;
+    a break is A grade when the buyer's last purchase of that SKU before the break was A grade."""
+    lf = {k: (c.get("category") or "").split(">")[-1] for k, c in catalog.items()}
+    sold, broke = {}, {}
+    for sku, n in db.execute("SELECT sku, COUNT(*) FROM settles WHERE grade='A' GROUP BY sku"):
+        if sku in lf:
+            sold[lf[sku]] = sold.get(lf[sku], 0) + n
+    for sku, n in db.execute("SELECT sku, COUNT(*) FROM (SELECT b.sku sku, (SELECT s.grade FROM settles s WHERE "
+                             "s.buyer=b.buyer AND s.sku=b.sku AND s.ts<=b.ts ORDER BY s.ts DESC LIMIT 1) g FROM broken b) "
+                             "WHERE g='A' GROUP BY sku"):
+        if sku in lf:
+            broke[lf[sku]] = broke.get(lf[sku], 0) + n
+    return {k: round(broke.get(k, 0) / n, 4) for k, n in sold.items() if n}, sold
+
+
+CACHE = os.path.join(HERE, "logs", "cat_break_a.json")
+CACHE_S = 1800        # the A grade query takes ~2.5 s: at most every 30 min (market_db.refresh runs every restock run)
+
+
+def cat_break_a_cached(db, catalog, path=None, max_age=CACHE_S, now=None):
+    path, now = path or CACHE, now or time.time()
+    try:
+        with open(path, encoding="utf-8") as f:
+            c = json.load(f)
+        if now - c["ts"] < max_age:
+            return c["rate"], c["n"]
+    except (OSError, ValueError, KeyError):
+        pass
+    rate, n = cat_break_a(db, catalog)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"ts": now, "rate": rate, "n": n}, f, ensure_ascii=False)
+    os.replace(tmp, path)
+    return rate, n
+
+
 def warranty(u, case, base_h, stats, r=None):
     """Warranty hours for a unit over min_cost, or None when this rule does not decide (rule off / not over 1.5M)."""
     r = rules() if r is None else r
@@ -96,7 +135,7 @@ def warranty(u, case, base_h, stats, r=None):
     if case != "normal" or u.get("kind") == "food" or u.get("grade") not in w.get("grades", ["A"]):
         return 0
     lf = leaf(u)
-    rate, n = (stats.get("cat_break") or {}).get(lf), (stats.get("cat_n") or {}).get(lf, 0)
+    rate, n = (stats.get("cat_break_a") or {}).get(lf), (stats.get("cat_n_a") or {}).get(lf, 0)
     if rate is None or n < w.get("min_n", 30) or rate > w.get("max_break", 0.06):
         return 0
     from depts import sofa
@@ -107,6 +146,6 @@ def warranty(u, case, base_h, stats, r=None):
 
 def log_line(u, h, stats):
     lf = leaf(u)
-    return (f"top high {u.get('sku')} grade {u.get('grade')} cost {int(u.get('cost') or 0):,}: {lf} market break "
-            f"{(stats.get('cat_break') or {}).get(lf)} (n {(stats.get('cat_n') or {}).get(lf, 0)}) -> warranty {h} h "
+    return (f"top high {u.get('sku')} grade {u.get('grade')} cost {int(u.get('cost') or 0):,}: {lf} market A break "
+            f"{(stats.get('cat_break_a') or {}).get(lf)} (n {(stats.get('cat_n_a') or {}).get(lf, 0)}) -> warranty {h} h "
             f"at {time.strftime('%H:%M')}")

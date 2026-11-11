@@ -38,4 +38,10 @@ def policy(data=None):
         W.RULES, W.KIT_LOGS = tmp_path("supply_window.json"), [tmp_path("market-kit.log")]
     except Exception:
         pass
+    try:                                          # 11/11 ~20:50: normal lines a run, over-1.5M rules, A grade cache
+        from depts import normal_min, top_high
+        normal_min.RULES, top_high.RULES = tmp_path("normal_min.json"), tmp_path("top_high.json")
+        top_high.CACHE = tmp_path("cat_break_a.json")
+    except Exception:
+        pass
     return P

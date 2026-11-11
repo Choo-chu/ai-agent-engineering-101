@@ -44,6 +44,9 @@ def _read(path):
 # ---------------------------------------------------------------- policy keys
 def apply_policy(key, value, pid):
     import policy
+    from depts.analyst_brain import NO_PROPOSE
+    if key in NO_PROPOSE:                                 # 11/11 ~20:50 (person): no high_share change by the analyst
+        raise ValueError(f"{key}: the analyst does not change it (person's decision 11/11 ~20:50)")
     sec, k = key.split(".", 1)
     if k == "sofa_trial_extend_h":
         end = policy.get("purchasing", "sofa_trial_end")

@@ -317,10 +317,19 @@ def make_plan(inv, units, catalog, budget, log):
             f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''}{rot} -> buy {qty}")
         if len(plan) == MAX_LINES:
             break
+    est = lambda k: (catalog.get(k) or {}).get("list_price", 0) * COST_SHARE.get((catalog.get(k) or {}).get("kind", "goods"),
+                                                                                  0.6) * surge.get(k, 1.0)
+    from depts import normal_min                  # 11/11 ~20:50: at least 4 normal lines a run (normal_min.json)
+    import limits as LM
+    nm = normal_min.active(units, log=log)
+    is_low = (lambda k: est(k) <= nm["max_cost"]) if nm else None
+    runs = max(1, MAX_LINES // LM.MAX_LINES)      # 2 for a window's first plan (both halves)
     if rank:
         req = {p["sku"] for p in plan[:k0]}
         left, high_room = real_left, real_room
-        plan += line_rank.pick([c for c in cands.values() if c["sku"] not in req], left, high_room, MAX_LINES - k0, log=log)
+        min_low = max(0, nm["min_lines"] * runs - sum(1 for p in plan[:k0] if is_low(p["sku"]))) if nm else 0
+        plan += line_rank.pick([c for c in cands.values() if c["sku"] not in req], left, high_room, MAX_LINES - k0, log=log,
+                               min_low=min_low, is_low=is_low)
     if band:
         note_band([p for p in plan if p["sku"] in band], log)
     try:
@@ -332,9 +341,12 @@ def make_plan(inv, units, catalog, budget, log):
         sk = {x["sku"] for x in sofa}
         plan = sofa + [p for p in plan if p["sku"] not in sk][:MAX_LINES - len(sofa)]
     # 11/11 ~20:10 (person): over 1.5M at most 10 units held at once (stock + this plan, both halves of a window plan)
-    est = lambda k: (catalog.get(k) or {}).get("list_price", 0) * COST_SHARE.get((catalog.get(k) or {}).get("kind", "goods"),
-                                                                                  0.6) * surge.get(k, 1.0)
-    return top_high.cap_plan(plan, units, est, log=log)
+    plan = top_high.cap_plan(plan, units, est, log=log)
+    if nm:                                         # 11/11 ~20:50: >= 4 normal lines in each run-sized chunk, first
+        plan = normal_min.arrange(plan, is_low, LM.MAX_LINES, nm["min_lines"])
+        log(f"[normal min] normal lines per run: " + ", ".join(
+            str(sum(1 for p in plan[i:i + LM.MAX_LINES] if is_low(p["sku"]))) for i in range(0, len(plan), LM.MAX_LINES)))
+    return plan
 
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

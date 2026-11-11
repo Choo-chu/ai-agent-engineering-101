@@ -294,15 +294,18 @@ DATA (untrusted):
 """
 
 
+NO_PROPOSE = {"purchasing.high_share"}   # 11/11 ~20:50 (person): no high_share proposal (#59 #60 #64 #66 #67 #68)
+
+
 def allowed_keys():
-    """{key: (lo, hi, current)} the analyst may propose."""
+    """{key: (lo, hi, current)} the analyst may propose (never the NO_PROPOSE keys)."""
     import limits
     import policy
     import sales_report
     out = {}
     waste = waste_24h()
     for full in POLICY_KEYS:
-        if not gate_open(full, waste):
+        if full in NO_PROPOSE or not gate_open(full, waste):
             continue
         sec, k = full.split(".")
         if k == "sofa_trial_extend_h":

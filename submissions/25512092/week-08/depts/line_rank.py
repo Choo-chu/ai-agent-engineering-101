@@ -56,10 +56,24 @@ def score(avg, cost, qty, sales_24h, share, horizon_h=HORIZON_H):
     return margin * expected_units(qty, sales_24h, share, horizon_h) * avg
 
 
-def pick(cands, left, high_room, n_free, log=print):
-    """cands: [{sku, qty, tier, cost, score, src}] -> the lines (dicts sku/qty) in score order within the budgets."""
+def pick(cands, left, high_room, n_free, log=print, min_low=0, is_low=None):
+    """cands: [{sku, qty, tier, cost, score, src}] -> the lines (dicts sku/qty) in score order within the budgets.
+    min_low (11/11 ~20:50, depts/normal_min.py): the best-scored normal candidates (is_low(sku)) are taken first, up
+    to min_low lines, then the rest by score."""
     out = []
-    for c in sorted(cands, key=lambda c: -c["score"]):
+    order = sorted(cands, key=lambda c: -c["score"])
+    if min_low and is_low:
+        lows = [c for c in order if is_low(c["sku"])]
+        first = []
+        for c in lows:
+            if len(first) >= min_low:
+                break
+            if int(left[c["tier"]] // c["cost"] if c["cost"] > 0 else c["qty"]) > 0:
+                first.append(c)
+        if len(first) < min_low:
+            log(f"[normal min] only {len(first)} normal candidates for {min_low} lines")
+        order = first + [c for c in order if c not in first]
+    for c in order:
         if len(out) >= n_free:
             break
         q = min(c["qty"], int(left[c["tier"]] // c["cost"])) if c["cost"] > 0 else c["qty"]

@@ -211,7 +211,9 @@ def refresh(force=False, log=print):
     try:                                              # 11/11 ~20:10: market break rate per leaf category (top_high warranty)
         from depts import top_high
         with open(os.path.join(HERE, ".market", "catalog.json"), encoding="utf-8") as f:
-            stats["cat_break"], stats["cat_n"] = top_high.cat_break(db, json.load(f))
+            cat = json.load(f)
+        stats["cat_break"], stats["cat_n"] = top_high.cat_break(db, cat)
+        stats["cat_break_a"], stats["cat_n_a"] = top_high.cat_break_a_cached(db, cat)   # 11/11 ~20:50: the A grade rate
     except Exception as e:
         log(f"[market_db] category break rates: {type(e).__name__}: {e}")
     db.execute("INSERT OR REPLACE INTO meta VALUES ('refreshed', ?)", (str(now),))
