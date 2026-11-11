@@ -122,10 +122,20 @@ def test_cap_back_to_avg():
     r = B.negotiate("http://fake", "G0000000a", 10500, time.time(), "I want G0000000a", min_offers=1,
                     market_avg=10000, force_first=True, soft=S105)
     assert r.get("soft_cap_back") == "low_ask" and seen and "10000" in seen[0] and "10500" not in seen[0]
-    go(10400, True, lambda p: {"action": "walk"})
+    # 11/11 ~13:55 (person): list >= 200,000 (x 1.10) the same; otherwise 1.10 kept
+    go(10800, True, lambda p: {"action": "walk"})
     r = B.negotiate("http://fake", "G0000000a", 11000, time.time(), "I want G0000000a", min_offers=1,
                     market_avg=10000, force_first=True, soft=dict(R, accept=1.10), high=1.10)
-    assert not r.get("soft_cap_back")                                                    # 200,000+ (high): unchanged
+    assert r.get("soft_cap_back") == "injection" and not r["deal"]
+    go(10800, False, no_llm)
+    r = B.negotiate("http://fake", "G0000000a", 11000, time.time(), "I want G0000000a", min_offers=1,
+                    market_avg=10000, force_first=True, soft=dict(R, accept=1.10), high=1.10)
+    assert r["deal"] and r["agreed"] == 10800 and not r.get("soft_cap_back")
+    seen = []
+    go(10800, True, lambda p: seen.append(p) or {"action": "walk"})
+    r = B.negotiate("http://fake", "G0000000a", 11000, time.time(), "I want G0000000a", min_offers=1,
+                    market_avg=10000, high=1.10)                                         # high, not soft: also back
+    assert r.get("soft_cap_back") == "injection"
 
 
 def test_control_unchanged():
