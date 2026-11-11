@@ -1,5 +1,19 @@
 {
  "enabled": true,
  "since": 1794398899,
- "why": "person's decision 11/11 ~21:00: item_mismatch 1 in 24 h -> back 24 h, 2+ -> avoid 24 h; ledger grade claims untrue > 20% (>= 5 claims, 48 h) -> avoid 24 h; injection 2+ in 24 h -> avoid 24 h; on top of the permanent 'cheated me before' block (kept, person 11/11 ~21:10); drop warning like the shop_order guard"
+ "why": "person's decision 11/11 ~21:00: item_mismatch 1 in 24 h -> back 24 h, 2+ -> avoid 24 h; ledger grade claims untrue > 20% (>= 5 claims, 48 h) -> avoid 24 h; injection 2+ in 24 h -> avoid 24 h; on top of the permanent 'cheated me before' block (kept, person 11/11 ~21:10); drop warning like the shop_order guard",
+ "released": {
+  "real_yellow": 1794400295,
+  "kcwarni": 1794400295,
+  "lee-sungsoo": 1794400295,
+  "jiseokkk": 1794400295,
+  "psyoung82": 1794400295,
+  "inextro": 1794400295,
+  "dragonash": 1794400295,
+  "elm-street": 1794400295,
+  "willow-goods": 1794400295,
+  "maple-home": 1794400295,
+  "cheapest-in-town": 1794400295
+ },
+ "released_why": "person's decision 11/11 ~21:20: shops blocked for one case leave the permanent block, only the 24 h rules apply; bright-living (15 injections) stays blocked; an amount mismatch counts like an item mismatch"
 }

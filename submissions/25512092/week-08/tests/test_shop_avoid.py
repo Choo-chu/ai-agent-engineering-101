@@ -95,7 +95,7 @@ def test_missed_and_summary():
         A.note_missed("o-1", "과자", ["two"], "walk")
         A.note_missed("o-2", "과자", ["two"], "no_shop")
         line = A.summary_line(NOW + 5, NOW - 12 * 3600)
-    assert "놓친 주문 2건" in line and "two [회피] 품목 불일치 2건" in line and "놓친 주문 2" in line, line
+    assert "놓친 주문 2건" in line and "two [회피] 품목·금액 불일치 2건" in line and "놓친 주문 2" in line, line
 
 
 def test_guard_warns_on_drop():
@@ -133,6 +133,60 @@ def test_item_draft():
     assert "ledger #99" in d["post"] and d["refs"] == [99] and "사기" not in d["post"]
 
 
+class FakeSeller:
+    """A seller that first offers `sku` at 32223, then completes on any number."""
+    def __init__(self, sku):
+        self.sku, self.sent, self.cancelled = sku, [], False
+        self.card = {"name": "fake", "skills": []}
+        self.url = "https://fake"
+
+    def _t(self, st, text):
+        return {"id": "t1", "status": {"state": st, "message": {"parts": [{"text": text}]}}}
+
+    def send(self, text, tid=None):
+        self.sent.append(text)
+        if tid is None:
+            return self._t("TASK_STATE_INPUT_REQUIRED", f"절임배추 20kg ({self.sku}), grade B. Asking 32223.")
+        return self._t("TASK_STATE_COMPLETED", "Deal at 32223.")
+
+    def cancel(self, tid):
+        self.cancelled = True
+
+
+def run_neg(sku, ok):
+    from depts import buyer_speed
+    fs = FakeSeller(sku)
+    def no_llm(*a, **k):
+        raise AssertionError("no LLM call in tests")
+    with mock.patch.object(buyer_speed, "rules", lambda: {}), \
+            mock.patch.object(buyer_speed, "client", lambda *a, **k: fs), \
+            mock.patch.object(B, "log", lambda m: None), \
+            mock.patch.object(B, "ask_harness", no_llm), \
+            mock.patch("buyer.HEADERS", {}, create=True):
+        res = B.negotiate("https://fake", "신선야채(부패주의)", 77590, time.time(), "I want to buy 고추가루 (G1f2acd72)",
+                          market_avg=40000, min_offers=1, shop="fake", ok_skus=ok)
+    return res, fs
+
+
+def test_wrong_item_not_accepted():
+    res, fs = run_neg("G4a998429", {"G1f2acd72", "Gaaaaaaaa"})
+    assert not res["deal"] and res["ended"] == "wrong_item" and res["skip"] and fs.cancelled
+    assert any("not the item I ordered" in t for t in fs.sent) and not any(t.strip().isdigit() for t in fs.sent[1:])
+    assert B.wrong_item({}, "G4a998429 is not in stock. To buy an alternative, name its SKU: G1f2acd72", {"G1f2acd72"}) is None
+    assert B.wrong_item({}, "Asking 30000.", {"G1f2acd72"}) is None          # no SKU named: no judgement
+    assert B.wrong_item({}, "G4a998429 Asking 1", set()) is None             # no order list: no check
+
+
+def test_released_and_amount_rule():
+    p = setup(mem=[(NOW - 3600, "kc", "receipt_mismatch")])
+    with open(p["RULES"], "w", encoding="utf-8") as f:
+        json.dump({"enabled": True, "since": NOW - 60, "released": {"kc": NOW - 60, "rel": NOW - 60}}, f)
+    mem = [{"shop": "rel", "flag": "item_mismatch", "stars": 1}, {"shop": "bright", "flag": "injection", "stars": 1},
+           {"shop": "kc", "flag": "receipt_mismatch", "receipt_price": 2, "agreed": 1}]
+    got, avoided = choose(p, ["bright", "rel", "kc", "fine"], memory=mem)
+    assert got == ["rel", "fine", "kc"] and not avoided, got                # bright still blocked; kc: amount -> back
+
+
 if __name__ == "__main__":
     test_item_mismatch()
     test_grade_claims()
@@ -142,4 +196,6 @@ if __name__ == "__main__":
     test_guard_warns_on_drop()
     test_injection_phrases()
     test_item_draft()
+    test_wrong_item_not_accepted()
+    test_released_and_amount_rule()
     print("ok")

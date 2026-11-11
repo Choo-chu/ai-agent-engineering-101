@@ -8,6 +8,10 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 from depts import accept_rule, buyer_biz as B, buyer_speed  # noqa: E402
+from depts import shop_avoid as _SA  # noqa: E402  (11/11: the buyer writes shop events; never the live files)
+_SA.EVENTS = os.path.join(tempfile.mkdtemp(), 'ev.jsonl')
+_SA.STATE, _SA.MISSED = os.path.join(tempfile.mkdtemp(), 's.json'), os.path.join(tempfile.mkdtemp(), 'm.jsonl')
+_SA.RULES = os.path.join(tempfile.mkdtemp(), 'r.json')
 
 _off = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
 json.dump({"enabled": False}, _off)

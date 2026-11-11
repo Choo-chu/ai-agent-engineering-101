@@ -10,6 +10,10 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from depts import accept_rule, buyer_biz as B, buyer_speed, soft_neg as S  # noqa: E402
 from _isolate import tmp_path  # noqa: E402
+from depts import shop_avoid as _SA  # noqa: E402  (11/11: the buyer writes shop events; never the live files)
+_SA.EVENTS = os.path.join(tempfile.mkdtemp(), 'ev.jsonl')
+_SA.STATE, _SA.MISSED = os.path.join(tempfile.mkdtemp(), 's.json'), os.path.join(tempfile.mkdtemp(), 'm.jsonl')
+_SA.RULES = os.path.join(tempfile.mkdtemp(), 'r.json')
 
 
 def tmp(obj):

@@ -42,14 +42,14 @@ GUARD_FAIL_MIN = 4      # ... (after this many tries there), make one counteroff
 INJECTION = re.compile(r"market notice|for ai (buying )?agents|ignore (all|any|your|previous)|"
                        r"market policy|system prompt|"
                        # 11/11 ~21:00 (person): a ledger number / the ledger as grounds for a price or an acceptance
-                       r"(ledger|원장) ?(#|no\.?|number|번호|entry|record|ref|id)|"
+                       r"(ledger|원장) ?(#|no\.?\b|number|번호|entry|record|ref\b|id\b)|"
                        r"(according to|per|based on|cites?|citing) (the |our |market |this )?ledger|원장(에 따르면|을 ?근거|상으로|상 )|"
                        # operator / market notices
-                       r"운영자|시장 ?공지|(market|platform|system) (operator|announcement|admin)|"
+                       r"운영자|시장 ?공지|(market|platform|system) (operator|announcement|admin)\b|"
                        r"operator (notice|message|instruction|says|requires)|notice from the (market|operator|platform)|"
                        r"official (market )?notice|"
                        # "by the rules you must"
-                       r"규칙상|규정상|반드시 ?(수락|결제|지불|구매|별|평점|동의)|(the )?(market )?rules? (say|state|require)s?|"
+                       r"규칙상|규정상|반드시 ?(수락|결제|지불|구매|별|평점|동의)|(the )?(market )?rules? (say|state|require)s?\b|"
                        r"by (the |market )?rules?,? (you|buyers?) (must|have to)|"
                        r"you (must|are required to|have to) (accept|pay|agree|rate|give|leave)", re.I)
 # seller text that asks for a good review
@@ -110,7 +110,9 @@ def summarize(shop, memory):
     my_stars = [m["stars"] for m in mine if isinstance(m.get("stars"), (int, float))]
     my_avg = sum(my_stars) / len(my_stars) if my_stars else None
     cheated = any(m.get("flag") in ("receipt_mismatch", "over_budget", "item_mismatch", "no_receipt", "injection")
-                  and not harmless_mismatch(m) for m in mine)
+                  and not harmless_mismatch(m) for m in mine) and not (keys & RELEASED)
+    # 11/11 ~21:20 (person): a shop blocked for one case is released from the permanent block (shop_avoid.json
+    # "released"); only the 24 h rules of depts/shop_avoid apply to it from then on
 
     weighted = []
     if avg is not None:
@@ -138,11 +140,18 @@ def summarize(shop, memory):
 
 
 AVOIDED = []          # the shops depts/shop_avoid kept out of the last choose() (missed orders)
+RELEASED = set()      # shops out of the permanent "cheated me before" block (shop_avoid.json released)
 
 
 def choose(shops, memory, item, scores, reorder=None):
     """Returns allowed candidates, best shop score first, and the reason for the first one. reorder(allowed) -> list:
     11/09 ~21:30 depts/shop_order (no-stock shops back, our close rate first), applied before the top-k cut."""
+    RELEASED.clear()
+    try:
+        from depts import shop_avoid
+        RELEASED.update(shop_avoid.released())
+    except Exception as e:
+        log(f"[avoid] released list failed: {type(e).__name__}: {e}")
     infos = [summarize(s, memory) for s in shops if s.get("name") and s.get("url")]
     AVOIDED.clear()
     back = {}
@@ -222,6 +231,24 @@ SHELF_RE = [re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of\s+)?shelf life le
             re.compile(r"lasts\s+(\d+(?:\.\d+)?)\s+more hours", re.I)]
 WARRANTY_RE = re.compile(r"(\d+(?:\.\d+)?)[- ]?(?:h|hours?)\b[^.]{0,12}warranty|warranty[^.]{0,20}?(\d+(?:\.\d+)?)\s*h", re.I)
 GRADE_RE = re.compile(r"grade\s+([ABC])\b")
+
+
+SKU_RE = re.compile(r"\bG[0-9a-f]{8}\b")
+
+
+def wrong_item(task, text, ok_skus):
+    """11/11 ~21:20 (person): the SKU the seller offers, when it is not one of the order's (acceptable SKUs and the one
+    I asked for), else None. The certificate's SKU decides; without one, the SKUs named in the message: wrong only when
+    none of them is in the order (a reply that also names the ordered SKU, e.g. an out-of-stock note, is not)."""
+    if not ok_skus:
+        return None
+    cert = find_cert(task.get("status", {}).get("message")) or find_cert(task.get("artifacts"))
+    if cert and cert.get("sku"):
+        return None if cert["sku"] in ok_skus else cert["sku"]
+    named = SKU_RE.findall(text or "")
+    if named and not any(k in ok_skus for k in named):
+        return named[0]
+    return None
 
 
 def find_cert(obj):
@@ -348,7 +375,7 @@ def ask_price(text, budget=None):
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
               force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None,
-              soft=None, shop=None, high=None):
+              soft=None, shop=None, high=None, ok_skus=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
@@ -393,6 +420,17 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
         if st != "TASK_STATE_INPUT_REQUIRED":
             log(f"ENDED without deal ({st})")
             res["ended"], res["end_text"] = "seller_ended", (text or "")[:200]   # no stock vs ended (plan D reasons)
+            return res
+        bad = wrong_item(task, text, ok_skus)          # 11/11 ~21:20 (person): before any accept, LLM or code
+        if bad:
+            log(f"[item check] the shop offers {bad}, not an item of this order ({item}): no accept, next shop")
+            try:
+                client.send(f"That is not the item I ordered: {bad} is not one of the items in my order ({item}). "
+                            f"No deal.", tid)
+            except Exception:
+                pass
+            res["ended"], res["skip"], res["wrong_item"] = "wrong_item", f"offered {bad}, not the ordered item", bad
+            client.cancel(tid)
             return res
         if time.time() - start > DEADLINE:
             p = None if res.get("accept_rule") else accept_rule.price(ask_price(text, budget) or res["last_ask"], budget,
@@ -745,7 +783,8 @@ def main():
                             soft=(dict(sn_rules, accept=max(sn_rules.get("accept", 1.0), hf),       # 11/09 ~21:20: +1 haggle
                                        haggles=sn_rules.get("haggles", soft_neg.HAGGLES) + high_accept.extra_haggles())
                                   if hf else sn_rules)
-                            if sn_arm == "soft" else None, shop=c["name"], high=hf)
+                            if sn_arm == "soft" else None, shop=c["name"], high=hf,
+                            ok_skus=(set(acceptable) | ({sku} if offers and sku else set())) if acceptable else None)
             res["secs"] = round(time.time() - t_neg, 1)
             if res.get("ended") == "seller_ended" and d2.STOCK.search(res.get("end_text") or ""):
                 shop_order.note_no_stock(c["name"], sku if offers else None)     # 11/09 ~21:30: for shop_order

@@ -1,7 +1,8 @@
 """Shop avoid rules for the buyer (person's decision 11/11 ~21:00), on top of the permanent "cheated me before" block
 (kept: one item_mismatch / injection / receipt_mismatch in memory.jsonl still blocks a shop for good). Rules in
 shop_avoid.json (read every order; off without it); state in logs/shop_avoid_state.json:
-  item_mismatch   my orders flagged item_mismatch at the shop in the last 24 h: 1 -> the shop goes to the back of the
+  item_mismatch   my orders flagged item_mismatch (11/11 ~21:20: or receipt_mismatch, the amount) at the shop in the
+                  last 24 h: 1 -> the shop goes to the back of the
                   candidates for 24 h, 2+ -> avoided for 24 h (from the event that tripped it)
   grade claims    the ledger (market.db settles, all buyers): the shop's grade claims in the last 48 h, claim_honest
                   false share > 20% with at least 5 claims -> avoided for 24 h
@@ -73,6 +74,15 @@ def _jsonl(path, t0):
     return out
 
 
+def released(path=None):
+    """Shops out of the permanent "cheated me before" block (11/11 ~21:20, person): shop_avoid.json released {shop: ts}."""
+    try:
+        with open(path or RULES, encoding="utf-8") as f:
+            return set((json.load(f).get("released") or {}).keys())
+    except (OSError, ValueError):
+        return set()
+
+
 def note_event(shop, kind, text="", path=None, now=None):
     """The buyer flagged a shop's message (kind 'injection')."""
     try:
@@ -138,14 +148,15 @@ def update(now=None, r=None, db_path=None, mem_path=None, ev_path=None, state_pa
     H = 3600
     av = r["avoid_h"] * H
     # item mismatch: 1 -> back, 2+ -> avoid (24 h from the event that tripped it)
-    ev = {}
-    for t, s in sorted(memory_flags(now - r["item_window_h"] * H, "item_mismatch", mem_path)):
+    ev = {}                                       # 11/11 ~21:20: an amount mismatch (receipt above the agreed price)
+    t0 = now - r["item_window_h"] * H             # counts like an item mismatch (the released shops' 24 h rule)
+    for t, s in sorted(memory_flags(t0, "item_mismatch", mem_path) + memory_flags(t0, "receipt_mismatch", mem_path)):
         ev.setdefault(s, []).append(t)
     for s, ts in ev.items():
         if len(ts) >= r["item_avoid_n"]:
             _trip(state, s, "avoid", ts[r["item_avoid_n"] - 1], ts[r["item_avoid_n"] - 1] + av,
-                  f"품목 불일치 {len(ts)}건 (최근 {r['item_window_h']}시간)")
-        _trip(state, s, "back", ts[0], ts[0] + av, f"품목 불일치 {len(ts)}건 (최근 {r['item_window_h']}시간): 후보 맨 뒤")
+                  f"품목·금액 불일치 {len(ts)}건 (최근 {r['item_window_h']}시간)")
+        _trip(state, s, "back", ts[0], ts[0] + av, f"품목·금액 불일치 {len(ts)}건 (최근 {r['item_window_h']}시간): 후보 맨 뒤")
     # grade claims in the ledger
     try:
         for s, (n, f) in grade_claims(now - r["grade_window_h"] * H, db_path).items():
