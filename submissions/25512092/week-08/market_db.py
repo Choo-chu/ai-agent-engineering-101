@@ -256,7 +256,7 @@ def board_snapshot(db, now, log=print):
 
 
 WANT = re.compile(r"구합니다|구해요|찾습니다|찾아요|삽니다|wanted|looking for|want to buy|need", re.I)
-SKU_RE = re.compile(r"G[0-9a-f]{8}")
+SKU_RE = re.compile(r"\bG[0-9a-f]{8}\b")   # 11/11 ~21:50: was backspace characters (never matched)
 FORUM_PATH = os.path.join(HERE, ".market", "forum.json")
 BAD_DISHONEST = 2          # a shop with this many dishonest grade claims is avoided ...
 BAD_DISHONEST_SHARE = 0.05  # ... and only when they are at least this share of its settles (person's decision 11/07
@@ -349,8 +349,8 @@ def signals(db, names):
     posts = load_forum()
     wanted, wanted_cats = {}, {}
     for d in demand_posts(posts):
-        for sku in d["skus"]:
-            wanted[sku] = wanted.get(sku, 0) + 1
+        # 11/11 ~21:50 (person, option 1): the SKUs a post names do not reach the buying plan (stats "wanted" stays
+        # as it was while SKU_RE never matched); they serve the forum replies (depts/cs) and forum_watch only
         for leaf in d["cats"]:
             wanted_cats[leaf] = wanted_cats.get(leaf, 0) + 1
     for p in posts:
