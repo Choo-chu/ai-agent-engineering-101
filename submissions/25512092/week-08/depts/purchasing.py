@@ -8,6 +8,7 @@ from datetime import datetime
 
 import decisions
 from depts import sofa as sofa_rules
+from depts import top_high  # 11/11 ~20:10: over 1.5M holding limits (top_high.json)
 import policy
 import pricing
 import sales_report
@@ -240,6 +241,8 @@ def make_plan(inv, units, catalog, budget, log):
         wide = leaf_of(sku) in breadth
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             hold_max = deep_high.limit(sku, deep)  # 11/10 ~12:30: 1, or 2-5 for a fast-selling SKU
+            if top_high.is_top(cost):             # 11/11 ~20:10: over 1.5M at most 2 a SKU, even a deep-stock SKU
+                hold_max = min(hold_max, top_high.per_sku())
             if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku, 0) >= hold_max:
                 continue
             try:                                  # 11/08 ~17:00: expected first ask above the market average
@@ -328,7 +331,10 @@ def make_plan(inv, units, catalog, budget, log):
     if sofa:                                       # 11/09: a list (1, or 2 with sofa x2)
         sk = {x["sku"] for x in sofa}
         plan = sofa + [p for p in plan if p["sku"] not in sk][:MAX_LINES - len(sofa)]
-    return plan
+    # 11/11 ~20:10 (person): over 1.5M at most 10 units held at once (stock + this plan, both halves of a window plan)
+    est = lambda k: (catalog.get(k) or {}).get("list_price", 0) * COST_SHARE.get((catalog.get(k) or {}).get("kind", "goods"),
+                                                                                  0.6) * surge.get(k, 1.0)
+    return top_high.cap_plan(plan, units, est, log=log)
 
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

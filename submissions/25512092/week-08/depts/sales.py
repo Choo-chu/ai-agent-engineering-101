@@ -146,6 +146,10 @@ def warranty_hours(u, case, stats):
     import policy
     WARRANTY_H, WARRANTY_MAX_BREAK, WARRANTY_MIN_N = policy.values("sales", "warranty_h", "warranty_max_break",
                                                                    "warranty_min_n")
+    from depts import top_high                       # 11/11 ~20:10: cost > 1.5M: A grade in a category with market
+    h = top_high.warranty(u, case, WARRANTY_H, stats)   # break <= 6% only; B / C none (before the sofa / B rules)
+    if h is not None:
+        return h
     from depts import sofa
     if case != "endgame" and sofa.applies(u):        # sofas: 72 h while sofa_rules.json says warranty (C)
         return sofa.warranty_for(u)                  # 11/09: none on a C grade sofa
