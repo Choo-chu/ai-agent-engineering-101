@@ -12,8 +12,13 @@
   "dragonash": 1794400295,
   "elm-street": 1794400295,
   "willow-goods": 1794400295,
-  "maple-home": 1794400295,
   "cheapest-in-town": 1794400295
  },
- "released_why": "person's decision 11/11 ~21:20: shops blocked for one case leave the permanent block, only the 24 h rules apply; bright-living (15 injections) stays blocked; an amount mismatch counts like an item mismatch"
+ "released_why": "person's decision 11/11 ~21:20: shops blocked for one case leave the permanent block, only the 24 h rules apply; bright-living (15 injections) stays blocked; an amount mismatch counts like an item mismatch",
+ "reblocked": {
+  "maple-home": {
+   "ts": 1794403136,
+   "why": "person 11/11 ~22:20 (exception to the night mode): receipt amount 15% above the agreed price twice (19,900 -> 22,885 on 11/05 23:36, 4,700 -> 5,405 on 11/11 22:16): back on the permanent block"
+  }
+ }
 }
