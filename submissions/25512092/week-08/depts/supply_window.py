@@ -24,7 +24,10 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECOND = os.path.join(HERE, "logs", "window_plan2.json")
 
-SEC_PER_LINE = 12          # measured 11 s median between two supplies of one run, plus a little
+SEC_PER_LINE = 12          # measured 11 s median between two supplies of one run, plus a little (the fallback)
+RULES = os.path.join(HERE, "supply_window.json")   # 11/11 ~18:25 (person): sec_per_line 11 with a guard
+KIT_LOGS = [os.path.join(HERE, "logs", "market-kit.log.1"), os.path.join(HERE, "logs", "market-kit.log")]
+GUARD_EVERY_S = 60
 FIRST_LINE_S = 3           # from printing the plan to the kit's first supply call
 MARGIN_S = 5               # the last line arrives at least this long before the close
 EARLY_S = 150              # the kit's buyer timeout is 300 s; planning takes ~20-30 s
@@ -55,7 +58,95 @@ def n_fit(r, now=None):
         return None
     start = max(now, r.get("opens_at") or now) + FIRST_LINE_S
     left = close - MARGIN_S - start
-    return 0 if left < 0 else int(math.floor(left / SEC_PER_LINE)) + 1
+    return 0 if left < 0 else int(math.floor(left / sec_per_line())) + 1
+
+
+def rules(path=None):
+    try:
+        with open(path or RULES, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def sec_per_line(path=None):
+    """Seconds a plan line is expected to take: supply_window.json sec_per_line (11/11 ~18:25: 11), else 12."""
+    v = rules(path).get("sec_per_line")
+    return v if isinstance(v, (int, float)) and 5 <= v <= 30 else SEC_PER_LINE
+
+
+def closed_since(t0, now=None, paths=None):
+    """Kit supply lines refused as "supply is closed" in [t0, now] (the kit logs, HH:MM:SS stamps, days rebuilt
+    backwards from today)."""
+    import re
+    from datetime import datetime
+    now = now or time.time()
+    ts = re.compile(r"(\d\d):(\d\d):(\d\d) ")
+    raw = []
+    for p in paths or KIT_LOGS:
+        try:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                raw += f.readlines()
+        except OSError:
+            pass
+    base = datetime.fromtimestamp(now).replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    n, day, last = 0, 0, None
+    for x in reversed(raw):
+        m = ts.match(x)
+        if not m:
+            continue
+        sec = int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3])
+        if last is not None and sec > last + 3600:
+            day -= 1
+        last = sec
+        t = base + day * 86400 + sec
+        if t < t0:
+            break
+        if t <= now and "[supply]" in x and "supply is closed" in x:
+            n += 1
+    return n
+
+
+def guard(now=None, log=print, path=None, paths=None, send=None):
+    """11/11 ~18:25 (person): while sec_per_line is below the fallback, more than max_closed lines refused as "supply is
+    closed" in the last guard_h hours (counted from the change) -> back to the fallback (12) and a Telegram.
+    Checked at most every GUARD_EVERY_S. Returns True when it reverted."""
+    path = path or RULES
+    now = now or time.time()
+    r = rules(path)
+    fb = r.get("fallback", SEC_PER_LINE)
+    if not r.get("since") or r.get("reverted") or not r.get("sec_per_line") or r["sec_per_line"] >= fb:
+        return False
+    if now - r.get("checked", 0) < GUARD_EVERY_S:
+        return False
+    t0 = max(r["since"], now - r.get("guard_h", 3) * 3600)
+    n = closed_since(t0, now, paths)
+    r["checked"], r["closed_now"] = round(now), n
+    hit = n > r.get("max_closed", 3)
+    if hit:
+        r.update(reverted=round(now), reverted_from=r["sec_per_line"], sec_per_line=fb,
+                 revert_reason=f"{n} lines refused as supply is closed since {time.strftime('%H:%M', time.localtime(t0))}")
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+    if hit:
+        msg = (f"공급 창 줄당 {r['reverted_from']}초 -> {fb}초 자동 복귀: {time.strftime('%H:%M', time.localtime(t0))} 이후 "
+               f"마감 거절 {n}줄 (기준 {r.get('max_closed', 3)}줄 초과)")
+        log(f"[window] {msg}")
+        try:
+            if send is None:
+                import alerts
+                send = alerts.send
+            send("urgent", "window_line_revert", msg)
+        except Exception:
+            pass
+        try:
+            import decisions
+            decisions.record("purchasing", "window_line_revert", "supply window", fb, msg)
+        except Exception:
+            pass
+    return hit
 
 
 def save_second(plan2, r, log=print, path=None):
@@ -111,6 +202,6 @@ def fit(plan, r, now=None, log=print):
     if n is None or len(plan) <= n:
         return plan, []
     kept, dropped = plan[:n], plan[n:]
-    log(f"[window] {len(plan)} lines, {n} reach the market before the close ({SEC_PER_LINE} s a line): "
+    log(f"[window] {len(plan)} lines, {n} reach the market before the close ({sec_per_line()} s a line): "
         f"{len(dropped)} dropped to the next window ({', '.join(str(p['sku']) + ' x' + str(p['qty']) for p in dropped)})")
     return kept, dropped

@@ -33,4 +33,9 @@ def policy(data=None):
         PU.HIGH_MARGIN, PU.BAND_LOG = tmp_json({}, "high_margin"), tmp_path("high_margin_band.jsonl")
     except Exception:
         pass
+    try:                                          # 11/11 ~18:25: the supply window rules (sec_per_line, guard), kit logs
+        from depts import supply_window as W
+        W.RULES, W.KIT_LOGS = tmp_path("supply_window.json"), [tmp_path("market-kit.log")]
+    except Exception:
+        pass
     return P

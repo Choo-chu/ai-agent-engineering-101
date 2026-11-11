@@ -1,0 +1,8 @@
+{
+ "sec_per_line": 11,
+ "since": 1794389144,
+ "guard_h": 3,
+ "max_closed": 3,
+ "fallback": 12,
+ "note": "11/11 ~18:25 person: 11 s a line, close - 5 s unchanged; > 3 lines refused as closed in 3 h -> 12 s + Telegram"
+}

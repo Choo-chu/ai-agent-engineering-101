@@ -50,6 +50,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=".market")
     state = ap.parse_args().state
+    try:                                             # 11/11 ~18:25 (person): 11 s a line, back to 12 s at > 3 lines
+        from depts import supply_window              # refused as closed in 3 h (before the 2nd plan is fitted)
+        supply_window.guard(log=log)
+    except Exception as e:
+        log(f"[window] line guard error: {type(e).__name__}: {e}")
     try:                                             # 11/11 ~15:20 (person): the window's 2nd plan, made with the
         from depts import supply_window              # 1st, goes out at once (no refresh, ticks or planning first)
         plan2 = supply_window.take_second(state, log=log)
