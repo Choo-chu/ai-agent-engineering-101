@@ -8,7 +8,7 @@
   "food_min_shelf_h": 24,
   "max_break": 0.15,
   "perishable_trial_market_30m": 3,
-  "perishable_trial_qty": 2,
+  "perishable_trial_qty": 1,
   "sofa_trial_start": 1793951508,
   "sofa_trial_end": 1794797940,
   "high_max": 100,
@@ -44,8 +44,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 22,
- "ts": 1794279356,
- "by": "person",
- "reason": "person's decision 11/10 ~11:50: high_share 0.7, pinned 24 h"
+ "version": 23,
+ "ts": 1794356223,
+ "by": "ceo",
+ "reason": "purchasing.perishable_trial_qty -> 1 (trial-buy perishable units wasted in 24 h: 1 (normal-buy waste 3 not counted))"
 }

@@ -87,3 +87,36 @@
 11-10 21:06:33 second_shop off: saved 0.4126 < 3위 0.4015 + 0.012 (차이 0.0111)
 11-10 22:36:34 [alert] info shop_order_warn:1794317794: buyer 가게 순서 중단 조건 경고 (자동 모드: 유지): 성사율 27.7% < 적용 전 32.7% - 5%p (최근 2시간 285건) (telegram held)
 11-10 23:36:34 [alert] info shop_order_warn:1794321394: buyer 가게 순서 중단 조건 경고 (자동 모드: 유지): 성사율 26.2% < 적용 전 32.7% - 5%p (최근 2시간 302건) (telegram held)
+11-11 00:36:34 [alert] info shop_order_warn:1794324994: buyer 가게 순서 중단 조건 경고 (자동 모드: 유지): 성사율 20.8% < 적용 전 32.7% - 5%p (최근 2시간 159건) (telegram held)
+11-11 10:33:50 start (absolute saved guard, off and on again: high_accept saved < 0.400 끔 / >= 0.405 다시 켬; second_shop saved < 0.395 끔 / >= 0.400 다시 켬; soft_neg saved < 0.388 끔 / >= 0.393 다시 켬; accept_rule saved < 0.388 끔 / >= 0.393 다시 켬)
+11-11 10:33:58 check {'saved': 0.415, 'deals': 3868, 'surplus': 142136036, 'all': 0.863, 'second': 0.4319, 'third': 0.4211, 'saved_rank': 3, 'all_rank': 4}
+11-11 10:39:12 start (absolute saved guard, off and on again: high_accept saved < 0.3950 끔 / >= 0.4000 다시 켬; second_shop saved < 0.3900 끔 / >= 0.3950 다시 켬; soft_neg saved < 0.3830 끔 / >= 0.3880 다시 켬; accept_rule saved < 0.3830 끔 / >= 0.3880 다시 켬; 4th > 0.375 raises them)
+11-11 10:39:16 check {'saved': 0.415, 'deals': 3874, 'surplus': 143342474, 'all': 0.863, 'second': 0.432, 'third': 0.4212, 'fourth': 0.3775, 'saved_rank': 3, 'all_rank': 4}
+11-11 10:45:44 start (absolute saved guard, off and on again: high_accept saved < 0.3950 끔 / >= 0.4000 다시 켬; second_shop saved < 0.3900 끔 / >= 0.3950 다시 켬; soft_neg saved < 0.3830 끔 / >= 0.3880 다시 켬; accept_rule saved < 0.3830 끔 / >= 0.3880 다시 켬; 4th > 0.375 raises them)
+11-11 10:45:46 check {'saved': 0.415, 'deals': 3881, 'surplus': 143428285, 'all': 0.863, 'second': 0.4321, 'third': 0.4212, 'fourth': 0.3775, 'saved_rank': 3, 'all_rank': 4}
+11-11 11:15:47 check {'saved': 0.4149, 'deals': 3911, 'surplus': 144129933, 'all': 0.865, 'second': 0.432, 'third': 0.4219, 'fourth': 0.3776, 'saved_rank': 3, 'all_rank': 4}
+11-11 11:45:48 check {'saved': 0.4151, 'deals': 3933, 'surplus': 145107386, 'all': 0.865, 'second': 0.4323, 'third': 0.4223, 'fourth': 0.3776, 'saved_rank': 3, 'all_rank': 4}
+11-11 12:15:49 check {'saved': 0.415, 'deals': 3959, 'surplus': 146682702, 'all': 0.865, 'second': 0.4336, 'third': 0.4227, 'fourth': 0.3777, 'saved_rank': 3, 'all_rank': 4}
+11-11 12:45:50 check {'saved': 0.4149, 'deals': 3978, 'surplus': 147174223, 'all': 0.865, 'second': 0.434, 'third': 0.423, 'fourth': 0.3778, 'saved_rank': 3, 'all_rank': 4}
+11-11 13:15:53 check {'saved': 0.4147, 'deals': 4007, 'surplus': 148616886, 'all': 0.865, 'second': 0.4348, 'third': 0.4232, 'fourth': 0.378, 'saved_rank': 3, 'all_rank': 4}
+11-11 13:46:00 check {'saved': 0.4145, 'deals': 4041, 'surplus': 151177740, 'all': 0.865, 'second': 0.435, 'third': 0.4234, 'fourth': 0.378, 'saved_rank': 3, 'all_rank': 4}
+11-11 14:16:01 check {'saved': 0.4144, 'deals': 4061, 'surplus': 151561026, 'all': 0.865, 'second': 0.4354, 'third': 0.4237, 'fourth': 0.3781, 'saved_rank': 3, 'all_rank': 3}
+11-11 14:46:03 check {'saved': 0.4144, 'deals': 4092, 'surplus': 152853997, 'all': 0.865, 'second': 0.4361, 'third': 0.4239, 'fourth': 0.3782, 'saved_rank': 3, 'all_rank': 3}
+11-11 15:16:04 check {'saved': 0.4141, 'deals': 4119, 'surplus': 154635923, 'all': 0.865, 'second': 0.4369, 'third': 0.4242, 'fourth': 0.3782, 'saved_rank': 3, 'all_rank': 4}
+11-11 15:46:12 check {'saved': 0.414, 'deals': 4135, 'surplus': 156106867, 'all': 0.865, 'second': 0.4372, 'third': 0.4246, 'fourth': 0.3783, 'saved_rank': 3, 'all_rank': 3}
+11-11 16:16:14 check {'saved': 0.4136, 'deals': 4169, 'surplus': 156735471, 'all': 0.866, 'second': 0.4375, 'third': 0.4249, 'fourth': 0.3784, 'saved_rank': 3, 'all_rank': 3}
+11-11 16:46:16 check {'saved': 0.4135, 'deals': 4191, 'surplus': 158082387, 'all': 0.866, 'second': 0.4376, 'third': 0.4253, 'fourth': 0.3783, 'saved_rank': 3, 'all_rank': 3}
+11-11 17:16:21 check {'saved': 0.4133, 'deals': 4217, 'surplus': 158651773, 'all': 0.866, 'second': 0.4376, 'third': 0.4257, 'fourth': 0.3784, 'saved_rank': 3, 'all_rank': 3}
+11-11 17:46:26 check {'saved': 0.4132, 'deals': 4237, 'surplus': 158948566, 'all': 0.866, 'second': 0.4369, 'third': 0.4263, 'fourth': 0.3784, 'saved_rank': 3, 'all_rank': 3}
+11-11 18:16:31 check {'saved': 0.4128, 'deals': 4264, 'surplus': 159203378, 'all': 0.866, 'second': 0.4369, 'third': 0.4267, 'fourth': 0.3785, 'saved_rank': 3, 'all_rank': 3}
+11-11 18:46:33 check {'saved': 0.4126, 'deals': 4286, 'surplus': 160121179, 'all': 0.866, 'second': 0.4369, 'third': 0.4272, 'fourth': 0.3787, 'saved_rank': 3, 'all_rank': 3}
+11-11 19:16:34 check {'saved': 0.4124, 'deals': 4312, 'surplus': 160759960, 'all': 0.866, 'second': 0.4369, 'third': 0.4275, 'fourth': 0.3786, 'saved_rank': 3, 'all_rank': 3}
+11-11 19:46:37 check {'saved': 0.4123, 'deals': 4323, 'surplus': 161368247, 'all': 0.866, 'second': 0.4369, 'third': 0.4278, 'fourth': 0.3785, 'saved_rank': 3, 'all_rank': 3}
+11-11 20:16:42 check {'saved': 0.4122, 'deals': 4336, 'surplus': 161525736, 'all': 0.866, 'second': 0.4369, 'third': 0.428, 'fourth': 0.3786, 'saved_rank': 3, 'all_rank': 3}
+11-11 20:46:43 check {'saved': 0.412, 'deals': 4360, 'surplus': 161948893, 'all': 0.866, 'second': 0.4369, 'third': 0.4283, 'fourth': 0.3786, 'saved_rank': 3, 'all_rank': 3}
+11-11 21:16:46 check {'saved': 0.4117, 'deals': 4389, 'surplus': 162389405, 'all': 0.867, 'second': 0.4369, 'third': 0.4287, 'fourth': 0.3787, 'saved_rank': 3, 'all_rank': 3}
+11-11 21:46:57 check {'saved': 0.4116, 'deals': 4408, 'surplus': 162736041, 'all': 0.867, 'second': 0.4369, 'third': 0.429, 'fourth': 0.3788, 'saved_rank': 3, 'all_rank': 3}
+11-11 22:16:58 check {'saved': 0.4115, 'deals': 4436, 'surplus': 163179493, 'all': 0.867, 'second': 0.4369, 'third': 0.4294, 'fourth': 0.3789, 'saved_rank': 3, 'all_rank': 3}
+11-11 22:46:59 check {'saved': 0.4113, 'deals': 4467, 'surplus': 164771255, 'all': 0.867, 'second': 0.4369, 'third': 0.4297, 'fourth': 0.3791, 'saved_rank': 3, 'all_rank': 3}
+11-11 23:17:02 check {'saved': 0.4112, 'deals': 4489, 'surplus': 165293295, 'all': 0.867, 'second': 0.4369, 'third': 0.4301, 'fourth': 0.3792, 'saved_rank': 3, 'all_rank': 4}
+11-11 23:47:10 check {'saved': 0.4111, 'deals': 4514, 'surplus': 166573333, 'all': 0.867, 'second': 0.4369, 'third': 0.4305, 'fourth': 0.3793, 'saved_rank': 3, 'all_rank': 4}

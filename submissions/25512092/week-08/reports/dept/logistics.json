@@ -1,17 +1,17 @@
 {
  "metrics": {
-  "cash": 13408104,
-  "stock_cost": 66619238,
-  "units": 391,
-  "storage_per_day": 666192,
-  "near_expiry_12h": 3,
-  "goods_over_48h": 5,
-  "high_over_24h": 23,
+  "cash": 47437806,
+  "stock_cost": 77445291,
+  "units": 357,
+  "storage_per_day": 774453,
+  "near_expiry_12h": 7,
+  "goods_over_48h": 6,
+  "high_over_24h": 19,
   "perishable_24h": {
-   "bought": 19,
-   "sold": 18,
-   "wasted": 1,
-   "waste_cost": 21863
+   "bought": 10,
+   "sold": 14,
+   "wasted": 4,
+   "waste_cost": 42129
   }
  },
  "disposal_candidates": [
@@ -19,84 +19,84 @@
    "unit": "u-b41384ba3c36",
    "sku": "G612e869d",
    "cost": 5594,
-   "hours": 83
+   "hours": 107
   },
   {
-   "unit": "u-cfadad966b6f",
-   "sku": "Gd7ab0bd8",
-   "cost": 44762,
-   "hours": 54
+   "unit": "u-b8c5a0e36f63",
+   "sku": "G6969f82d",
+   "cost": 254690,
+   "hours": 55
   },
   {
-   "unit": "u-d476dc282f67",
-   "sku": "Gb0cd3b17",
-   "cost": 73706,
-   "hours": 52
+   "unit": "u-b8c5a0e36f63",
+   "sku": "G6969f82d",
+   "cost": 254690,
+   "hours": 55
   },
   {
-   "unit": "u-b47cbe1d7aa0",
-   "sku": "G54d1cea5",
-   "cost": 76629,
-   "hours": 51
+   "unit": "u-b76c02bf6929",
+   "sku": "G2607d1f6",
+   "cost": 455811,
+   "hours": 53
   },
   {
-   "unit": "u-6e0cc6fbde05",
-   "sku": "G38a0dca5",
-   "cost": 19437,
+   "unit": "u-b76c02bf6929",
+   "sku": "G2607d1f6",
+   "cost": 455811,
+   "hours": 53
+  },
+  {
+   "unit": "u-a7fe1e781ede",
+   "sku": "Gfe5449fb",
+   "cost": 446874,
    "hours": 49
   },
   {
-   "unit": "u-710578e73031",
-   "sku": "Gc44de87c",
-   "cost": 165099,
-   "hours": 35
+   "unit": "u-a7fe1e781ede",
+   "sku": "Gfe5449fb",
+   "cost": 446874,
+   "hours": 49
   },
   {
-   "unit": "u-2c20424cddf6",
-   "sku": "G72c86070",
-   "cost": 277538,
-   "hours": 35
+   "unit": "u-4149cf439538",
+   "sku": "G2a787318",
+   "cost": 261737,
+   "hours": 49
   },
   {
-   "unit": "u-8f7c818f25fd",
-   "sku": "G30604071",
-   "cost": 241926,
-   "hours": 34
+   "unit": "u-4149cf439538",
+   "sku": "G2a787318",
+   "cost": 261737,
+   "hours": 49
   },
   {
-   "unit": "u-a31183f3b319",
-   "sku": "G9ce449f6",
-   "cost": 315352,
-   "hours": 32
-  },
-  {
-   "unit": "u-430aca88eea5",
-   "sku": "Gd1e861c7",
-   "cost": 200255,
-   "hours": 32
+   "unit": "u-e2802d36c917",
+   "sku": "Gc2ac2479",
+   "cost": 245875,
+   "hours": 48
   }
  ],
  "issues": [
   {
    "level": "warn",
-   "text": "23 high-price units unsold > 24 h",
+   "text": "19 high-price units unsold > 24 h",
    "refs": [
-    "u-710578e73031",
-    "u-2c20424cddf6",
-    "u-8f7c818f25fd",
-    "u-a31183f3b319",
-    "u-430aca88eea5"
+    "u-b8c5a0e36f63",
+    "u-b76c02bf6929",
+    "u-a7fe1e781ede",
+    "u-4149cf439538",
+    "u-e2802d36c917"
    ]
   },
   {
    "level": "warn",
-   "text": "1 perishable units wasted in 24 h (21,863)",
+   "text": "4 perishable units wasted in 24 h (42,129)",
    "refs": []
   }
  ],
  "dept": "logistics",
- "ts": 1794322643,
- "policy_version": 22,
+ "ts": 1794408903,
+ "policy_version": 23,
  "window_h": 6,
  "requests": []
 }

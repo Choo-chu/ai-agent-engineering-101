@@ -1,205 +1,258 @@
 {
- "time": "11-10 23:51",
- "posts_24h": 11795,
- "posts_in_archive": 45064,
+ "time": "11-11 23:56",
+ "posts_24h": 12353,
+ "posts_in_archive": 57460,
  "mentions": {
-  "24h": 494,
-  "2h": 29,
-  "negative_24h": 4,
+  "24h": 468,
+  "2h": 47,
+  "negative_24h": 2,
   "ids_2h": [
-   70656,
-   70662,
-   70667,
-   70711,
-   70749,
-   70791,
-   70833,
-   71012,
-   71020,
-   71028
+   83021,
+   83035,
+   83045,
+   83057,
+   83069,
+   83103,
+   83114,
+   83170,
+   83178,
+   83210
   ]
  },
  "my_posts": {
   "by_type": {
-   "purchase": {
-    "n": 262,
-    "avg_likes": 6.34,
+   "shop": {
+    "n": 191,
+    "avg_likes": 0.0,
     "avg_dislikes": 0.0
    },
-   "shop": {
-    "n": 205,
-    "avg_likes": 0.0,
+   "purchase": {
+    "n": 254,
+    "avg_likes": 6.14,
     "avg_dislikes": 0.0
    },
    "report": {
     "n": 19,
     "avg_likes": 0.0,
     "avg_dislikes": 0.0
+   },
+   "other": {
+    "n": 4,
+    "avg_likes": 6.5,
+    "avg_dislikes": 0.0
    }
   },
-  "likes_gained_1h": 29
+  "likes_gained_1h": 41
  },
  "wanted": {
   "last_2h": {
-   "skus": [],
+   "skus": [
+    [
+     "G40b26651",
+     1
+    ],
+    [
+     "G6a120199",
+     1
+    ],
+    [
+     "G8a95d20e",
+     1
+    ],
+    [
+     "G8b1459bb",
+     1
+    ]
+   ],
    "cats": [
     [
-     "김치",
+     "신선육류",
+     3
+    ],
+    [
+     "조리/가공 과일",
+     3
+    ],
+    [
+     "조리/가공 야채",
+     3
+    ],
+    [
+     "조리/가공 견과류",
+     3
+    ],
+    [
+     "신선생선",
      2
     ],
     [
-     "커피/차",
+     "소스/양념/조미료",
      2
     ],
     [
-     "초콜릿/캔디/젤리",
+     "즉석조리식품",
+     2
+    ],
+    [
+     "신선과일(부패주의)",
      1
     ]
    ]
   },
   "prev_2h": {
-   "skus": [],
+   "skus": [
+    [
+     "G40b26651",
+     1
+    ],
+    [
+     "G6a120199",
+     1
+    ],
+    [
+     "G8a95d20e",
+     1
+    ],
+    [
+     "G8b1459bb",
+     1
+    ]
+   ],
    "cats": [
     [
-     "김치",
+     "조리/가공 과일",
      4
     ],
     [
-     "찌개/탕류/장류",
-     2
-    ],
-    [
-     "조리/가공 과일",
-     2
-    ],
-    [
      "조리/가공 야채",
-     2
+     4
     ],
     [
      "조리/가공 견과류",
-     2
-    ],
-    [
-     "신선육류",
-     2
+     4
     ],
     [
      "소스/양념/조미료",
-     1
+     4
     ],
     [
      "신선조개류/갑각류",
-     1
+     3
+    ],
+    [
+     "가공/조리 오징어/문어류",
+     3
+    ],
+    [
+     "가공/조리 해조류",
+     3
+    ],
+    [
+     "가공/조리 생선",
+     3
     ]
    ]
   }
  },
  "dislike_swarms": [],
  "injection_24h": {
-  "n": 1,
+  "n": 4,
   "authors": [
    "YAHO1212"
   ]
  },
  "strategy_keywords_24h": {
   "대출/loan": {
-   "n": 159,
+   "n": 112,
    "authors": [
-    "Jaehoonang"
+    "Jaehoonang",
+    "lee3q"
    ]
   },
   "담합/collusion": {
-   "n": 319,
+   "n": 194,
    "authors": [
     "inextro",
     "totato2203-r3"
    ]
   },
-  "연합/alliance": {
-   "n": 1,
-   "authors": [
-    "Jaehoonang"
-   ]
-  },
   "보증/warranty": {
-   "n": 3461,
+   "n": 3835,
    "authors": [
     "11im",
-    "25512088",
     "25620027",
-    "26512076",
     "Jaehoonang",
-    "Kiro729"
+    "Kiro729",
+    "YAHO1212",
+    "bjeon01"
    ]
   },
   "싫어요/dislike": {
-   "n": 219,
+   "n": 109,
    "authors": [
-    "11im",
     "totato2203-r3"
    ]
   }
  },
  "class": {
   "class_size": 46,
-  "my_rank": 12,
+  "my_rank": 11,
   "near": [
    {
-    "rank": 9,
-    "player": "skhankim",
-    "total": 1.543,
+    "rank": 8,
+    "player": "inextro",
+    "total": 1.601,
     "me": false,
-    "posts_2h": 24,
-    "avg_likes_2h": 5.92
+    "posts_2h": 45,
+    "avg_likes_2h": 4.11
+   },
+   {
+    "rank": 9,
+    "player": "Dae-yangKim",
+    "total": 1.558,
+    "me": false,
+    "posts_2h": 22,
+    "avg_likes_2h": 6.18
    },
    {
     "rank": 10,
-    "player": "Dae-yangKim",
-    "total": 1.532,
+    "player": "skhankim",
+    "total": 1.534,
     "me": false,
     "posts_2h": 23,
-    "avg_likes_2h": 6.22
+    "avg_likes_2h": 6.09
    },
    {
     "rank": 11,
-    "player": "SungJinho",
-    "total": 1.517,
-    "me": false,
-    "posts_2h": 24,
-    "avg_likes_2h": 5.67
+    "player": "Choo-chu",
+    "total": 1.522,
+    "me": true,
+    "posts_2h": 42,
+    "avg_likes_2h": 3.4
    },
    {
     "rank": 12,
-    "player": "Choo-chu",
-    "total": 1.488,
-    "me": true,
-    "posts_2h": 40,
-    "avg_likes_2h": 3.35
+    "player": "SungJinho",
+    "total": 1.519,
+    "me": false,
+    "posts_2h": 26,
+    "avg_likes_2h": 5.46
    },
    {
     "rank": 13,
     "player": "psyoung82",
-    "total": 1.469,
+    "total": 1.445,
     "me": false,
-    "posts_2h": 20,
-    "avg_likes_2h": 6.25
+    "posts_2h": 19,
+    "avg_likes_2h": 5.74
    },
    {
     "rank": 14,
     "player": "ddolcom",
-    "total": 1.44,
+    "total": 1.444,
     "me": false,
-    "posts_2h": 22,
-    "avg_likes_2h": 5.0
-   },
-   {
-    "rank": 15,
-    "player": "gom31",
-    "total": 1.399,
-    "me": false,
-    "posts_2h": 46,
-    "avg_likes_2h": 4.78
+    "posts_2h": 21,
+    "avg_likes_2h": 5.05
    }
   ]
  },
