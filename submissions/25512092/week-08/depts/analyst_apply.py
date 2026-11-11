@@ -95,6 +95,8 @@ def current_limit(key):
 
 def check_max(key, value):
     import limits
+    if key == "limits.STOCK_CAP" and limits.auto_cap_on():   # 11/11 ~14:05 (person)
+        raise ValueError("the automatic STOCK_CAP (stock_cap_auto.json) is on: no STOCK_CAP change")
     mx = limits.ANALYST_MAX
     ok = {"limits.STOCK_CAP": 1_000_000 <= value <= mx["STOCK_CAP"],
           "limits.HIGH_MAX": 100_000 <= value <= mx["HIGH_MAX"],

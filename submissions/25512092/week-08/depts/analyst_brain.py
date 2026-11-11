@@ -158,9 +158,14 @@ def by_key(now):
         cap = d.execute("SELECT COUNT(*), COALESCE(SUM(budget_free-budget),0), COALESCE(MAX(stock_cost),0) "
                         "FROM cap_runs WHERE ts>=?", (t,)).fetchone()
         stock = d.execute("SELECT stock_cost, balance FROM cash ORDER BY ts DESC LIMIT 1").fetchone()
-        out["limits.STOCK_CAP"] = {"window": f"{fmt(t)} ~ {fmt(now)}", "current": limits.STOCK_CAP,
+        # 11/11 ~14:05 (person): the automatic STOCK_CAP (cash + stock - reserve) is what binds while it is on
+        cap_now, _, src = limits.stock_cap_now(stock[1], stock[0]) if stock else (limits.STOCK_CAP, None, "fixed")
+        out["limits.STOCK_CAP"] = {"window": f"{fmt(t)} ~ {fmt(now)}", "current": cap_now, "source": src,
                                    "restock_runs_cut_by_cap": cap[0], "budget_held_back_sum": cap[1],
                                    "stock_at_cost_now": stock[0] if stock else None, "cash_now": stock[1] if stock else None}
+        if src == "auto":
+            out["limits.STOCK_CAP"]["note"] = (f"automatic: cash + stock at cost - {limits.auto_cap_rules().get('reserve'):,}"
+                                               " every run; not a proposable key while it is on")
         for key in ("limits.HIGH_MAX", "purchasing.high_max", "purchasing.high_share"):
             t = since(key)
             hp = d.execute("SELECT COUNT(*), COALESCE(SUM(cost),0) FROM my_stock WHERE cost>? AND supplied_at>=?",
@@ -177,8 +182,9 @@ def by_key(now):
         t = since("purchasing.spend_share")
         share = policy.get("purchasing", "spend_share")
         bind = {"spend_share": 0, "STOCK_CAP": 0, "cash_reserve": 0}
+        ar = limits.auto_cap_rules()
         for bal, stk in d.execute("SELECT balance, stock_cost FROM cash WHERE ts>=?", (t,)):
-            spend, room = (bal - limits.CASH_RESERVE) * share, limits.STOCK_CAP - stk
+            spend, room = (bal - limits.CASH_RESERVE) * share, limits.stock_cap_now(bal, stk, r=ar)[0] - stk
             bind["cash_reserve" if spend <= 0 else "STOCK_CAP" if room < spend else "spend_share"] += 1
         out["purchasing.spend_share"] = {"window": f"{fmt(t)} ~ {fmt(now)}", "current": share,
                                          "five_min_snapshots_by_binding_rule": bind,
@@ -248,6 +254,10 @@ def collect(log_=log):
     snap["policy"] = {k: pol.get(k) for k in ("version", "purchasing", "sales", "logistics", "cs", "buyer")}
     snap["limits"] = {"STOCK_CAP": limits.STOCK_CAP, "STOCK_EXIT": limits.STOCK_EXIT,
                       "CASH_RESERVE": limits.CASH_RESERVE, "HIGH_MAX": sales_report.HIGH_MAX}
+    if limits.auto_cap_on():                        # 11/11 ~14:05 (person): the analyst knows the automatic cap
+        snap["limits"]["STOCK_CAP"] = (f"automatic: cash + stock at cost - {limits.auto_cap_rules().get('reserve'):,} "
+                                       "every restock run (the fixed value is not used)")
+        snap["limits"].pop("STOCK_EXIT", None)
     d = db()
     try:
         d.execute("CREATE TABLE IF NOT EXISTS analyst_snap (ts REAL PRIMARY KEY, snap TEXT)")
@@ -307,7 +317,8 @@ def allowed_keys():
         lo, hi = limits.POLICY_RANGES.get(full, (None, None))
         out[full] = (lo, hi, cur)
     mx = limits.ANALYST_MAX
-    out["limits.STOCK_CAP"] = (1_000_000, mx["STOCK_CAP"], limits.STOCK_CAP)
+    if not limits.auto_cap_on():                    # 11/11 ~14:05 (person): no STOCK_CAP proposal while it is automatic
+        out["limits.STOCK_CAP"] = (1_000_000, mx["STOCK_CAP"], limits.STOCK_CAP)
     out["limits.HIGH_MAX"] = (100_000, mx["HIGH_MAX"], sales_report.HIGH_MAX)
     out["limits.CASH_RESERVE"] = (mx["CASH_RESERVE_MIN"], 5_000_000, limits.CASH_RESERVE)
     return out
