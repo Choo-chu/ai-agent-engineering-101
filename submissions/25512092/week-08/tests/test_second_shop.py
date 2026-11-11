@@ -167,19 +167,19 @@ def test_soft_move_accept():
 
 
 def test_saved_guard():
-    # 11/10 ~12:30 (person): against the 3rd best saved; losing 1st switches nothing off
-    b = lambda s, third, rank=1: {"saved": s, "second": 0.5, "third": third, "saved_rank": rank}
-    w = saved_guard.why
-    assert w("high_accept", b(0.3895, 0.37)) and not w("high_accept", b(0.3905, 0.37))    # 3rd + 0.020
-    assert w("second_shop", b(0.3815, 0.37)) and not w("second_shop", b(0.3825, 0.37))    # 3rd + 0.012
-    assert w("soft_neg", b(0.3755, 0.37)) and not w("soft_neg", b(0.3765, 0.37))          # 3rd + 0.006
-    assert w("accept_rule", b(0.3755, 0.37)) and not w("accept_rule", b(0.40, 0.37))
-    assert not w("soft_neg", b(0.45, 0.37, rank=2))                                      # not first: stays on
-    assert not w("high_accept", {"saved": 0.3, "second": 0.4})                           # no 3rd: nothing
+    # 11/11 ~10:30 (person): absolute thresholds with a gap; no rank / 2nd / 3rd condition
+    b = lambda s, third=0.5, rank=3: {"saved": s, "second": 0.6, "third": third, "saved_rank": rank}
+    w, k = saved_guard.why, saved_guard.back
+    assert w("high_accept", b(0.3999)) and not w("high_accept", b(0.400)) and k("high_accept", b(0.405))         and not k("high_accept", b(0.4049))
+    assert w("second_shop", b(0.3949)) and not w("second_shop", b(0.395)) and k("second_shop", b(0.400))
+    assert w("soft_neg", b(0.3879)) and not w("soft_neg", b(0.388)) and k("soft_neg", b(0.393))         and not k("soft_neg", b(0.3929))
+    assert w("accept_rule", b(0.3879)) and k("accept_rule", b(0.393))
+    assert not w("soft_neg", b(0.4145, third=0.4198, rank=3))           # 3rd and under the 2nd: stays on
+    assert not w("high_accept", {"saved": None}) and not k("high_accept", {"saved": None})
 
 
 def test_apply_and_watch():
-    """20:27: on only with soft_neg widened and not already under the staged guard; the watcher switches off by stage."""
+    """20:27: on only when not already under the guard; the watcher switches off and on again by absolute saved."""
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tools"))
     import saved_guard_watch as gw
     import soft_neg_mid as mid
@@ -188,20 +188,32 @@ def test_apply_and_watch():
     rec, sent = [], []
     dec = mock.Mock(record=lambda *a, **k: rec.append(a))
     al = mock.Mock(send=lambda *a, **k: sent.append(a))
-    with mock.patch.object(d2, "RULES", os.path.join(d, "d2.json")), \
-            mock.patch.object(high_accept, "RULES", os.path.join(d, "ha.json")):
-        b = {"saved": 0.42, "third": 0.37, "saved_rank": 1}
-        t = mid.apply_d_high(b, 1000, dec)
+    J = lambda n, v: open(os.path.join(d, n), "w", encoding="utf-8").write(json.dumps(v))
+    J("sn.json", {"enabled": True, "since": 1, "until": 2 * 10 ** 10, "share": 1.0})
+    J("ar.json", {"enabled": True, "since": 1, "until": None, "mode": "always"})
+    with mock.patch.object(d2, "RULES", os.path.join(d, "d2.json")),             mock.patch.object(high_accept, "RULES", os.path.join(d, "ha.json")),             mock.patch.object(soft_neg, "RULES", os.path.join(d, "sn.json")),             mock.patch.object(accept_rule, "RULES", os.path.join(d, "ar.json")):
+        t = mid.apply_d_high({"saved": 0.42}, 1000, dec)
         assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == high_accept.FACTOR
         assert "적용" in t and len(rec) == 2
-        # under 3rd + 0.020 but over + 0.012: high off, D stays
-        assert gw.check({"saved": 0.385, "third": 0.37, "saved_rank": 1}, al, dec) == ["high_accept"]
-        assert not high_accept.rules()["enabled"] and d2.rules()["enabled"] and len(sent) == 1
-        assert gw.check({"saved": 0.381, "third": 0.37, "saved_rank": 1}, al, dec) == ["second_shop"]
-        assert gw.check({"saved": 0.30, "third": 0.37, "saved_rank": 2}, al, dec) == []       # both already off
-        # at 20:27 already under 3rd + 0.020: high not switched on, D on
+        assert gw.check({"saved": 0.398}, al, dec) == [("high_accept", "off")]                 # < 0.400
+        assert not high_accept.rules()["enabled"] and high_accept.rules()["guard_off"] and d2.rules()["enabled"]
+        assert gw.check({"saved": 0.404}, al, dec) == []                                       # gap: not on yet
+        assert gw.check({"saved": 0.405}, al, dec) == [("high_accept", "on")]
+        assert high_accept.rules()["enabled"] and high_accept.on() and not high_accept.rules()["guard_off"]
+        assert gw.check({"saved": 0.387}, al, dec) == [("high_accept", "off"), ("second_shop", "off"),
+                                                       ("soft_neg", "off"), ("accept_rule", "off")]
+        assert not soft_neg.on() and not accept_rule.on()
+        assert gw.check({"saved": 0.393}, al, dec) == [("soft_neg", "on"), ("accept_rule", "on")]
+        assert soft_neg.on() and soft_neg.rules()["share"] == 1.0 and accept_rule.on()
+        assert gw.check({"saved": 0.41}, al, dec) == [("high_accept", "on"), ("second_shop", "on")]
+        assert all(m.on() for m in (high_accept, d2, soft_neg, accept_rule))
+        assert sum(1 for a in sent if a[0] == "urgent") == len(sent) == 10
+        # switched off by the person (no guard_off): never switched on by the guard
+        r = accept_rule.rules(); r.update(enabled=False); J("ar.json", r)
+        assert gw.check({"saved": 0.45}, al, dec) == [] and not accept_rule.on()
+        # at 20:27 already under the guard: high not switched on, D on
         os.remove(d2.RULES); os.remove(high_accept.RULES)
-        t = mid.apply_d_high({"saved": 0.385, "third": 0.37, "saved_rank": 1}, 1000, dec)
+        t = mid.apply_d_high({"saved": 0.397}, 1000, dec)
         assert d2.rules()["enabled"] and not high_accept.rules() and "적용 안 함" in t
 
 

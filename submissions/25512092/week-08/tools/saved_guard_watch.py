@@ -1,11 +1,9 @@
-"""Staged saved guard for high_accept_105 and second_shop (plan D) (person's decision 11/09 ~17:40, depts/saved_guard.py):
-every CHECK_S reads the board and switches off, with an urgent Telegram and a decision,
-  high_accept_105 when my saved < 2nd + 0.025, second_shop when my saved < 2nd + 0.015
-(soft_neg and the accept rule: the same staged rule in tools/soft_neg_watch.py and tools/accept_watch.py, 2nd + 0.008).
-Both are switched on by tools/soft_neg_mid.py at 20:27 only if soft_neg went to 100%; REPORT_H after that, one report:
-  D: 2nd-shop tries, deals, close rate, saving per deal (vs list)
-  expensive orders (list >= 200,000): orders, close rate, surplus per deal, deals closed above the average (high_accept_105)
-  all: orders and deals per hour (vs the same length before), surplus added, saved change, the 2nd best saved
+"""Saved guard watcher (person's decision 11/11 ~10:30, depts/saved_guard.py): every CHECK_S reads the board and, for
+high_accept, second_shop (D), soft_neg and the accept rule, switches off below its absolute saved threshold and on
+again at or above its higher one (only what this guard switched off), urgent Telegram + decision each time; no rank
+condition. Earlier: staged by the 2nd (11/09) / 3rd (11/10) best saved, off only (soft_neg and the accept rule in their
+own watchers, tools/soft_neg_watch.py and tools/accept_watch.py, which ended when they switched off).
+Also: shop_order's guard (tools/shop_order_check.py), and one D / expensive-order report REPORT_H after soft_neg_mid.
     python tools/saved_guard_watch.py [--report-dry]          (log in logs/saved_guard.log)
 """
 import json
@@ -18,13 +16,15 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "tools"))
 os.chdir(HERE)
-from depts import high_accept, saved_guard, second_shop, soft_neg  # noqa: E402
+from depts import accept_rule, high_accept, saved_guard, second_shop, soft_neg  # noqa: E402
 
 CHECK_S, REPORT_H = 1800, 6
 LOG = os.path.join(HERE, "logs", "saved_guard.log")
 STATE = os.path.join(HERE, "logs", "saved_guard_state.json")
-FEATURES = (("high_accept", high_accept, "비싼 주문 수락 기준 완화(high_accept_105)"),
-            ("second_shop", second_shop, "2번째 가게 시도(D, second_shop)"))
+FEATURES = (("high_accept", high_accept, "비싼 주문 수락 기준 완화(high_accept 1.10)"),
+            ("second_shop", second_shop, "2번째 가게 시도(D, second_shop)"),
+            ("soft_neg", soft_neg, "soft_neg"),                       # 11/11 ~10:30 (person): all four here, with
+            ("accept_rule", accept_rule, "수락 규칙(상시, 시장 평균 100%)"))   # switching on again (depts/saved_guard.py)
 
 
 def log(m):
@@ -57,21 +57,43 @@ def board():
     return b()
 
 
-def check(b, alerts, decisions):
-    """Switch off what the staged guard says; returns the names switched off."""
-    off = []
+def on_kw(key, now):
+    """The rules to switch `key` on again (soft_neg: 100% of orders to the round end)."""
+    kw = dict(enabled=True, stopped=None, stop_reason=None, guard_off=False, guard_on=round(now))
+    if key == "soft_neg":
+        from limits import ROUND_END
+        kw.update(until=round(ROUND_END), share=1.0, ended=None)
+    if key == "accept_rule":
+        kw.update(until=None, ended=None, mode="always")
+    return kw
+
+
+def check(b, alerts, decisions, now=None):
+    """11/11 ~10:30 (person): absolute saved thresholds, off and on again (depts/saved_guard.py); no rank condition.
+    Returns [(name, 'off' / 'on')]."""
+    now = now or time.time()
+    out = []
     for key, mod, name in FEATURES:
-        if not mod.on():
-            continue
-        why = saved_guard.why(key, b)
-        if why:
-            set_rules(mod, enabled=False, stopped=round(time.time()), stop_reason=why)
+        r = mod.rules()
+        if mod.on():
+            why = saved_guard.why(key, b)
+            if not why:
+                continue
+            set_rules(mod, enabled=False, stopped=round(now), stop_reason=why, guard_off=True)
             decisions.record("buyer", f"{mod.TAG}_stop", mod.TAG, b, why)
-            alerts.send("urgent", f"{mod.TAG}_stop", f"buyer {name} 끔: {why} (기준 {saved_guard.REF_TEXT} + {saved_guard.MARGINS[key]})",
-                        log=log)
+            alerts.send("urgent", f"{mod.TAG}_stop:{int(now)}", f"buyer {name} 끔: {why} (기준 {saved_guard.text(key)})", log=log)
             log(f"{key} off: {why}")
-            off.append(key)
-    return off
+            out.append((key, "off"))
+        elif r.get("guard_off"):
+            why = saved_guard.back(key, b)
+            if not why:
+                continue
+            set_rules(mod, **on_kw(key, now))
+            decisions.record("buyer", f"{mod.TAG}_on", mod.TAG, b, why + " - on again (saved guard)")
+            alerts.send("urgent", f"{mod.TAG}_on:{int(now)}", f"buyer {name} 다시 켬: {why} (기준 {saved_guard.text(key)})", log=log)
+            log(f"{key} on again: {why}")
+            out.append((key, "on"))
+    return out
 
 
 def shop_order_check(alerts, decisions, now=None):
@@ -189,7 +211,7 @@ def report(t0, b0, b1, t1=None):
     if b0:
         L.append(f"- surplus +{b1['surplus'] - b0['surplus']:,} (시간당 {(b1['surplus'] - b0['surplus']) / h:,.0f}), saved "
                  f"{b0['saved']} -> {b1['saved']}, 2위 saved {b0['second']} -> {b1['second']} (차이 "
-                 f"{b1['saved'] - b1['second']:.4f}; 끄는 기준 3위 saved + 고가 0.020 / D 0.012 / soft_neg·수락 규칙 0.006), deals "
+                 f"{b1['saved'] - b1['second']:.4f}; 끄는/켜는 기준 saved 고가 0.400/0.405, D 0.395/0.400, soft_neg·수락 0.388/0.393), deals "
                  f"{b0['deals']} -> {b1['deals']}")
     return "\n".join(L)
 
@@ -202,7 +224,7 @@ def main():
     import alerts
     import decisions
     from limits import ROUND_END
-    log("start (staged guard by the 3rd best saved: high_accept + 0.020, second_shop + 0.012)")
+    log("start (absolute saved guard, off and on again: " + "; ".join(f"{k} {saved_guard.text(k)}" for k in saved_guard.THRESH) + ")")
     while time.time() < ROUND_END:
         st = state()
         ss = second_shop.rules()
@@ -216,13 +238,12 @@ def main():
                 log(f"report failed: {type(e).__name__}: {e}")
             st[f"report:{int(t_on)}"] = round(time.time())
             save_state(st)
-        if any(m.on() for _, m, _ in FEATURES):
-            try:
-                b = board()
-                log(f"check {b}")
-                check(b, alerts, decisions)
-            except Exception as e:
-                log(f"check failed: {type(e).__name__}")
+        try:                                       # 11/11 ~10:30: every time (switching on again too)
+            b = board()
+            log(f"check {b}")
+            check(b, alerts, decisions)
+        except Exception as e:
+            log(f"check failed: {type(e).__name__}: {e}")
         try:
             shop_order_check(alerts, decisions)
         except Exception as e:
