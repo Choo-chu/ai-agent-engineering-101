@@ -13,6 +13,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "tools"))
 import check_soft105 as C  # noqa: E402
+import board_read as BR  # noqa: E402
 
 T0 = 1_800_000_000
 
@@ -56,7 +57,7 @@ def test_live_board_now():
     out = C.send_with_retry(S, lambda lv, k, t: sent.append((k, t)), now=NOW, sleep=lambda s: None,
                             db_path=db_with(ROWS), board=board_ok, path=sn_log(), clock=lambda: NOW)
     t = out[0]
-    assert len(sent) == 1 and "None" not in t and C.FAIL not in t, t
+    assert len(sent) == 1 and "None" not in t and BR.FAIL not in t, t
     assert "-> 0.4135" in t and "(4위) -> 0.866 (2위)" in t
     # deals per hour over the real snapshot / reading times: (4180-4000)/(3h+25min) and (4000-3900)/(3h-50min)
     assert f"{180 / ((3 * 3600 + 1500) / 3600):.1f} vs {100 / ((3 * 3600 - 3000) / 3600):.1f}" in t
@@ -86,28 +87,28 @@ def test_failed_then_next_snapshot():
     out = C.send_with_retry(S, lambda lv, k, t: sent.append((k, t)), now=NOW, sleep=sleep, db_path=p,
                             board=board, path=sn_log())
     first, second = sent[0][1], sent[1][1]
-    assert "None" not in first and f"saved 0.4146 -> {C.FAIL}" in first and "다음 스냅샷 값으로 다시 시도" in first
-    assert "시간당 deals(보드) " + C.FAIL in first
-    assert sent[1][0].endswith(":retry1") and "다시 읽음 1" in second and C.FAIL not in second, second
+    assert "None" not in first and f"saved 0.4146 -> {BR.FAIL}" in first and "다음 스냅샷 값으로 다시 시도" in first
+    assert "시간당 deals(보드) " + BR.FAIL in first
+    assert sent[1][0].endswith(":retry1") and "다시 읽음 1" in second and BR.FAIL not in second, second
     assert "-> 0.4134" in second and "(3위)" in second and slept and len(out) == 2
 
 
 def test_gives_up_without_snapshot():
     sent = []
-    C_WAIT = C.WAIT_S
-    C.WAIT_S = 0
+    C_WAIT = BR.WAIT_S
+    BR.WAIT_S = 0
     try:
         C.send_with_retry(S, lambda lv, k, t: sent.append((k, t)), now=NOW, sleep=lambda s: None,
                           db_path=db_with(ROWS), board=board_down, path=sn_log())
     finally:
-        C.WAIT_S = C_WAIT
+        BR.WAIT_S = C_WAIT
     assert len(sent) == 2 and "다시 읽기 중단" in sent[1][1]
 
 
 def test_old_limit_missed():
     p = db_with(ROWS)
-    assert C.row_at(T0, db_path=p)[1]["deals"] == 4000          # 25 min off: found now
-    assert C.row_at(T0, tol=1200, db_path=p) == (None, None)    # the old 20 min limit: None
+    assert BR.at(T0, db_path=p).get("b", "deals") == 4000         # 25 min off: found now
+    assert not BR.at(T0, tol=1200, db_path=p).ok   # the old 20 min limit: None
 
 
 if __name__ == "__main__":

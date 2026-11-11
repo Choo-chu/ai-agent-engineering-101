@@ -81,12 +81,9 @@ def guard(now=None, r=None, path=None, sn=None):
 
 
 def _mine(t):
-    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=60)
-    try:
-        r = db.execute("SELECT ts, buyer FROM board_hist ORDER BY ABS(ts - ?) LIMIT 1", (t,)).fetchone()
-    finally:
-        db.close()
-    return json.loads(r[1]) if r and abs(r[0] - t) <= 1800 else None
+    """My buyer row at t via tools/board_read.py (the common board reading); None = 읽기 실패."""
+    import board_read
+    return board_read.mine(t)[1]
 
 
 def shop_share(t0, t1):
@@ -112,7 +109,8 @@ def report(t_on, t1=None):
         ns.append((sum(1 for r in R if r["why"] == "재고 없음") / len(R)) if R else None)
     m1, m_on, m0 = _mine(t1), _mine(t_on), _mine(t0)
     h = (t1 - t_on) / 3600
-    dph = lambda x, y: f"{(x['deals'] - y['deals']) / h:.1f}" if x and y else "-"
+    from board_read import FAIL
+    dph = lambda x, y: f"{(x['deals'] - y['deals']) / h:.1f}" if x and y else FAIL
     sa, sb = shop_share(t_on, t1), shop_share(t0, t_on)
     top = sorted(set(sa) | set(sb), key=lambda s: -(sa.get(s, 0) + sb.get(s, 0)))[:8]
     r = shop_order.rules()
@@ -121,7 +119,7 @@ def report(t_on, t1=None):
          f"후 vs 전 같은 길이 ({st})",
          f"  성사율 {pf(a['rate'])} ({a['n']}건) vs {pf(b['rate'])} ({b['n']}건), 재고 없음으로 실패한 주문 비율 {pf(ns[0])} vs {pf(ns[1])}",
          f"  시간당 deals {dph(m1, m_on)} vs {dph(m_on, m0)} (결제 기준 {a['dph']:.1f} vs {b['dph']:.1f}), saved "
-         f"{(m_on or {}).get('saved')} -> {(m1 or {}).get('saved')}",
+         f"{(m_on or {}).get('saved', FAIL)} -> {(m1 or {}).get('saved', FAIL)}",
          "  가게별 시도 비중 (후 vs 전): " + ", ".join(f"{s} {sa.get(s, 0):.0%} vs {sb.get(s, 0):.0%}" for s in top),
          "  (21:14 공격적 변경·D·high_accept 1.10이 비교 구간에 섞임)"]
     return "\n".join(L)

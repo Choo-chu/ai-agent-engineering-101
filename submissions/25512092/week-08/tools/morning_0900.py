@@ -51,34 +51,49 @@ def decisions_in(t0, t1, actions):
     return out
 
 
-def board_lines(now):
+def board_lines(now, cur=None, bad=None, board=None, db_path=None):
+    """Board readings via tools/board_read.py: "now" = cur, else the live board, else the nearest snapshot; past points
+    = the nearest snapshot (else logs/board_full.jsonl); a failed one shows "읽기 실패" and is added to bad."""
+    import board_read as BR
     import board_speed as bs
-    j = bs.board()
-    S = {s["name"]: s for s in j["shops"] if s.get("all") is not None}
-    B = {b["name"]: b for b in j["buyers"] if b.get("all") is not None}
-    sr, br = bs.ranks({n: s["all"] for n, s in S.items()}), bs.ranks({n: b["all"] for n, b in B.items()})
-    me_s, me_b = S[bs.ME], B[bs.ME]
+    bad = [] if bad is None else bad
+    if cur is None:
+        cur = BR.now(board, db_path=db_path)
+    if not cur.ok:
+        bad.append("지금")
     L = []
     for h in (3, None):
         t = now - h * 3600 if h else T0
-        hh = (now - t) / 3600
-        ps, pb = bs.mine_at(t)
-        if ps is None:
-            ps = (bs.hist_at(bs.FULL, "s", t) or {}).get(bs.ME)
-        if pb is None:
-            pb = (bs.hist_at(bs.FULL, "b", t) or {}).get(bs.ME)
-        lab = f"최근 {h}시간" if h else f"밤사이 {hh:.1f}시간"
-        f = lambda cur, p, k: f"{(cur[k] - p[k]) / hh:+,.0f}" if p and p.get(k) is not None else "-"
-        L.append(f"  {lab}: Book/h {f(me_s, ps, 'book')}, 매출/h {f(me_s, ps, 'revenue')}, deals/h {f(me_b, pb, 'deals')}")
-    sv = sorted(B, key=lambda n: -B[n]["saved"])
-    second = next(B[n]["saved"] for n in sv if n != bs.ME)
-    L.insert(0, f"  가게 {sr[bs.ME]}위/{len(S)} (ALL {me_s['all']}, Book {me_s['book']:,}, 매출 {me_s['revenue']:,}); buyer ALL "
-                f"{br[bs.ME]}위/{len(B)} (ALL {me_b['all']}), saved {me_b['saved']} ({sv.index(bs.ME) + 1}위, 2위 차이 "
-                f"{me_b['saved'] - second:+.4f}), deals {me_b['deals']:,}")
+        p = BR.at(t, db_path=db_path)
+        if not p.ok:
+            ps, pb = (bs.hist_at(bs.FULL, "s", t) or {}).get(bs.ME), (bs.hist_at(bs.FULL, "b", t) or {}).get(bs.ME)
+            p = BR.Point(t, ps, pb, "board_full") if ps or pb else p
+        lab = f"최근 {h}시간" if h else f"밤사이 {(now - t) / 3600:.1f}시간"
+        if not p.ok:
+            bad.append(lab)
+        f = lambda side, k: BR.show(BR.per_h(p, cur, side, k), "+,.0f")
+        L.append(f"  {lab}: Book/h {f('s', 'book')}, 매출/h {f('s', 'revenue')}, deals/h {f('b', 'deals')}")
+    g = lambda side, k, spec="": BR.show(cur.get(side, k), spec)
+    second = BR.FAIL
+    if cur.j is not None:
+        B = [b for b in cur.j["buyers"] if b.get("all") is not None and b["name"] != bs.ME]
+        second = BR.show(cur.get("b", "saved") - max(b["saved"] for b in B), "+.4f") if B and cur.get("b", "saved") \
+            is not None else BR.FAIL
+    L.insert(0, f"  가게 {g('s', 'rank')}위 (ALL {g('s', 'all')}, Book {g('s', 'book', ',')}, 매출 {g('s', 'revenue', ',')}); "
+                f"buyer ALL {g('b', 'rank')}위 (ALL {g('b', 'all')}), saved {g('b', 'saved')} ({g('b', 'saved_rank')}위, "
+                f"2위 차이 {second}), deals {g('b', 'deals', ',')} [{cur.src or BR.FAIL}]")
+    if bad:
+        L.append("  " + BR.fail_line(bad))
     return L
 
 
-def summary(now):
+def build(now, cur=None, **kw):
+    """(text, failed board readings) for board_read.send_with_retry."""
+    bad = []
+    return summary(now, cur=cur, bad=bad, **kw), bad
+
+
+def summary(now, cur=None, bad=None, **kw):
     L = [f"09:00 아침 요약 {datetime.fromtimestamp(T0):%m-%d %H:%M} ~ {datetime.fromtimestamp(now):%m-%d %H:%M}"]
     A = alerts_in(T0, now)
     U = [a for a in A if a.get("level") == "urgent"]
@@ -114,9 +129,11 @@ def summary(now):
         L.append(f"   [03:25 가게 순서 6시간] 계산 실패 {type(e).__name__}")
     L.append("5. 보드")
     try:
-        L += board_lines(now)
+        L += board_lines(now, cur=cur, bad=bad, **kw)
     except Exception as e:
         L.append(f"  보드 읽기 실패 {type(e).__name__}")
+        if bad is not None:
+            bad.append("보드")
     L.append("6. 결정 필요")
     L += [f"   - {x}" for x in needs(now)]
     return "\n".join(L)
@@ -161,7 +178,8 @@ def main():
         time.sleep(min(60, max(1, AT - time.time())))
     import alerts
     try:
-        alerts.send("daily", "morning_0900:20261110", summary(AT))
+        import board_read as BR
+        BR.send_with_retry(lambda cur: build(AT if cur is None else cur.ts, cur), alerts.send, "morning_0900:20261110")
     except Exception as e:
         alerts.send("urgent", "morning_0900_fail", f"09:00 요약 실패: {type(e).__name__}: {e}")
 

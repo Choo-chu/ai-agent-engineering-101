@@ -113,28 +113,13 @@ def band(t0, t1):
     return out
 
 
-def mine_at(t, tol=2700):
-    """My shop / buyer board rows nearest to t (board_hist is written about every 30 min: within 45 min)."""
-    d = sqlite3.connect(f"file:{os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=60)
-    try:
-        r = d.execute("SELECT ts, shop, buyer FROM board_hist ORDER BY ABS(ts - ?) LIMIT 1", (t,)).fetchone()
-    finally:
-        d.close()
-    if not r or abs(r[0] - t) > tol:
-        return None, None
-    return json.loads(r[1]), json.loads(r[2])
-
-
 def fmt(v, d=0):
     return "-" if v is None else f"{v:,.{d}f}"
 
 
-def per_h(a, b, k, h):
-    return (b[k] - a[k]) / h if a and b and a.get(k) is not None and b.get(k) is not None else None
-
-
-def report(s, now=None):
-    import board_speed as bs
+def report(s, now=None, cur=None, board=None, db_path=None, clock=time.time):
+    """(text, the board readings that failed); board readings via tools/board_read.py (cur: the Point for "now")."""
+    import board_read as BR
     import morning_summary as ms
     from depts import deep_high
     now = now or time.time()
@@ -161,11 +146,26 @@ def report(s, now=None):
              f"{b['profit']:,}")
     L.append(f"- 적용 때 {s['stock']}")
     L.append(f"- 지금 {ms.stock_line(now)}")
-    (sp, _), (s0, _), (s1, _) = mine_at(tp), mine_at(t0), mine_at(now)
-    L.append(f"- 가게 시간당 Book {fmt(per_h(s0, s1, 'book', h))} vs {fmt(per_h(sp, s0, 'book', h))}, 시간당 매출 "
-             f"{fmt(per_h(s0, s1, 'revenue', h))} vs {fmt(per_h(sp, s0, 'revenue', h))}, 순위 {(s0 or {}).get('rank')} -> "
-             f"{(s1 or {}).get('rank')}")
-    return "\n".join(L)
+    if cur is None:
+        cur = BR.now(board, clock=clock, db_path=db_path)
+    pp, p0 = BR.at(tp, db_path=db_path), BR.at(t0, db_path=db_path)
+    bad = BR.failed(**{"직전 시작": pp, "적용 때": p0, "지금": cur})
+    ph = lambda x, y, k: BR.show(BR.per_h(x, y, "s", k), ",.0f")
+    L.append(f"- 가게 시간당 Book {ph(p0, cur, 'book')} vs {ph(pp, p0, 'book')}, 시간당 매출 "
+             f"{ph(p0, cur, 'revenue')} vs {ph(pp, p0, 'revenue')}, 순위 {BR.show(p0.get('s', 'rank'))} -> "
+             f"{BR.show(cur.get('s', 'rank'))}")
+    if bad:
+        L.append(BR.fail_line(bad))
+    return "\n".join(L), bad
+
+
+def send_with_retry(s, send, now=None, sleep=time.sleep, db_path=None, board=None, clock=time.time):
+    """The report through board_read.send_with_retry (again with each next snapshot while a reading failed)."""
+    import board_read as BR
+    now = now or time.time()
+    return BR.send_with_retry(
+        lambda cur: report(s, now=now if cur is None else cur.ts, cur=cur, board=board, db_path=db_path, clock=clock),
+        send, f"check_window:{s['t0']}", sleep=sleep, db_path=db_path, now_ts=now)
 
 
 def main():
@@ -175,13 +175,13 @@ def main():
         return
     s = load() or start()
     if "--dry" in sys.argv:
-        print(report(s))
+        print(report(s)[0])
         return
     while time.time() < s["t0"] + H * 3600:
         time.sleep(min(60, max(1, s["t0"] + H * 3600 - time.time())))
     import alerts
     try:
-        alerts.send("daily", f"check_window:{s['t0']}", report(s))
+        send_with_retry(s, alerts.send)
     except Exception as e:
         alerts.send("urgent", "check_window_fail", f"11/11 공급 창 3시간 점검 실패: {type(e).__name__}: {e}")
 

@@ -43,27 +43,28 @@ def features():
     return ", ".join(f"{n} {'켜짐' if m.on() else '꺼짐'}" for n, m in names)
 
 
-def per_h(a, b, k, h):
-    return (b[k] - a[k]) / h if a and b and a.get(k) is not None and b.get(k) is not None else None
-
-
 def fmt(v, d=0):
     return "-" if v is None else f"{v:,.{d}f}"
 
 
-def report(s, now=None):
-    import board_speed as bs
+def report(s, now=None, cur=None, board=None, db_path=None, clock=time.time):
+    """(text, the board readings that failed); board readings via tools/board_read.py (cur: the Point for "now")."""
+    import board_read as BR
     import morning_summary as ms
     from depts import deep_high
     now = now or time.time()
     t0 = s["t0"]
     h = max((now - t0) / 3600, 0.01)
-    (sp, bp), (s0, b0), (s1, b1) = bs.mine_at(t0 - h * 3600), bs.mine_at(t0), bs.mine_at(now)
+    if cur is None:
+        cur = BR.now(board, clock=clock, db_path=db_path)
+    pp, p0 = BR.at(t0 - h * 3600, db_path=db_path), BR.at(t0, db_path=db_path)
+    bad = BR.failed(**{"직전 시작": pp, "적용 때": p0, "지금": cur})
+    g = lambda q, k: BR.show(q.get("b", k))
+    ph = lambda x, y, side, k, spec: BR.show(BR.per_h(x, y, side, k), spec)
     L = [f"11/11 변경 {h:.1f}시간 점검: {datetime.fromtimestamp(t0):%m-%d %H:%M} 적용, 후 vs 직전 같은 길이"]
-    L.append(f"- buyer 시간당 deals {fmt(per_h(b0, b1, 'deals', h), 1)} vs {fmt(per_h(bp, b0, 'deals', h), 1)}; saved "
-             f"{(b0 or {}).get('saved')} -> {(b1 or {}).get('saved')} (saved {(b0 or {}).get('saved_rank')}위 -> "
-             f"{(b1 or {}).get('saved_rank')}위), ALL {(b0 or {}).get('all')} ({(b0 or {}).get('rank')}위) -> "
-             f"{(b1 or {}).get('all')} ({(b1 or {}).get('rank')}위)")
+    L.append(f"- buyer 시간당 deals {ph(p0, cur, 'b', 'deals', ',.1f')} vs {ph(pp, p0, 'b', 'deals', ',.1f')}; saved "
+             f"{g(p0, 'saved')} -> {g(cur, 'saved')} (saved {g(p0, 'saved_rank')}위 -> {g(cur, 'saved_rank')}위), "
+             f"ALL {g(p0, 'all')} ({g(p0, 'rank')}위) -> {g(cur, 'all')} ({g(cur, 'rank')}위)")
     L.append(f"- 장치: {features()} (끄는/켜는 saved: 비싼 주문 0.395/0.400, D 0.390/0.395, soft_neg·수락 0.383/0.388; 4위 > 0.375면 4위 + 0.018/0.013/0.008)")
     L.append(f"- 적용 때 {s['stock']}")
     L.append(f"- 지금 {ms.stock_line(now)}")
@@ -72,10 +73,12 @@ def report(s, now=None):
     L.append(f"- 깊게 쌓기 대상(최대 3개) SKU {a['skus']} vs {p['skus']}개: 매입 {a['buy_n']}개 {a['buy_cost']:,} vs {p['buy_n']}개 "
              f"{p['buy_cost']:,}; 판매 {a['sell_n']}개 이익 {a['profit']:,} vs {p['sell_n']}개 {p['profit']:,}; 입고→판매 중앙값 "
              f"{fmt(a['median_h'], 2)} vs {fmt(p['median_h'], 2)}시간; 품절 {a['out_h']:.1f} vs {p['out_h']:.1f}시간")
-    L.append(f"- 가게 시간당 Book {fmt(per_h(s0, s1, 'book', h))} vs {fmt(per_h(sp, s0, 'book', h))}, 시간당 매출 "
-             f"{fmt(per_h(s0, s1, 'revenue', h))} vs {fmt(per_h(sp, s0, 'revenue', h))}, 순위 {(s0 or {}).get('rank')} -> "
-             f"{(s1 or {}).get('rank')}")
-    return "\n".join(L)
+    L.append(f"- 가게 시간당 Book {ph(p0, cur, 's', 'book', ',.0f')} vs {ph(pp, p0, 's', 'book', ',.0f')}, 시간당 매출 "
+             f"{ph(p0, cur, 's', 'revenue', ',.0f')} vs {ph(pp, p0, 's', 'revenue', ',.0f')}, 순위 "
+             f"{BR.show(p0.get('s', 'rank'))} -> {BR.show(cur.get('s', 'rank'))}")
+    if bad:
+        L.append(BR.fail_line(bad))
+    return "\n".join(L), bad
 
 
 def main():
@@ -84,13 +87,15 @@ def main():
         return
     s = load() or start()
     if "--dry" in sys.argv:
-        print(report(s))
+        print(report(s)[0])
         return
     while time.time() < s["t0"] + H * 3600:
         time.sleep(min(60, max(1, s["t0"] + H * 3600 - time.time())))
     import alerts
     try:
-        alerts.send("daily", f"check_1111:{s['t0']}", report(s))
+        import board_read as BR
+        BR.send_with_retry(lambda cur: report(s, now=None if cur is None else cur.ts, cur=cur), alerts.send,
+                           f"check_1111:{s['t0']}")
     except Exception as e:
         alerts.send("urgent", "check_1111_fail", f"11/11 변경 3시간 점검 실패: {type(e).__name__}: {e}")
 

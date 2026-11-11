@@ -104,15 +104,10 @@ def hist_at(path, key, t):
 
 
 def mine_at(t):
-    """My shop and buyer board rows nearest to t (board_hist, within 20 min)."""
-    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=60)
-    try:
-        r = db.execute("SELECT ts, shop, buyer FROM board_hist ORDER BY ABS(ts - ?) LIMIT 1", (t,)).fetchone()
-    finally:
-        db.close()
-    if not r or abs(r[0] - t) > 1200:
-        return None, None
-    return json.loads(r[1]), json.loads(r[2])
+    """My shop and buyer board rows at t via tools/board_read.py (11/11 ~17:00, person: one common reading): now = the
+    live board, else the nearest snapshot; past = the nearest board_hist snapshot within 45 min; (None, None) failed."""
+    import board_read
+    return board_read.mine(t)
 
 
 def report(j=None, now=None):

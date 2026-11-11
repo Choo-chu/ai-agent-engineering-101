@@ -52,8 +52,9 @@ def cycle(t0, t1):
 
 
 def board_at(db, t):
-    r = db.execute("SELECT buyer FROM board_hist WHERE ts<=? ORDER BY ts DESC LIMIT 1", (t,)).fetchone()
-    return json.loads(r[0]) if r else None
+    """My buyer row at t via tools/board_read.py (the common board reading); None = 읽기 실패."""
+    import board_read
+    return board_read.mine(t)[1]
 
 
 def window(db, t0, t1):

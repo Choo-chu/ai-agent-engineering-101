@@ -105,9 +105,9 @@ def orders_per_h(t0, t1):
     """My orders and deals per hour in [t0, t1) and in the same length before (board_hist)."""
     db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=60)
     try:
-        def at(t):
-            r = db.execute("SELECT buyer FROM board_hist WHERE ts<=? ORDER BY ts DESC LIMIT 1", (t,)).fetchone()
-            return json.loads(r[0]) if r else None
+        def at(t):                                # the common board reading (tools/board_read.py)
+            import board_read
+            return board_read.mine(t)[1]
         a, b, c = at(t0 - (t1 - t0)), at(t0), at(t1)
     finally:
         db.close()

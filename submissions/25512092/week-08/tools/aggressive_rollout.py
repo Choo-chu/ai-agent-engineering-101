@@ -46,12 +46,9 @@ def board():
 
 
 def mine_at(t):
-    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=60)
-    try:
-        r = db.execute("SELECT ts, shop, buyer FROM board_hist ORDER BY ABS(ts - ?) LIMIT 1", (t,)).fetchone()
-    finally:
-        db.close()
-    return (json.loads(r[1]), json.loads(r[2])) if r and abs(r[0] - t) <= 1800 else (None, None)
+    """Via tools/board_read.py (the common board reading)."""
+    import board_read
+    return board_read.mine(t)
 
 
 def shop_window(db, t0, t1, cat):
