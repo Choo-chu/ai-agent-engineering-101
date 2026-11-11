@@ -154,7 +154,7 @@ def choose(shops, memory, item, scores, reorder=None):
             if kind == "avoid" and not c["blocked"]:
                 c["blocked"], c["avoided"] = f"회피: {why}", True
                 AVOIDED.append(c["name"])
-            elif kind == "back":
+            elif kind == "back" and not c["blocked"]:      # a blocked shop stays blocked
                 back[c["name"]] = why
     except Exception as e:
         log(f"[avoid] failed: {type(e).__name__}: {e}")
