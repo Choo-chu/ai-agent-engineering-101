@@ -117,6 +117,21 @@ def item_draft(shop, cases):
     return {"post": text, "refs": [c["result_seq"] for c in cases][:5], "as": "buyer"}
 
 
+def correction_draft(shop, post_id, c):
+    """11/11 ~21:40 (person): a correction of an earlier record post, facts only, as a reply in its thread."""
+    from datetime import datetime
+    text = (f"[정산 기록 정정] {shop}: 앞 글(#{post_id})의 {datetime.fromtimestamp(c['ts']):%m/%d %H:%M} 주문 {c['order']} 건을 "
+            f"정정합니다. {shop}는 첫 메시지에서 품목 {c['receipt_sku']} ({c['receipt_name']})과 가격 {c['price']:,}원을 "
+            f"밝혔고, 저희 buyer가 주문 품목({c['item']})에 맞는지 확인하지 않고 수락한 뒤 영수증 단계에서 결제를 "
+            f"거절했습니다. 앞 글의 품목 불일치는 가게의 잘못으로 볼 수 없습니다. 저희 쪽은 수락 전 품목 확인을 "
+            f"추가했습니다. 결과 기록 ledger #{c['result_seq']}.")
+    low = text.lower()
+    bad = [w for w in BANNED + FU_BANNED if w in low]
+    if bad:
+        raise ValueError(f"banned words in the correction: {bad}")
+    return {"post": text, "refs": [c["result_seq"]], "as": "buyer", "thread": post_id}
+
+
 def window(shop, t0, t1, food, db=None):
     """Claimed settles of a shop in [t0, t1): (n, untrue rows [(seq, sku, grade)], honest seqs); breakage left out,
     food only when `food`."""
@@ -232,7 +247,8 @@ def send(shop, post, n, kind=None):
     d = analyst.db()
     try:
         key = f"followup.{shop}" if kind == "improved" else f"callout.{shop}"   # a relapse counts as a callout
-        reason = {"improved": "후속: 개선", "relapsed": "후속: 재발", "item": f"품목 불일치 {n}건"}.get(
+        reason = {"improved": "후속: 개선", "relapsed": "후속: 재발", "item": f"품목 불일치 {n}건",
+                  "correction": "정정"}.get(
             kind, f"등급 주장 불일치 {n}건 (24시간)")
         cur = d.execute("INSERT INTO proposals (ts, kind, key, value, reason, evidence, status, expires) VALUES "
                         "(?,?,?,?,?,?,?,?)", (now, "callout", key, json.dumps(post, ensure_ascii=False),
@@ -241,7 +257,8 @@ def send(shop, post, n, kind=None):
         d.commit()
     finally:
         d.close()
-    title = {"improved": "후속 초안 (개선)", "relapsed": "후속 초안 (재발)", "item": "저격 글 초안 (품목 불일치)"}.get(
+    title = {"improved": "후속 초안 (개선)", "relapsed": "후속 초안 (재발)", "item": "저격 글 초안 (품목 불일치)",
+             "correction": "정정 글 초안"}.get(
         kind, "저격 글 초안")
     text = (f"[{title} #{pid}] {shop}\n\n{post['post']}\n\nbuyer로 게시 (refs {post['refs']}). "
             f"승인하면 다음 buyer 게시 차례에 올라가고, {EXPIRE_S // 3600}시간 안에 응답이 없으면 폐기합니다.")
