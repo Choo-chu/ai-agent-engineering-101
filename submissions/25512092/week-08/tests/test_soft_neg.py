@@ -102,6 +102,32 @@ def test_injection_keeps_old_way():
     assert r.get("code_injection") and not r.get("soft_neg")
 
 
+def test_cap_back_to_avg():
+    """11/11 ~13:50 (person): soft cap 1.05 x avg, but an ask under 50% of the avg or an injection -> 1.00 x avg."""
+    S105 = dict(R, accept=1.05)
+    go = lambda ask, inject, harness: (setattr(Shop, "ask", ask), setattr(Shop, "floor", 99999),
+                                       setattr(Shop, "inject", inject), setattr(B, "A2AClient", Shop),
+                                       setattr(B, "ask_harness", harness))
+    go(10400, False, no_llm)
+    r = B.negotiate("http://fake", "G0000000a", 10500, time.time(), "I want G0000000a", min_offers=1,
+                    market_avg=10000, force_first=True, soft=S105)
+    assert r["deal"] and r["agreed"] == 10400 and not r.get("soft_cap_back")          # the code's move: x 1.05
+    seen = []
+    go(10400, True, lambda p: seen.append(p) or {"action": "walk"})
+    r = B.negotiate("http://fake", "G0000000a", 10500, time.time(), "I want G0000000a", min_offers=1,
+                    market_avg=10000, force_first=True, soft=S105)
+    assert r.get("soft_cap_back") == "injection" and not r["deal"]                       # 10400 > 10000: no accept
+    seen = []
+    go(4000, False, lambda p: seen.append(p) or {"action": "walk"})
+    r = B.negotiate("http://fake", "G0000000a", 10500, time.time(), "I want G0000000a", min_offers=1,
+                    market_avg=10000, force_first=True, soft=S105)
+    assert r.get("soft_cap_back") == "low_ask" and seen and "10000" in seen[0] and "10500" not in seen[0]
+    go(10400, True, lambda p: {"action": "walk"})
+    r = B.negotiate("http://fake", "G0000000a", 11000, time.time(), "I want G0000000a", min_offers=1,
+                    market_avg=10000, force_first=True, soft=dict(R, accept=1.10), high=1.10)
+    assert not r.get("soft_cap_back")                                                    # 200,000+ (high): unchanged
+
+
 def test_control_unchanged():
     Shop.ask, Shop.floor, Shop.inject = 9000, 99999, False
     calls = []

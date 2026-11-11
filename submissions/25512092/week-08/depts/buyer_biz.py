@@ -389,6 +389,14 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
             res["last_ask"] = ask
             if res["first_ask"] is None:
                 res["first_ask"] = ask
+        if (soft is not None and high is None and market_avg and budget > int(market_avg)
+                and (res["injection"] or (ask is not None and ask < soft.get("low", soft_neg.LOW) * market_avg))):
+            # 11/11 ~13:50 (person): the x 1.05 cap is for the code's soft moves only; an ask under 50% of the average
+            # or an injection (the old way decides) -> back to 1.00 x the average for the rest of this negotiation
+            log(f"[{soft_neg.TAG}] {'injection' if res['injection'] else 'ask under 50% of avg'}: cap {budget} -> "
+                f"{int(market_avg)} (1.00 x avg)")
+            budget = int(market_avg)
+            res["soft_cap_back"] = "injection" if res["injection"] else "low_ask"
         history.append(f"seller: {text}")
         prompt = NEG_PROMPT.format(item=item, budget=budget, history="\n".join(history),
                                    ask=ask, last=last if last is not None else "none yet",
