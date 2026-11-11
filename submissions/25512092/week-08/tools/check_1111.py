@@ -64,7 +64,7 @@ def report(s, now=None):
              f"{(b0 or {}).get('saved')} -> {(b1 or {}).get('saved')} (saved {(b0 or {}).get('saved_rank')}위 -> "
              f"{(b1 or {}).get('saved_rank')}위), ALL {(b0 or {}).get('all')} ({(b0 or {}).get('rank')}위) -> "
              f"{(b1 or {}).get('all')} ({(b1 or {}).get('rank')}위)")
-    L.append(f"- 장치: {features()} (끄는/켜는 saved: 비싼 주문 0.400/0.405, D 0.395/0.400, soft_neg·수락 0.388/0.393)")
+    L.append(f"- 장치: {features()} (끄는/켜는 saved: 비싼 주문 0.395/0.400, D 0.390/0.395, soft_neg·수락 0.383/0.388; 4위 > 0.375면 4위 + 0.018/0.013/0.008)")
     L.append(f"- 적용 때 {s['stock']}")
     L.append(f"- 지금 {ms.stock_line(now)}")
     a = deep_high.window_stats(deep_high.skus_between(t0, now), t0, now)

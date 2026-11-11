@@ -155,7 +155,24 @@ def summary(t0, t1):
         lines += ["17. " + H[0][3:]] + H[1:]
     except Exception as e:
         lines.append(f"17. 경고·정보 모음 실패 {type(e).__name__}")
+    try:                                          # 11/11 ~10:40 (person): the goal is the buyer ALL rank
+        import board_speed
+        lines.append("18. " + all_line(board_speed.board()))
+    except Exception as e:
+        lines.append(f"18. buyer ALL 순위 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
+
+
+def all_line(j, me="choo-chu"):
+    """My buyer ALL rank and the ALL gap to the buyer just above and just below (live board json)."""
+    B = sorted((b for b in j["buyers"] if b.get("all") is not None), key=lambda b: -b["all"])
+    i = next(k for k, b in enumerate(B) if b["name"] == me)
+    m = B[i]
+    up = (f"바로 위 {i}위 {B[i - 1]['name']} {B[i - 1]['all']} (차이 {B[i - 1]['all'] - m['all']:+.4f})" if i > 0
+          else "바로 위 없음 (1위)")
+    dn = (f"바로 아래 {i + 2}위 {B[i + 1]['name']} {B[i + 1]['all']} (차이 {B[i + 1]['all'] - m['all']:+.4f})"
+          if i + 1 < len(B) else "바로 아래 없음")
+    return f"buyer ALL {i + 1}위/{len(B)} ({m['all']}, saved {m['saved']}): {up}, {dn}"
 
 
 STALE_H = 12

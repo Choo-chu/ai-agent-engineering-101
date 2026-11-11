@@ -167,14 +167,22 @@ def test_soft_move_accept():
 
 
 def test_saved_guard():
-    # 11/11 ~10:30 (person): absolute thresholds with a gap; no rank / 2nd / 3rd condition
-    b = lambda s, third=0.5, rank=3: {"saved": s, "second": 0.6, "third": third, "saved_rank": rank}
+    # 11/11 ~10:40 (person): absolute thresholds with a 0.005 gap, raised over the 4th; no rank / 2nd / 3rd condition
+    b = lambda s, f4=None: {"saved": s, "second": 0.6, "third": 0.5, "fourth": f4, "saved_rank": 3}
     w, k = saved_guard.why, saved_guard.back
-    assert w("high_accept", b(0.3999)) and not w("high_accept", b(0.400)) and k("high_accept", b(0.405))         and not k("high_accept", b(0.4049))
-    assert w("second_shop", b(0.3949)) and not w("second_shop", b(0.395)) and k("second_shop", b(0.400))
-    assert w("soft_neg", b(0.3879)) and not w("soft_neg", b(0.388)) and k("soft_neg", b(0.393))         and not k("soft_neg", b(0.3929))
-    assert w("accept_rule", b(0.3879)) and k("accept_rule", b(0.393))
-    assert not w("soft_neg", b(0.4145, third=0.4198, rank=3))           # 3rd and under the 2nd: stays on
+    assert w("high_accept", b(0.3949)) and not w("high_accept", b(0.395)) and k("high_accept", b(0.400))         and not k("high_accept", b(0.3999))
+    assert w("second_shop", b(0.3899)) and not w("second_shop", b(0.390)) and k("second_shop", b(0.395))
+    assert w("soft_neg", b(0.3829)) and not w("soft_neg", b(0.383)) and k("soft_neg", b(0.388))         and not k("soft_neg", b(0.3879))
+    assert w("accept_rule", b(0.3829)) and k("accept_rule", b(0.388))
+    assert not w("soft_neg", b(0.3829 + 0.0002, f4=0.375))              # 4th not over 0.375: base
+    # 4th 0.3773 > 0.375: off at 4th + 0.018 / 0.013 / 0.008, on 0.005 above
+    t = saved_guard.thresholds
+    assert t("high_accept", b(0, 0.3773))[:2] == (0.3953, 0.4003) and t("second_shop", b(0, 0.3773))[:2] == (0.3903, 0.3953)
+    assert t("soft_neg", b(0, 0.3773))[:2] == (0.3853, 0.3903)
+    assert w("soft_neg", b(0.385, 0.3773)) and not w("soft_neg", b(0.3855, 0.3773)) and "4위" in w("soft_neg", b(0.385, 0.3773))
+    assert not k("soft_neg", b(0.390, 0.3773)) and k("soft_neg", b(0.3903, 0.3773))
+    assert t("soft_neg", b(0, 0.370))[:2] == (0.383, 0.388)                # never under the base
+    assert not w("soft_neg", b(0.4145, 0.3773))
     assert not w("high_accept", {"saved": None}) and not k("high_accept", {"saved": None})
 
 
@@ -195,15 +203,15 @@ def test_apply_and_watch():
         t = mid.apply_d_high({"saved": 0.42}, 1000, dec)
         assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == high_accept.FACTOR
         assert "적용" in t and len(rec) == 2
-        assert gw.check({"saved": 0.398}, al, dec) == [("high_accept", "off")]                 # < 0.400
+        assert gw.check({"saved": 0.393}, al, dec) == [("high_accept", "off")]                 # < 0.395
         assert not high_accept.rules()["enabled"] and high_accept.rules()["guard_off"] and d2.rules()["enabled"]
-        assert gw.check({"saved": 0.404}, al, dec) == []                                       # gap: not on yet
-        assert gw.check({"saved": 0.405}, al, dec) == [("high_accept", "on")]
+        assert gw.check({"saved": 0.399}, al, dec) == []                                       # gap: not on yet
+        assert gw.check({"saved": 0.400}, al, dec) == [("high_accept", "on")]
         assert high_accept.rules()["enabled"] and high_accept.on() and not high_accept.rules()["guard_off"]
-        assert gw.check({"saved": 0.387}, al, dec) == [("high_accept", "off"), ("second_shop", "off"),
+        assert gw.check({"saved": 0.382}, al, dec) == [("high_accept", "off"), ("second_shop", "off"),
                                                        ("soft_neg", "off"), ("accept_rule", "off")]
         assert not soft_neg.on() and not accept_rule.on()
-        assert gw.check({"saved": 0.393}, al, dec) == [("soft_neg", "on"), ("accept_rule", "on")]
+        assert gw.check({"saved": 0.388}, al, dec) == [("soft_neg", "on"), ("accept_rule", "on")]
         assert soft_neg.on() and soft_neg.rules()["share"] == 1.0 and accept_rule.on()
         assert gw.check({"saved": 0.41}, al, dec) == [("high_accept", "on"), ("second_shop", "on")]
         assert all(m.on() for m in (high_accept, d2, soft_neg, accept_rule))
@@ -213,7 +221,7 @@ def test_apply_and_watch():
         assert gw.check({"saved": 0.45}, al, dec) == [] and not accept_rule.on()
         # at 20:27 already under the guard: high not switched on, D on
         os.remove(d2.RULES); os.remove(high_accept.RULES)
-        t = mid.apply_d_high({"saved": 0.397}, 1000, dec)
+        t = mid.apply_d_high({"saved": 0.392}, 1000, dec)
         assert d2.rules()["enabled"] and not high_accept.rules() and "적용 안 함" in t
 
 

@@ -52,3 +52,17 @@ if __name__ == "__main__":
     test_stock_line()
     test_b_refunds()
     print("ok")
+
+
+def test_all_line():
+    import morning_summary as ms
+    j = {"buyers": [{"name": "a", "all": 0.9, "saved": 0.41}, {"name": "choo-chu", "all": 0.86, "saved": 0.4145},
+                    {"name": "c", "all": 0.85, "saved": 0.37}, {"name": "x", "all": None, "saved": 0}]}
+    t = ms.all_line(j)
+    assert "2위/3" in t and "a 0.9 (차이 +0.0400)" in t and "c 0.85 (차이 -0.0100)" in t
+    assert "바로 위 없음" in ms.all_line({"buyers": j["buyers"][1:3]})
+
+
+if __name__ == "__main__":
+    test_all_line()
+    print("ok all_line")

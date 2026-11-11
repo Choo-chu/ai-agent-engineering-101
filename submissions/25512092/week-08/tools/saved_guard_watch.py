@@ -69,7 +69,7 @@ def on_kw(key, now):
 
 
 def check(b, alerts, decisions, now=None):
-    """11/11 ~10:30 (person): absolute saved thresholds, off and on again (depts/saved_guard.py); no rank condition.
+    """11/11 ~10:40 (person): absolute saved thresholds, raised over the 4th, off and on again (depts/saved_guard.py); no rank condition.
     Returns [(name, 'off' / 'on')]."""
     now = now or time.time()
     out = []
@@ -81,7 +81,7 @@ def check(b, alerts, decisions, now=None):
                 continue
             set_rules(mod, enabled=False, stopped=round(now), stop_reason=why, guard_off=True)
             decisions.record("buyer", f"{mod.TAG}_stop", mod.TAG, b, why)
-            alerts.send("urgent", f"{mod.TAG}_stop:{int(now)}", f"buyer {name} 끔: {why} (기준 {saved_guard.text(key)})", log=log)
+            alerts.send("urgent", f"{mod.TAG}_stop:{int(now)}", f"buyer {name} 끔: {why} (기준 {saved_guard.text(key, b)})", log=log)
             log(f"{key} off: {why}")
             out.append((key, "off"))
         elif r.get("guard_off"):
@@ -90,7 +90,7 @@ def check(b, alerts, decisions, now=None):
                 continue
             set_rules(mod, **on_kw(key, now))
             decisions.record("buyer", f"{mod.TAG}_on", mod.TAG, b, why + " - on again (saved guard)")
-            alerts.send("urgent", f"{mod.TAG}_on:{int(now)}", f"buyer {name} 다시 켬: {why} (기준 {saved_guard.text(key)})", log=log)
+            alerts.send("urgent", f"{mod.TAG}_on:{int(now)}", f"buyer {name} 다시 켬: {why} (기준 {saved_guard.text(key, b)})", log=log)
             log(f"{key} on again: {why}")
             out.append((key, "on"))
     return out
@@ -211,7 +211,7 @@ def report(t0, b0, b1, t1=None):
     if b0:
         L.append(f"- surplus +{b1['surplus'] - b0['surplus']:,} (시간당 {(b1['surplus'] - b0['surplus']) / h:,.0f}), saved "
                  f"{b0['saved']} -> {b1['saved']}, 2위 saved {b0['second']} -> {b1['second']} (차이 "
-                 f"{b1['saved'] - b1['second']:.4f}; 끄는/켜는 기준 saved 고가 0.400/0.405, D 0.395/0.400, soft_neg·수락 0.388/0.393), deals "
+                 f"{b1['saved'] - b1['second']:.4f}; 끄는/켜는 기준 saved 고가 0.395/0.400, D 0.390/0.395, soft_neg·수락 0.383/0.388, 4위 > 0.375면 4위 + 0.018/0.013/0.008), deals "
                  f"{b0['deals']} -> {b1['deals']}")
     return "\n".join(L)
 
@@ -224,7 +224,7 @@ def main():
     import alerts
     import decisions
     from limits import ROUND_END
-    log("start (absolute saved guard, off and on again: " + "; ".join(f"{k} {saved_guard.text(k)}" for k in saved_guard.THRESH) + ")")
+    log("start (absolute saved guard, off and on again: " + "; ".join(f"{k} {saved_guard.text(k)}" for k in saved_guard.BASE) + "; 4th > 0.375 raises them" + ")")
     while time.time() < ROUND_END:
         st = state()
         ss = second_shop.rules()

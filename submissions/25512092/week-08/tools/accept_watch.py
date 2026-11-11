@@ -47,6 +47,8 @@ def board():
     others = sorted((b["saved"] for b in B if b is not me), reverse=True)
     second = others[0]
     return {"saved": me["saved"], "deals": me["deals"], "surplus": me["surplus"], "all": me["all"], "second": second, "third": others[1] if len(others) > 1 else None,
+            "fourth": others[2] if len(others) > 2 else None,   # 11/11 (person): the 3rd best other buyer, i.e. the
+            # buyer who would be 4th with us in the top 3 (depts/saved_guard.py raises the thresholds above it)
             "saved_rank": 1 + sum(1 for b in B if b["saved"] > me["saved"]),
             "all_rank": 1 + sum(1 for b in B if b["all"] > me["all"])}
 
