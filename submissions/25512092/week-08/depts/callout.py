@@ -97,6 +97,26 @@ def draft(shop, rows):
     return {"post": text, "refs": [r[0] for r in rows[:5]], "as": "buyer"}
 
 
+def item_draft(shop, cases):
+    """11/11 ~21:00 (person): an item-mismatch callout, facts only. cases: [{ts, order, item, asked_sku, asked_name,
+    receipt_sku, receipt_name, receipt_cat, price, result_seq}]: the time, the ordered item, the receipt's item and the
+    result ledger number; no guesses, no insults (BANNED checked)."""
+    from datetime import datetime
+    parts = []
+    for c in cases:
+        parts.append(f"{datetime.fromtimestamp(c['ts']):%m/%d %H:%M} 주문 {c['order']} (주문 품목 {c['item']}): buyer가 요청한 "
+                     f"SKU {c['asked_sku']} ({c['asked_name']}). 가게가 첫 답에서 제시하고 서명한 영수증의 품목은 "
+                     f"{c['receipt_sku']} ({c['receipt_name']}, 카테고리 {c['receipt_cat']}), {c['price']:,}원. 영수증 품목이 "
+                     f"주문 품목에 해당하지 않아 결제하지 않았습니다. 결과 기록 ledger #{c['result_seq']}")
+    text = (f"[정산 기록] {shop}: 주문 품목과 영수증 품목이 다른 건 {len(cases)}건. " + " / ".join(parts)
+            + ". ledger 번호로 직접 확인할 수 있습니다.")
+    low = text.lower()
+    bad = [w for w in BANNED + FU_BANNED if w in low]
+    if bad:
+        raise ValueError(f"banned words in the draft: {bad}")
+    return {"post": text, "refs": [c["result_seq"] for c in cases][:5], "as": "buyer"}
+
+
 def window(shop, t0, t1, food, db=None):
     """Claimed settles of a shop in [t0, t1): (n, untrue rows [(seq, sku, grade)], honest seqs); breakage left out,
     food only when `food`."""
@@ -212,7 +232,8 @@ def send(shop, post, n, kind=None):
     d = analyst.db()
     try:
         key = f"followup.{shop}" if kind == "improved" else f"callout.{shop}"   # a relapse counts as a callout
-        reason = {"improved": "후속: 개선", "relapsed": "후속: 재발"}.get(kind, f"등급 주장 불일치 {n}건 (24시간)")
+        reason = {"improved": "후속: 개선", "relapsed": "후속: 재발", "item": f"품목 불일치 {n}건"}.get(
+            kind, f"등급 주장 불일치 {n}건 (24시간)")
         cur = d.execute("INSERT INTO proposals (ts, kind, key, value, reason, evidence, status, expires) VALUES "
                         "(?,?,?,?,?,?,?,?)", (now, "callout", key, json.dumps(post, ensure_ascii=False),
                                               reason, "ledger", "sent", now + EXPIRE_S))
@@ -220,7 +241,8 @@ def send(shop, post, n, kind=None):
         d.commit()
     finally:
         d.close()
-    title = {"improved": "후속 초안 (개선)", "relapsed": "후속 초안 (재발)"}.get(kind, "저격 글 초안")
+    title = {"improved": "후속 초안 (개선)", "relapsed": "후속 초안 (재발)", "item": "저격 글 초안 (품목 불일치)"}.get(
+        kind, "저격 글 초안")
     text = (f"[{title} #{pid}] {shop}\n\n{post['post']}\n\nbuyer로 게시 (refs {post['refs']}). "
             f"승인하면 다음 buyer 게시 차례에 올라가고, {EXPIRE_S // 3600}시간 안에 응답이 없으면 폐기합니다.")
     res = analyst._call("sendMessage", chat_id=analyst.chat_id(), text=text[:4000], reply_markup=BUTTONS(pid))

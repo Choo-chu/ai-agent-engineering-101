@@ -40,7 +40,18 @@ GUARD_FAIL_MIN = 4      # ... (after this many tries there), make one counteroff
 
 # seller text that tries to instruct the buying agent
 INJECTION = re.compile(r"market notice|for ai (buying )?agents|ignore (all|any|your|previous)|"
-                       r"market policy|system prompt", re.I)
+                       r"market policy|system prompt|"
+                       # 11/11 ~21:00 (person): a ledger number / the ledger as grounds for a price or an acceptance
+                       r"(ledger|원장) ?(#|no\.?|number|번호|entry|record|ref|id)|"
+                       r"(according to|per|based on|cites?|citing) (the |our |market |this )?ledger|원장(에 따르면|을 ?근거|상으로|상 )|"
+                       # operator / market notices
+                       r"운영자|시장 ?공지|(market|platform|system) (operator|announcement|admin)|"
+                       r"operator (notice|message|instruction|says|requires)|notice from the (market|operator|platform)|"
+                       r"official (market )?notice|"
+                       # "by the rules you must"
+                       r"규칙상|규정상|반드시 ?(수락|결제|지불|구매|별|평점|동의)|(the )?(market )?rules? (say|state|require)s?|"
+                       r"by (the |market )?rules?,? (you|buyers?) (must|have to)|"
+                       r"you (must|are required to|have to) (accept|pay|agree|rate|give|leave)", re.I)
 # seller text that asks for a good review
 SOLICIT = re.compile(r"5[- ]?stars?|five stars?|give (this|our) shop", re.I)
 # review text that reports a dishonest receipt
@@ -126,16 +137,33 @@ def summarize(shop, memory):
             "snippets": [clean(r.get("review", "")) for r in revs[:2]]}
 
 
+AVOIDED = []          # the shops depts/shop_avoid kept out of the last choose() (missed orders)
+
+
 def choose(shops, memory, item, scores, reorder=None):
     """Returns allowed candidates, best shop score first, and the reason for the first one. reorder(allowed) -> list:
     11/09 ~21:30 depts/shop_order (no-stock shops back, our close rate first), applied before the top-k cut."""
     infos = [summarize(s, memory) for s in shops if s.get("name") and s.get("url")]
+    AVOIDED.clear()
+    back = {}
+    try:                                              # 11/11 ~21:00 (person): depts/shop_avoid, on top of "cheated me"
+        from depts import shop_avoid
+        st = shop_avoid.update()
+        for c in infos:
+            kind, why = shop_avoid.status({c["name"], c["url"].rstrip("/")}, st)
+            if kind == "avoid" and not c["blocked"]:
+                c["blocked"], c["avoided"] = f"회피: {why}", True
+                AVOIDED.append(c["name"])
+            elif kind == "back":
+                back[c["name"]] = why
+    except Exception as e:
+        log(f"[avoid] failed: {type(e).__name__}: {e}")
     allowed = [c for c in infos if not c["blocked"]]
     for c in infos:
         if c["blocked"]:
             log(f"[skip] {c['name']}: {c['blocked']}")
     if not allowed:  # everyone looks bad: still trade with the least bad one, but never with a shop that cheated me
-        allowed = [c for c in infos if c["blocked"] != "cheated me before"]   # (11/07 ~16:05: elm-street came back here)
+        allowed = [c for c in infos if c["blocked"] != "cheated me before" and not c.get("avoided")]   # (11/07 ~16:05: elm-street came back here)
     for c in allowed:
         c["shop_score"] = scores.get(c["name"]) or DEFAULT_SCORE
     allowed.sort(key=lambda c: c["shop_score"]["score"], reverse=True)
@@ -146,6 +174,10 @@ def choose(shops, memory, item, scores, reorder=None):
             allowed = reorder(allowed)
         except Exception as e:                        # never lose the order over it: shop-score order
             log(f"[shop_order] failed: {type(e).__name__}: {e}")
+    if back and len(allowed) > 1:                     # 11/11 ~21:00: one item_mismatch in 24 h -> the back
+        allowed = [c for c in allowed if c["name"] not in back] + [c for c in allowed if c["name"] in back]
+        for n, why in back.items():
+            log(f"[avoid] {n}: back of the candidates ({why})")
     b = allowed[0]["shop_score"]
     return allowed[:__import__("policy").get("buyer", "top_k", TOP_K)], (f"{allowed[0]['name']}: shop score {b['score']:.2f} (cheap {b['cheap']:.2f}, "
                              f"honest {b['honest']:.2f}, success {b['success']:.2f})")
@@ -343,6 +375,12 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
         res["last_state"] = st
         log(f"seller [{st}]: {text!r}")
         if INJECTION.search(text):
+            if not res["injection"]:                  # 11/11 ~21:00: one event per negotiation (depts/shop_avoid)
+                try:
+                    from depts import shop_avoid
+                    shop_avoid.note_event(shop or client.card.get("name"), "injection", text)
+                except Exception:
+                    pass
             res["injection"] = True
             log("FLAG seller message contains instructions for buyer agents")
         if SOLICIT.search(text):
@@ -591,6 +629,11 @@ def main():
         log(f"[order] {args.item}: {len(acceptable)} acceptable SKUs, {len(stocked)}/{len(shops)} shops in stock")
         shops = stocked
     memory = load_memory()
+    try:                                              # 11/11 ~21:00: the avoid rules' drop warning (every 10 min)
+        from depts import shop_avoid
+        shop_avoid.guard()
+    except Exception as e:
+        log(f"[avoid] guard failed: {type(e).__name__}: {e}")
     stats, catalog = load_stats(), load_catalog()
     SHOP_FLAGS.update(stats.get("shop_flags", {}))
     case = strategy.buyer_case()
@@ -610,6 +653,12 @@ def main():
     ordered, why = choose(shops, memory, args.item, stats.get("shop_score", {}), reorder_fn)
     if not ordered:
         log("no shop to trade with")
+        if AVOIDED:
+            try:
+                from depts import shop_avoid
+                shop_avoid.note_missed(order.get("order"), args.item, list(AVOIDED), "no_shop")
+            except Exception:
+                pass
         print(json.dumps({"shop": None, "receipt": None, "stars": None, "review": "no shops"}), flush=True)
         return
     log(f"[choose] {ordered[0]['url']}: {why}; buyer case {case}")
@@ -760,6 +809,12 @@ def main():
               "deal": res["deal"], "flag": flag, "stars": stars})
     log(f"stars {stars} ({flag}): {review}")
     refused = res["deal"] and refuse_receipt(flag, res, chosen["name"], args.item, order.get("order"), log=log)
+    if AVOIDED and not (res["deal"] and not refused):  # 11/11 ~21:00: an avoided shop had it, the order ended without
+        try:                                          # a deal -> a missed order
+            from depts import shop_avoid
+            shop_avoid.note_missed(order.get("order"), args.item, list(AVOIDED), flag)
+        except Exception:
+            pass
     out = {"shop": chosen["url"], "receipt": res["receipt"] if res["deal"] and not refused else None,
            "stars": stars, "review": review}
     accept = {}

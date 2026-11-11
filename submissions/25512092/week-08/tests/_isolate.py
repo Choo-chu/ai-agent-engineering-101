@@ -44,4 +44,10 @@ def policy(data=None):
         top_high.CACHE = tmp_path("cat_break_a.json")
     except Exception:
         pass
+    try:                                          # 11/11 ~21:00: shop avoid rules, state, events, missed orders
+        from depts import shop_avoid as SA
+        SA.RULES, SA.STATE, SA.EVENTS = tmp_path("shop_avoid.json"), tmp_path("shop_avoid_state.json"), tmp_path("ev.jsonl")
+        SA.MISSED = tmp_path("shop_avoid_missed.jsonl")
+    except Exception:
+        pass
     return P

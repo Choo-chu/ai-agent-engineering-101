@@ -160,6 +160,11 @@ def summary(t0, t1):
         lines.append("18. " + all_line(board_speed.board()))
     except Exception as e:
         lines.append(f"18. buyer ALL 순위 계산 실패 {type(e).__name__}")
+    try:                                          # 11/11 ~21:00 (person): avoided shops, why, orders missed
+        from depts import shop_avoid
+        lines.append("19. " + shop_avoid.summary_line(t1, t0))
+    except Exception as e:
+        lines.append(f"19. 회피 가게 계산 실패 {type(e).__name__}")
     return "\n".join(lines)
 
 

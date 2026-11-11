@@ -1,0 +1,5 @@
+{
+ "enabled": true,
+ "since": 1794398899,
+ "why": "person's decision 11/11 ~21:00: item_mismatch 1 in 24 h -> back 24 h, 2+ -> avoid 24 h; ledger grade claims untrue > 20% (>= 5 claims, 48 h) -> avoid 24 h; injection 2+ in 24 h -> avoid 24 h; on top of the permanent 'cheated me before' block (kept, person 11/11 ~21:10); drop warning like the shop_order guard"
+}
