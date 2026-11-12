@@ -67,7 +67,7 @@ def test_targets_apply_report():
             mock.patch.object(BR, "per_h", lambda a, b, s, k: 1234.0), mock.patch.object(BR, "failed", lambda **k: []):
         txt = R.report({"t0": round(NOW), "units": {t["unit"]: t["rule"] for t in ts}}, now=NOW + 3 * 3600, db_path=db,
                        inv_path=tmp_json({"units": []}, "inv"))
-    assert "3·4번 (손절 -> 평균): 1개 중 판매 1개, 매출 1,000,000, 원가 1,040,000, 손익 -40,000" in txt, txt
+    assert "3·4번 (손절 -> 평균): 1개 중 판매 1개, 매출 1,000,000, 원가 1,040,000, 손익 -40,000, 실제 손실 합 -40,000 "            "(원가 아래로 판 건만), 남은 0개" in txt, txt
     assert "1번 (A·B 24시간+): 1개 중 판매 1개, 매출 720,000, 원가 600,000, 손익 +120,000" in txt, txt
     assert "12시간+ 미판매 고가: " in txt and "시간당 Book 1,234" in txt, txt
 

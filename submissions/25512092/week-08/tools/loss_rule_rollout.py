@@ -109,6 +109,8 @@ def report(s, now=None, db_path=None, inv_path=None, board=None):
     t0 = s["t0"]
     h = max((now - t0) / 3600, 0.01)
     units = s["units"]
+    with open(inv_path or os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8") as f:
+        held = {u["unit"] for u in json.load(f).get("units", []) if u.get("grade") != "expired"}
     L = [f"하한 규칙 1~4 적용 {h:.1f}시간 점검 ({datetime.fromtimestamp(t0):%m-%d %H:%M} 적용, seller 재시작)"]
     d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=60)
     try:
@@ -118,10 +120,14 @@ def report(s, now=None, db_path=None, inv_path=None, board=None):
                 L.append(f"- {title}: 대상 없음")
                 continue
             q = ",".join("?" * len(us))
-            n, rev, cost = d.execute(f"SELECT COUNT(*), COALESCE(SUM(s.amount), 0), COALESCE(SUM(m.cost), 0) FROM settles s "
-                                     f"JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.unit IN ({q}) AND s.ts>=?",
-                                     (ME, *us, t0)).fetchone()
-            L.append(f"- {title}: {len(us)}개 중 판매 {n}개, 매출 {rev:,}, 원가 {cost:,}, 손익 {rev - cost:+,}")
+            n, rev, cost, loss = d.execute(
+                f"SELECT COUNT(*), COALESCE(SUM(s.amount), 0), COALESCE(SUM(m.cost), 0), "
+                f"COALESCE(SUM(MIN(0, s.amount - m.cost)), 0) FROM settles s JOIN my_stock m ON m.unit=s.unit "
+                f"WHERE s.shop=? AND s.unit IN ({q}) AND s.ts>=?", (ME, *us, t0)).fetchone()
+            sold = {x for (x,) in d.execute(f"SELECT unit FROM settles WHERE shop=? AND unit IN ({q})", (ME, *us))}
+            left = len([x for x in us if x in held and x not in sold])
+            L.append(f"- {title}: {len(us)}개 중 판매 {n}개, 매출 {rev:,}, 원가 {cost:,}, 손익 {rev - cost:+,}"
+                     + (f", 실제 손실 합 {loss:,} (원가 아래로 판 건만), 남은 {left}개" if tag == "3/4" else ""))
     finally:
         d.close()
     tr = M.aged_high_trend(now, inv_path=inv_path, db_path=db_path, step_h=1, span_h=max(1, round(h)))
@@ -139,6 +145,17 @@ def report(s, now=None, db_path=None, inv_path=None, board=None):
 def main():
     if "--report-dry" in sys.argv:
         print(report(json.load(open(STATE, encoding="utf-8"))))
+        return
+    if "--report-only" in sys.argv:              # 11/12 ~15:05: restarted for the new 3/4 lines; rules already on
+        s = json.load(open(STATE, encoding="utf-8"))
+        log("restarted: report only")
+        while time.time() < s["t0"] + H * 3600:
+            time.sleep(60)
+        try:
+            alerts.send("daily", f"loss_rule_report:{s['t0']}", report(s), log)
+            log("report sent")
+        except Exception as e:
+            alerts.send("urgent", "loss_rule_report_fail", f"하한 규칙 3시간 점검 실패: {type(e).__name__}: {e}", log)
         return
     ts = targets()
     text = preview_text(ts)
