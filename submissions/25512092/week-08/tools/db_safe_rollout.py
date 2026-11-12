@@ -4,6 +4,9 @@ report failure, due ~17:59; at the latest LATEST), in one go:
      calls the board outside the write)
   2. market.db to WAL (readers no longer block writers' commits)
   3. the seller restarted (the kit starts it again) and the analyst restarted (both keep connections for hours)
+  4. (person 11/12 ~16:20, with the same restarts) end_rules.json on: restock stops 6 h before the end (11/17 17:59),
+     the scheduled end cap and the automatic cap end then too, the endgame markdown 12 h before the end (11/17 11:59);
+     the values read back in a fresh process go into the Telegram
 One Telegram when applied; 1 h later one Telegram: lock errors since (kit log, analyst log), my sales, supplies and
 buyer deals in the hour vs the hour before.
     python tools/db_safe_rollout.py [--now] [--report-dry=EPOCH]      (log in logs/db_safe_rollout.log)
@@ -29,6 +32,7 @@ LOSS_LOG = os.path.join(HERE, "logs", "loss_rule_rollout.log")
 KIT_LOG = os.path.join(HERE, "logs", "market-kit.log")
 ANALYST_LOG = os.path.join(HERE, "logs", "analyst.log")
 DB = os.path.join(HERE, "market.db")
+END_RULES = os.path.join(HERE, "end_rules.json")
 FROM = datetime(2026, 11, 12, 17, 59).timestamp()
 LATEST = datetime(2026, 11, 12, 18, 30).timestamp()
 PY = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".venv", "Scripts", "python.exe"))
@@ -62,6 +66,25 @@ def restart_analyst():
     p = subprocess.Popen([PY, "-X", "utf8", "analyst_main.py"], cwd=HERE, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, creationflags=0x00000008 | 0x08000000)   # detached, no window
     return r.stdout.split(), p.pid
+
+
+def apply_end(path=END_RULES, now=None):
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump({"enabled": True, "restock_stop_h": 6, "endgame_h": 12, "since": round(now or time.time()),
+                   "why": "person 11/12 ~16:20: sell to the end - restock stop 36 -> 6 h, end cap at the stop, endgame 48 -> "
+                          "12 h; food unchanged"}, f)
+    os.replace(path + ".tmp", path)
+
+
+def end_values(env=None):
+    """The end rules as a fresh process sees them (what restock / the seller / the analyst load)."""
+    code = ("import sys, json; sys.path.insert(0, r'%s'); from datetime import datetime as D; import limits, pricing; "
+            "print(json.dumps({'restock_stop_h': limits.RESTOCK_STOP_H, 'stop_at': D.fromtimestamp(limits.ROUND_END - "
+            "limits.RESTOCK_STOP_H * 3600).strftime('%%m-%%d %%H:%%M'), 'cap_end_at': D.fromtimestamp(limits.CAP_END_AT)"
+            ".strftime('%%m-%%d %%H:%%M'), 'endgame_h': pricing.ENDGAME_H}))" % HERE)
+    r = subprocess.run([PY if os.path.exists(PY) else sys.executable, "-X", "utf8", "-c", code], capture_output=True,
+                       text=True, timeout=120, cwd=HERE, env=env)
+    return json.loads(r.stdout.strip().splitlines()[-1]) if r.returncode == 0 else {"error": r.stderr[-300:]}
 
 
 def apply(rules_path=None, db=DB):
@@ -140,6 +163,7 @@ def main():
     late = "--now" not in sys.argv and not report_out()
     t = time.time()
     mode = apply()
+    apply_end(now=t)
     from seller_conc_rollout import restart_seller, seller_back
     killed = restart_seller()
     old, pid = restart_analyst()
@@ -147,11 +171,15 @@ def main():
         + (" (no floor report by 18:30)" if late else ""))
     time.sleep(120)
     back = seller_back(t)
-    ok = back and mode == "wal"
+    ev = end_values()
+    ok = back and mode == "wal" and ev.get("restock_stop_h") == 6
     alerts.send("info" if ok else "urgent", "db_safe_applied",
                 f"DB 잠금 대책 적용 {datetime.fromtimestamp(t):%H:%M}: busy 10초 + 재시도 3번, journal {mode}, seller 재시작 "
                 + (f"정상 ({back})" if back else "후 확인 안 됨, 점검 필요") + f", 분석관 재시작 (pid {pid})"
-                + (" | 하한 규칙 보고가 18:30까지 안 나가 그대로 적용" if late else ""), log)
+                + (" | 하한 규칙 보고가 18:30까지 안 나가 그대로 적용" if late else "")
+                + f" | 끝까지 팔기: 매입 중단 {ev.get('stop_at')} (종료 {ev.get('restock_stop_h')}시간 전), 예약 재고 한도 "
+                  f"{ev.get('cap_end_at')}, 막바지 할인 종료 {ev.get('endgame_h')}시간 전부터" + (f" (확인 실패 {ev.get('error')})"
+                                                                                  if ev.get("error") else ""), log)
     while time.time() < t + 3600:
         time.sleep(60)
     try:

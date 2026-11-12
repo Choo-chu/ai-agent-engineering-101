@@ -34,8 +34,8 @@ def log(m):
         f.write(f"{datetime.now():%m-%d %H:%M:%S} {m}\n")
 
 
-def board():
-    j = httpx.get("https://market.ourolabs.ai/api/board", params={"round": 3}, timeout=30).json()
+def board(j=None):
+    j = j or httpx.get("https://market.ourolabs.ai/api/board", params={"round": 3}, timeout=30).json()
     B = [b for b in j["buyers"] if b.get("all") is not None]
     try:
         sys.path.insert(0, os.path.join(HERE, "tools"))

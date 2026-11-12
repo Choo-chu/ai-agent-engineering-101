@@ -28,8 +28,8 @@ AGING_AFTER_H = 24      # non-food older than this starts its markdown
 AGING_STEP_H = 6
 AGING_CUT = 0.10
 AGING_MIN_COST = 0.90   # aging never goes below 90% of cost
-from limits import ENDGAME_MIN, RESTOCK_STOP_H, ROUND_END  # noqa: E402,F401  hard limits (limits.py)
-ENDGAME_H = 48
+from limits import END_RULES, ENDGAME_MIN, RESTOCK_STOP_H, ROUND_END  # noqa: E402,F401  hard limits (limits.py)
+ENDGAME_H = float(END_RULES.get("endgame_h", 12)) if END_RULES else 48   # 11/12 ~16:20 (person): 12 h with end_rules.json
 ENDGAME_STEP_H = 6
 ENDGAME_CUT = 0.10
 

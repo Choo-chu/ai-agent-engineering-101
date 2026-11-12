@@ -7,6 +7,7 @@ import os
 import tempfile
 
 _DIR = tempfile.mkdtemp(prefix="w08-test-")
+os.environ.setdefault("W08_END_RULES", os.path.join(_DIR, "end_rules.json"))   # 11/12: limits reads it on import (off)
 
 
 def tmp_path(name):

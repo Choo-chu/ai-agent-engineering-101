@@ -46,6 +46,11 @@ def test_apply_and_report():
         market_db.connect().close()
     rules = os.path.join(D, "db_safe.json")
     assert R.apply(rules, db) == "wal" and json.load(open(rules))["enabled"]
+    er = os.path.join(D, "end_rules.json")                     # 11/12 ~16:20: lever 1 with the same restarts
+    R.apply_end(er)
+    assert json.load(open(er))["restock_stop_h"] == 6 and json.load(open(er))["endgame_h"] == 12
+    ev = R.end_values(env=dict(os.environ, W08_END_RULES=er, PYTHONUTF8="1"))
+    assert ev["restock_stop_h"] == 6 and ev["stop_at"] == "11-17 17:59" and ev["cap_end_at"] == "11-17 17:59" and ev["endgame_h"] == 12, ev
     t = time.time() - 1800
     c = sqlite3.connect(db)
     c.executemany("INSERT INTO settles (ts, shop, amount) VALUES (?,?,?)", [(t + 60, "choo-chu", 1000),

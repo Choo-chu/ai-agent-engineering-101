@@ -228,14 +228,15 @@ def test_apply_and_watch():
         assert gw.check({"saved": 0.399}, al, dec) == []                                       # gap: not on yet
         assert gw.check({"saved": 0.400}, al, dec) == [("high_accept", "on")]
         assert high_accept.rules()["enabled"] and high_accept.on() and not high_accept.rules()["guard_off"]
-        assert gw.check({"saved": 0.382}, al, dec) == [("high_accept", "off"), ("second_shop", "off"),
-                                                       ("soft_neg", "off"), ("accept_rule", "off")]
+        assert gw.check({"saved": 0.382}, al, dec) == [("high_accept", "off"),            # 11/12 ~16:20: D is no
+                                                       ("soft_neg", "off"), ("accept_rule", "off")]   # longer switched
+        assert d2.rules()["enabled"]                                                     # by saved
         assert not soft_neg.on() and not accept_rule.on()
         assert gw.check({"saved": 0.388}, al, dec) == [("soft_neg", "on"), ("accept_rule", "on")]
         assert soft_neg.on() and soft_neg.rules()["share"] == 1.0 and accept_rule.on()
-        assert gw.check({"saved": 0.41}, al, dec) == [("high_accept", "on"), ("second_shop", "on")]
+        assert gw.check({"saved": 0.41}, al, dec) == [("high_accept", "on")]
         assert all(m.on() for m in (high_accept, d2, soft_neg, accept_rule))
-        assert sum(1 for a in sent if a[0] == "urgent") == len(sent) == 10
+        assert sum(1 for a in sent if a[0] == "urgent") == len(sent) == 8
         # switched off by the person (no guard_off): never switched on by the guard
         r = accept_rule.rules(); r.update(enabled=False); J("ar.json", r)
         assert gw.check({"saved": 0.45}, al, dec) == [] and not accept_rule.on()

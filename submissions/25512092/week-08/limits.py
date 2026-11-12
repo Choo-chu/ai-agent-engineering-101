@@ -26,6 +26,26 @@ RESTOCK_STOP_H = 36           # no restock in the last 36 h
 CAP_END_AT = datetime(2026, 11, 15, 23, 59).timestamp()
 CAP_END = 15_000_000
 
+
+def _end_rules():
+    """11/12 ~16:20 (person), end_rules.json (read when a process imports limits): sell to the end - restock stops
+    restock_stop_h (6) before ROUND_END, the scheduled end cap and the automatic cap's end move to the same time;
+    depts/sales.py reads endgame_h (12) from it. Food (FOOD_TO_END_FROM) unchanged. Off -> the values above."""
+    import json, os
+    try:
+        path = os.environ.get("W08_END_RULES") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "end_rules.json")
+        with open(path, encoding="utf-8") as f:                 # W08_END_RULES: tests only
+            r = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return r if r.get("enabled") else {}
+
+
+END_RULES = _end_rules()
+if END_RULES:
+    RESTOCK_STOP_H = float(END_RULES.get("restock_stop_h", 6))
+    CAP_END_AT = ROUND_END - RESTOCK_STOP_H * 3600
+
 # automatic STOCK_CAP (person's decision 11/09 ~23:10): while stock_cap_auto.json is enabled (and before CAP_END_AT,
 # which keeps priority), the cap every run is cash + stock at cost - AUTO_RESERVE, STOCK_EXIT 88% of it; the fixed
 # STOCK_CAP above is the value when it is off (the cap brake's two stock trips turn it off and keep 20M).

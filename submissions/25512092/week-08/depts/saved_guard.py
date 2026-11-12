@@ -46,3 +46,27 @@ def back(feature, b):
     if b.get("saved") is not None and b["saved"] >= on:
         return f"saved {b['saved']} >= {on:.4f}" + (f" ({note})" if note else "")
     return None
+
+
+# 11/12 ~16:20 (person): D (second_shop) is no longer switched by saved (its deals save more than the average); and two
+# insurance steps on soft_neg against the best other STUDENT buyer's saved (b["student_second"], the midterm's ranking):
+#   accept  my saved < student 2nd + 0.015 -> soft_neg accept x 1.05 -> x 1.00; back to x 1.05 at >= student 2nd + 0.020
+#   first   my saved < student 2nd + 0.005 -> soft_neg first offer 0.75 -> 0.65; back to 0.75 at >= student 2nd + 0.010
+INSURE = {"accept": {"field": "accept", "normal": 1.05, "safe": 1.00, "below": 0.015, "back": 0.020},
+          "first": {"field": "first", "normal": 0.75, "safe": 0.65, "below": 0.005, "back": 0.010}}
+
+
+def insure(b, r):
+    """[(step, field, new value, why)] for soft_neg rules r and board summary b (none without a student 2nd)."""
+    s2, me = (b or {}).get("student_second"), (b or {}).get("saved")
+    if s2 is None or me is None:
+        return []
+    out = []
+    for step, c in INSURE.items():
+        cur = r.get(c["field"])
+        if not r.get(f"insured_{step}") and cur is not None and cur > c["safe"] and me < s2 + c["below"]:
+            out.append((step, c["field"], c["safe"], f"saved {me} < 학생 2위 {s2} + {c['below']} = {s2 + c['below']:.4f}"))
+        elif r.get(f"insured_{step}") and me >= s2 + c["back"]:
+            out.append((step, c["field"], r.get(f"insured_{step}_prev", c["normal"]),
+                        f"saved {me} >= 학생 2위 {s2} + {c['back']} = {s2 + c['back']:.4f}"))
+    return out
