@@ -63,6 +63,37 @@ def top(t0, t1, now, db_path=None):
             "warranty": sum(1 for r in sold if r[7]), "refunds": ref[0], "refund_amt": int(ref[1])}
 
 
+def last24(t1, db_path=None, hours=24):
+    """11/12 ~09:30 (person, for the HIGH_MAX call on 11/13): over-1.5M units bought in [t1 - 24 h, t1) (units, cost)
+    and sold in it whenever bought (units, revenue, cost, profit, margin), refunds on my over-1.5M sales in it."""
+    t0 = t1 - hours * 3600
+    d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=60)
+    try:
+        b = d.execute("SELECT COUNT(*), COALESCE(SUM(cost), 0) FROM my_stock WHERE cost>? AND supplied_at>=? AND "
+                      "supplied_at<?", (MIN, t0, t1)).fetchone()
+        s = d.execute("SELECT COUNT(*), COALESCE(SUM(s.amount), 0), COALESCE(SUM(m.cost), 0) FROM settles s JOIN my_stock m "
+                      "ON m.unit=s.unit WHERE s.shop=? AND m.cost>? AND s.ts>=? AND s.ts<?", (ME, MIN, t0, t1)).fetchone()
+        r = d.execute("SELECT COUNT(*), COALESCE(SUM(b.refunded), 0) FROM broken b WHERE b.shop=? AND b.refunded>0 AND "
+                      "b.ts>=? AND b.ts<? AND EXISTS (SELECT 1 FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE "
+                      "s.shop=b.shop AND s.sku=b.sku AND s.buyer=b.buyer AND s.ts<=b.ts AND m.cost>?)",
+                      (ME, t0, t1, MIN)).fetchone()
+    finally:
+        d.close()
+    rev, cost = int(s[1]), int(s[2])
+    return {"bought": b[0], "bought_cost": int(b[1]), "sold": s[0], "rev": rev, "sold_cost": cost, "profit": rev - cost,
+            "margin": (rev - cost) / rev if rev else None, "refunds": r[0], "refund_amt": int(r[1])}
+
+
+def last24_line(t1, db_path=None):
+    x = last24(t1, db_path)
+    n_held, most = held_now()
+    m = "-" if x["margin"] is None else f"{x['margin']:.1%}"
+    return (f"150만 초과 고가 24시간 누적 ({datetime.fromtimestamp(t1 - 86400):%m-%d %H:%M} ~ {datetime.fromtimestamp(t1):%H:%M}): "
+            f"매입 {x['bought']}개 원가 {x['bought_cost']:,}; 판매 {x['sold']}개 매출 {x['rev']:,} 원가 {x['sold_cost']:,} 이익 "
+            f"{x['profit']:,} (이익률 {m}); 환불 {x['refunds']}건 {x['refund_amt']:,}; 지금 보유 "
+            f"{'-' if n_held is None else n_held}개 (SKU당 최다 {'-' if most is None else most}) | HIGH_MAX 고정 11-13 12:00까지")
+
+
 def held_now(state=None):
     try:
         with open(os.path.join(state or os.path.join(HERE, ".market"), "inventory.json"), encoding="utf-8") as f:

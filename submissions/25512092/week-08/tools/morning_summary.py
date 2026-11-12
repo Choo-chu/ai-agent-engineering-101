@@ -170,6 +170,11 @@ def summary(t0, t1):
         lines += night_lines(t0, t1)
     except Exception as e:
         lines.append(f"20. 야간 점검 요약 실패 {type(e).__name__}: {e}")
+    try:                                          # 11/12 ~09:30 (person): for the HIGH_MAX call on 11/13 morning
+        import check_top15
+        lines.append("27. " + check_top15.last24_line(t1))
+    except Exception as e:
+        lines.append(f"27. 150만 초과 고가 24시간 누적 계산 실패 {type(e).__name__}: {e}")
     return "\n".join(lines)
 
 
