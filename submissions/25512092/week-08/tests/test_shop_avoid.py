@@ -104,6 +104,15 @@ def test_guard_warns_on_missed_orders():
     p = setup(mem=[(NOW - 3000, "two", "item_mismatch")])                   # two: one mismatch -> back
     got, _ = choose(p, ["two", "fine", "ok2"])
     assert got[-1] == "two" and B.BACKED == ["two"], (got, B.BACKED)
+    got, _ = choose(p, ["a", "b", "c", "two"])                              # 4th anyway: not missed because of it
+    assert got[-1] == "two" and B.BACKED == [], (got, B.BACKED)
+    d0 = tempfile.mkdtemp()                                                  # rows before missed_from: not counted
+    with mock.patch.object(A, "MISSED", os.path.join(d0, "m.jsonl")):
+        for i in range(6):
+            with mock.patch.object(A.time, "time", lambda: NOW - 900):
+                A.note_missed(f"x-{i}", "과자", [], "walk", back=["two"])
+        rp0 = tmp_json({"enabled": True, "since": NOW - 10 * 3600, "missed_from": NOW - 600}, "avoid")
+        assert A.guard(now=NOW, send=lambda *a: 1 / 0, rules_path=rp0) is None
     d = tempfile.mkdtemp()
     mp = os.path.join(d, "missed.jsonl")
     sn = os.path.join(d, "sn.jsonl")                                         # a big close-rate drop: ignored now
@@ -116,10 +125,10 @@ def test_guard_warns_on_missed_orders():
     sent = []
     with mock.patch.object(A, "MISSED", mp), mock.patch.object(A, "STATE", os.path.join(d, "s.json")):
         with mock.patch.object(A.time, "time", lambda: NOW - 3 * 3600):      # 3 h ago: outside the 2 h window
-            A.note_missed("o-0", "과자", [], "walk", back=list(B.BACKED))
+            A.note_missed("o-0", "과자", [], "walk", back=["two"])
         for i in range(4):
             with mock.patch.object(A.time, "time", lambda: NOW - 600 * (i + 1)):
-                A.note_missed(f"o-{i + 1}", "과자", ["bad"] if i == 0 else [], "walk", back=list(B.BACKED))
+                A.note_missed(f"o-{i + 1}", "과자", ["bad"] if i == 0 else [], "walk", back=["two"])
         assert A.guard(now=NOW, sn_path=sn, send=lambda *a: sent.append(a), rules_path=rp) is None and not sent
         with mock.patch.object(A.time, "time", lambda: NOW + 30):
             A.note_missed("o-5", "과자", [], "no_deal", back=["two"])

@@ -222,7 +222,7 @@ def summary_line(now=None, t0=None):
     now = now or time.time()
     t0 = t0 or now - 12 * 3600
     cur = current(now=now)
-    miss = missed_since(t0)
+    miss = [m for m in missed_since(t0) if m.get("ts", 0) <= now]   # 11/12: a summary for 08:00 stops at 08:00
     per = {}
     for m in miss:
         for s in (m.get("avoided") or []) + (m.get("back") or []):
@@ -258,7 +258,8 @@ def guard(now=None, r=None, sn_path=None, send=None, rules_path=None, missed_pat
     if now - raw.get("guard_checked", 0) < 600:
         return None
     h, need = r["missed_h"], r["missed_min"]
-    miss = [m for m in missed_since(now - h * 3600, missed_path) if m.get("ts", 0) <= now]
+    t0 = max(now - h * 3600, raw.get("missed_from") or 0)  # 11/12 ~09:20: rows before the narrowed back rule ignored
+    miss = [m for m in missed_since(t0, missed_path) if m.get("ts", 0) <= now]
     raw["guard_checked"] = round(now)
     why = None
     if len(miss) >= need:

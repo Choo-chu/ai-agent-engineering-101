@@ -32,6 +32,7 @@ MEMORY_PATH = os.path.join(HERE, "memory.jsonl")
 NEW_SHOP_SCORE = 3.0   # score for a shop nobody has reviewed yet
 SHOP_FLAGS = {}        # market_db shop_flags: dishonest grade claims and broken units, checked on the ledger
 TOP_K = 3              # candidates shown to the harness
+TRIES_N = 3            # shops tried per order (the next one when a shop does not answer or fails the precheck)
 MIN_OFFERS = 3         # counteroffers the buyer makes before it may accept or walk
 FIRST_OFFER = 0.6      # the code's opening counter, as a share of the asking price
 DEFAULT_SCORE = {"cheap": 0.5, "honest": 0.75, "success": 0.5, "score": 0.583}   # a shop with no data
@@ -185,7 +186,9 @@ def choose(shops, memory, item, scores, reorder=None):
             allowed = reorder(allowed)
         except Exception as e:                        # never lose the order over it: shop-score order
             log(f"[shop_order] failed: {type(e).__name__}: {e}")
-    BACKED[:] = [c["name"] for c in allowed if c["name"] in back]    # 11/12 ~09:10: missed orders count them too
+    # 11/12 ~09:20: missed orders count a back shop only when it would have been among the shops tried (the first
+    # TRIES_N) without the back rule; a shop ranked lower anyway is not missed because of the rule
+    BACKED[:] = [c["name"] for c in allowed[:TRIES_N] if c["name"] in back]
     if back and len(allowed) > 1:                     # 11/11 ~21:00: one item_mismatch in 24 h -> the back
         allowed = [c for c in allowed if c["name"] not in back] + [c for c in allowed if c["name"] in back]
         for n, why in back.items():
@@ -729,7 +732,7 @@ def main():
             ordered = buyer_break.order_shops(ordered, args.item, catalog, log=log)
         except Exception as e:
             log(f"[break rule] shop order failed: {type(e).__name__}")
-    tries = ordered[:3]  # next candidate when a shop does not answer or fails the precheck
+    tries = ordered[:TRIES_N]  # next candidate when a shop does not answer or fails the precheck
     from depts import high_accept, second_shop as d2
     ss_on = sn_arm == "soft" and d2.on()            # 11/09 plan D: a 2nd shop in the time under the 20 s spacing
     second_from, hf = None, None
