@@ -94,8 +94,12 @@ def current(now=None, log=None, write=True):
 
 
 def limit(sku, deep):
-    """Units of `sku` a run may hold (high price): the deep limit, else 1."""
-    return deep[sku]["limit"] if sku in deep else 1
+    """Units of `sku` a run may hold (high price): the deep limit, else 1 - or 2 for a SKU my shop sold in the last
+    24 h while wide_trial's TWO is on (11/13 ~00:00, person)."""
+    if sku in deep:
+        return deep[sku]["limit"]
+    from depts import wide_trial
+    return wide_trial.two_limit(sku)
 
 
 def skus_between(t0, t1):

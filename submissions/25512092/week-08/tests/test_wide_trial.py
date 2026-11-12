@@ -57,6 +57,7 @@ def plan_with(wrules, units=(), record=True):
     with contextlib.ExitStack() as es:
         for obj, name, val in (
                 (top_high, "last_costs", lambda *a, **k: {}), (W, "sold_skus", lambda *a, **k: {"H1"}),
+                (W, "sold_24h", lambda *a, **k: {"H1"}),
                 (PU, "load_stats", lambda: st), (PU, "price_of", lambda k, s=None: (st["skus"][k]["avg"], 50)),
                 (PU, "busy_categories", lambda c, top=5: ["TV"]), (PU, "c_rules", lambda: {}),
                 (PU, "excluded", lambda: {}), (PU, "guard_check", lambda *a: None), (PU, "sofa_trial", lambda *a: None),
@@ -95,7 +96,7 @@ def test_plan_b_c():
     assert W.c_shares({"N1": 0.8, "H1": 0.8}, lambda k: k == "H1", rules()) == {"N1": 1.2, "H1": 0.8}
     q, rows, sent, _ = plan_with(rules(), units=aged(15))  # 15 aged vs base 5: +10 -> off before the plan, one alert
     assert "H1" not in q and q["N1"] == 5 and not rows, q
-    assert len(sent) == 1 and sent[0][0] == "urgent" and sent[0][1] == "wide_trial_off", sent
+    assert len(sent) == 1 and sent[0][0] == "urgent" and sent[0][1].startswith("wide_trial_off"), sent
     assert W.rules()["off_ts"]
 
 
@@ -131,7 +132,7 @@ def test_watch_guard_and_report():
     g, rep = WW.step(now=NOW + 300, send=lambda *a: sent.append(a), path=path, units=aged(14, 300_000), **kw)
     assert g == "ok" and not rep and len(sent) == 1               # the report goes once
     g, _ = WW.step(now=NOW + 600, send=lambda *a: sent.append(a), path=path, units=aged(15, 300_000), **kw)
-    assert g == "tripped" and sent[-1][:2] == ("urgent", "wide_trial_off") and "+10개" in sent[-1][2], sent[-1]
+    assert g == "tripped" and sent[-1][0] == "urgent" and sent[-1][1].startswith("wide_trial_off") and "+10개" in sent[-1][2], sent[-1]
     assert WW.step(now=NOW + 900, send=lambda *a: sent.append(a), path=path, units=aged(30), **kw)[0] == "off"
     assert len(sent) == 2                                        # off: no second alert
     path2 = tmp_json(rules(since=round(t0)), "wide_trial")       # cost: 6 x 1.7M = 10.2M, +5.2M -> off
@@ -140,7 +141,76 @@ def test_watch_guard_and_report():
     assert W.guard(units=aged(5, 1_999_000), now=NOW, send=lambda *a: None, path=tmp_json(rules(), "w")) == "ok"
 
 
+def test_two():
+    # 11/13 ~00:00: TWO - a high SKU sold in the last 24 h up to 2 (deep_high.limit), via make_plan
+    q, rows, _, _ = plan_with(rules(applied=["C", "B", "TWO"]))
+    assert q.get("H1") == 2 and "H2" not in q, q
+    held = [{"unit": "x", "sku": "H1", "cost": 600_000, "grade": "A", "supplied_at": NOW - 600}]
+    q, _, _, _ = plan_with(rules(applied=["C", "B", "TWO"]), units=held)       # one held -> one more
+    assert q.get("H1") == 1, q
+    q, _, _, _ = plan_with(rules(applied=["C", "B", "TWO"]), units=held * 2)   # two held -> none
+    assert "H1" not in q, q
+    q, _, _, _ = plan_with(rules())                                            # without TWO: 1 as before
+    assert q.get("H1") == 1, q
+    assert deep_high.limit("D", {"D": {"limit": 4}}) == 4                      # deep_high's list keeps its limit
+    assert W.two_limit("H9", rules(applied=["TWO"]), sold={"H1"}) == 1
+    assert W.two_limit("H1", rules(applied=["TWO"], off_ts=1), sold={"H1"}) == 1
+
+
+def test_cost_guard():
+    # only the 12 h+ unsold high cost over 60M trips: B, C, TWO off, high_max back to 100, one urgent alert
+    r = rules(applied=["C", "B", "TWO"], max_cost=60_000_000, high_max_back=100)
+    sent, back = [], []
+    f = lambda n, why: back.append(n)
+    assert W.guard(units=aged(200, 290_000), now=NOW, send=lambda *a: sent.append(a), path=tmp_json(r, "w"),
+                   high_max_back_fn=f) == "ok"                                   # 200 units, 58M: the count is no rule
+    path = tmp_json(r, "w")
+    assert W.guard(units=aged(61), now=NOW, send=lambda *a: sent.append(a), path=path, high_max_back_fn=f) == "tripped"
+    assert back == [100] and len(sent) == 1 and sent[0][1].startswith("wide_trial_off"), (back, sent)
+    assert "원가 61,000,000 > 기준 60,000,000" in sent[0][2] and "고가 SKU당 1개" in sent[0][2] and "high_max 100" in sent[0][2]
+    rr = W.rules(path)
+    assert not W.on("TWO", rr) and not W.on("B", rr) and not W.on("C", rr)
+    assert W.guard(units=aged(70), now=NOW, send=lambda *a: sent.append(a), path=path, high_max_back_fn=f) == "off"
+    # high_max_back writes policy.json and high_caps.json (temp copies)
+    import policy as POL
+    from depts import high_caps
+    with mock.patch.object(POL, "write", lambda sec, why, by="ceo": back.append(sec)),             mock.patch.object(high_caps, "PATH", tmp_path("high_caps.json")):
+        high_caps.set_caps(0.85, 200)
+        W.high_max_back(100, "t")
+        assert high_caps.get() == (0.85, 100) and back[-1] == {"purchasing": {"high_max": 100}}
+
+
+def test_two_report():
+    d = tempfile.mkdtemp()
+    db = os.path.join(d, "m.db")
+    c = sqlite3.connect(db)
+    c.execute("CREATE TABLE my_stock (unit, sku, name, cost, grade, supplied_at, market_avg_at)")
+    c.execute("CREATE TABLE settles (ts, shop, sku, amount, unit)")
+    c.execute("CREATE TABLE cash (ts, balance, stock_cost)")
+    t0 = NOW - 3.05 * 3600
+    c.executemany("INSERT INTO my_stock (unit, sku, cost, supplied_at) VALUES (?,?,?,?)",
+                  [("h1", "H1", 600_000, t0 + 60), ("h2", "H1", 600_000, t0 + 120), ("h0", "H2", 500_000, t0 - 3600),
+                   ("n1", "N1", 6_000, t0 + 60)])
+    c.executemany("INSERT INTO settles VALUES (?,?,?,?,?)", [(t0 + 1800, "choo-chu", "H1", 650_000, "h1"),
+                                                             (t0 - 600, "choo-chu", "H2", 540_000, "h0")])
+    c.executemany("INSERT INTO cash VALUES (?,?,?)", [(t0, 78_000_000, 72_000_000), (NOW, 60_000_000, 90_000_000)])
+    c.commit()
+    c.close()
+    path = tmp_json(rules(applied=["C", "B", "TWO"], max_cost=60_000_000, two_since=round(t0), reported=1), "w")
+    sent = []
+    kw = dict(db_path=db, inv_path=tmp_json({"units": aged(3)}, "inv"), book=lambda a, b: (1_200_000, 15_000_000))
+    assert W.report_two_due(now=NOW, send=lambda *a: sent.append(a), path=path, **kw)
+    t = sent[0][2]
+    assert "고가 매입 2개 1,200,000 vs 1개 500,000" in t and "고가 판매 1개 매출 650,000 이익 +50,000 vs 1개 540,000 +40,000" in t, t
+    assert "현금 78,000,000 -> 60,000,000 (-18,000,000)" in t and "끄는 기준: 원가 60,000,000 초과" in t, t
+    assert "시간당 Book 1,200,000 vs 1,200,000, 시간당 매출 15,000,000 vs 15,000,000" in t, t
+    assert not W.report_two_due(now=NOW + 60, send=lambda *a: sent.append(a), path=path, **kw) and len(sent) == 1
+
+
 if __name__ == "__main__":
     test_plan_b_c()
     test_watch_guard_and_report()
+    test_two()
+    test_cost_guard()
+    test_two_report()
     print("ok")

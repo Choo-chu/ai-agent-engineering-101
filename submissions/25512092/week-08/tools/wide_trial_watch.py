@@ -13,12 +13,18 @@ sys.path.insert(0, os.path.join(HERE, "tools"))
 from depts import wide_trial as W  # noqa: E402
 
 CHECK_S = 300
+END = __import__("datetime").datetime(2026, 11, 17, 23, 59).timestamp()
 
 
 def step(now=None, send=None, path=None, units=None, log=print, **kw):
     """One check: (guard result, report sent)."""
     g = W.guard(units=units, now=now, send=send, path=path, log=log)
-    return g, W.report_due(now=now, send=send, path=path, log=log, **kw)
+    sent = W.report_due(now=now, send=send, path=path, log=log, **kw)
+    try:                                           # 11/13 ~00:00: TWO's 3 h check
+        sent = W.report_two_due(now=now, send=send, path=path, log=log) or sent
+    except Exception as e:
+        log(f"[wide trial] TWO report failed: {type(e).__name__}: {e}")
+    return g, sent
 
 
 def main():
@@ -32,7 +38,10 @@ def main():
         except Exception as e:
             print(time.strftime("%H:%M:%S"), f"failed: {type(e).__name__}: {e}", flush=True)
         r = W.rules()
-        if "--once" in sys.argv or (r.get("reported") and (r.get("off_ts") or time.time() > r["since"] + 86400)):
+        # 11/13 ~00:00: with the cost guard (max_cost) it runs until the guard trips or the round ends
+        done = (r.get("off_ts") and (r.get("two_reported") or not r.get("two_since"))) or (
+            not r.get("max_cost") and r.get("reported") and time.time() > r["since"] + 86400)
+        if "--once" in sys.argv or done or time.time() > END:
             return
         time.sleep(CHECK_S)
 

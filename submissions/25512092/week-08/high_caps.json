@@ -1,1 +1,1 @@
-{"share_cap": 0.85, "max_cap": 100, "why": "person's decision 11/09 ~23:10: high-price push: ceilings 0.85 / 100 (the high-price brake goes back to 0.7 / 60)"}
+{"share_cap": 0.85, "max_cap": 200, "why": "person 11/13 ~00:00: high 1 -> 2, high_max 100 -> 200 (ceiling)"}

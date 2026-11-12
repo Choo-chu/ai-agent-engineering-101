@@ -3,7 +3,8 @@
  "since": 1794460609,
  "applied": [
   "C",
-  "B"
+  "B",
+  "TWO"
  ],
  "B_min_margin": 0.06,
  "C_share": 1.2,
@@ -19,5 +20,14 @@
  "C_off_why": "person 11/12 ~16:30: C (hot fast normal goods my_share 1.2) back to 0.8; B (high margin 6%) kept",
  "reported": 1794471417,
  "C_on_again": 1794471692,
- "C_on_why": "person 11/12 (after the 3 h report: C raised sales and profit): C (hot fast normal goods my_share 1.2) on again; guard unchanged"
+ "C_on_why": "person 11/12 (after the 3 h report: C raised sales and profit): C (hot fast normal goods my_share 1.2) on again; guard unchanged",
+ "prev_off": {
+  "off_ts": 1794481323,
+  "off_why": "12시간+ 미판매 고가 73개 33,834,476 (적용 때 63개 35,875,897, +10개 -2,041,421; 기준 +10개 또는 +5,000,000)"
+ },
+ "two_since": 1794495179,
+ "two_max": 2,
+ "max_cost": 60000000,
+ "high_max_back": 100,
+ "why_two": "person 11/13 ~00:00: high SKU sold >= 1 in 24 h (not deep_high's) up to 2 a SKU; high_max 100 -> 200 (CEO/QC ceilings too); guard only 12 h+ unsold high cost > 60M -> B, C, TWO off + high_max 100; B / C on again under this guard; 3 h check"
 }
