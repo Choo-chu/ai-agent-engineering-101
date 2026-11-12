@@ -137,12 +137,24 @@ def _trip(state, shop, kind, at, until, reason):
     state["shops"][shop] = {"kind": kind, "at": round(at), "until": round(until), "reason": reason}
 
 
+def _drop_cleared(state, rules_path=None):
+    """11/12 ~09:30 (person): shop_avoid.json cleared {shop: ts} - an entry tripped by an event at or before ts is
+    dropped (real_yellow: the item mismatch was our buyer accepting without a check). Applied on every read, so a
+    process that saves an older state cannot bring it back."""
+    cl = _load(rules_path or RULES, {}).get("cleared") or {}
+    for s, ts in cl.items():
+        v = state.get("shops", {}).get(s)
+        if v and v.get("at", 0) <= ts:
+            state["shops"].pop(s, None)
+    return state
+
+
 def update(now=None, r=None, db_path=None, mem_path=None, ev_path=None, state_path=None, force=False):
     """The avoid state, recomputed at most every EVERY_S."""
     now = now or time.time()
     r = rules() if r is None else r
     sp = state_path or STATE
-    state = _load(sp, {"shops": {}, "checked": 0})
+    state = _drop_cleared(_load(sp, {"shops": {}, "checked": 0}))
     state.setdefault("shops", {})
     if not r or (not force and now - state.get("checked", 0) < EVERY_S):
         return state
@@ -180,6 +192,7 @@ def update(now=None, r=None, db_path=None, mem_path=None, ev_path=None, state_pa
             _trip(state, s, "avoid", ts[r["inj_avoid_n"] - 1], ts[r["inj_avoid_n"] - 1] + av,
                   f"인젝션 {len(ts)}번 (최근 {r['inj_window_h']}시간)")
     state["shops"] = {s: v for s, v in state["shops"].items() if v["until"] > now - 7 * 86400}
+    _drop_cleared(state)
     state["checked"] = round(now)
     _save(sp, state)
     return state
@@ -198,7 +211,7 @@ def status(keys, state, now=None):
 def current(state=None, now=None):
     """{shop: entry} of the shops avoided or sent to the back now."""
     now = now or time.time()
-    state = _load(STATE, {"shops": {}}) if state is None else state
+    state = _drop_cleared(_load(STATE, {"shops": {}})) if state is None else state
     return {s: v for s, v in state.get("shops", {}).items() if v["until"] > now}
 
 

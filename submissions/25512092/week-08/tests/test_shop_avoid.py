@@ -211,6 +211,25 @@ def test_released_and_amount_rule():
     assert got == ["rel", "fine", "kc"] and not avoided, got                # bright still blocked; kc: amount -> back
 
 
+def test_cleared_shop():
+    """11/12 ~09:30 (person): real_yellow's item mismatch was our buyer accepting without the check -> cleared: out of
+    the back / avoid list even when an older state still holds it; a mismatch after the clear trips again."""
+    p = setup(mem=[(NOW - 3000, "ry", "item_mismatch")])
+    got, _ = choose(p, ["ry", "fine"])
+    assert got == ["fine", "ry"]                                             # back before the clear
+    with open(p["RULES"], "w", encoding="utf-8") as f:
+        json.dump({"enabled": True, "since": NOW - 60, "cleared": {"ry": NOW - 100}}, f)
+    with mock.patch.multiple(A, **p):
+        assert "ry" not in A.current()                                       # the old saved state is filtered too
+    got, _ = choose(p, ["ry", "fine"])
+    assert got == ["ry", "fine"] and B.BACKED == [], got
+    p2 = setup(mem=[(NOW - 30, "ry", "item_mismatch")])                    # the old row deleted from memory, a new one
+    with open(p2["RULES"], "w", encoding="utf-8") as f:
+        json.dump({"enabled": True, "since": NOW - 60, "cleared": {"ry": NOW - 100}}, f)
+    got, avoided = choose(p2, ["ry", "fine"])
+    assert got == ["fine", "ry"] and not avoided, (got, avoided)            # after the clear: back again
+
+
 if __name__ == "__main__":
     test_item_mismatch()
     test_grade_claims()
@@ -218,6 +237,7 @@ if __name__ == "__main__":
     test_cheated_kept_and_no_fallback_to_avoided()
     test_missed_and_summary()
     test_guard_warns_on_missed_orders()
+    test_cleared_shop()
     test_injection_phrases()
     test_item_draft()
     test_wrong_item_not_accepted()
