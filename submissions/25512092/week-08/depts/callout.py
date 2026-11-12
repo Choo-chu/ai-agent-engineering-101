@@ -101,14 +101,21 @@ def candidates(now=None, db=None):
     own = db is None
     db = db or connect()
     try:
-        rows = db.execute("SELECT s.seq, s.ts, COALESCE(s.shop, s.shop_url), s.sku, s.name, s.grade, s.claim_honest, "
-                          "EXISTS (SELECT 1 FROM broken b WHERE b.buyer=s.buyer AND b.shop_url=s.shop_url "
-                          "AND b.sku=s.sku AND b.ts>=s.ts) FROM settles s WHERE s.claim_honest IS NOT NULL AND s.ts>=? "
-                          "AND COALESCE(s.shop, s.shop_url) IS NOT NULL AND COALESCE(s.shop, '')!=? ORDER BY s.seq",
-                          (now - WINDOW_S, ME)).fetchall()
+        # 11/12 ~15:10: the breakage check in Python (a per-row EXISTS on broken over ~58k claimed settles took ~57 s;
+        # that long read kept writers from committing: record_cash / strategy tick "database is locked" at 15:05)
+        raw = db.execute("SELECT s.seq, s.ts, COALESCE(s.shop, s.shop_url), s.sku, s.name, s.grade, s.claim_honest, "
+                         "s.buyer, s.shop_url FROM settles s WHERE s.claim_honest IS NOT NULL AND s.ts>=? "
+                         "AND COALESCE(s.shop, s.shop_url) IS NOT NULL AND COALESCE(s.shop, '')!=? ORDER BY s.seq",
+                         (now - WINDOW_S, ME)).fetchall()
+        last_break = {}
+        for buyer, url, sku, ts in db.execute("SELECT buyer, shop_url, sku, ts FROM broken WHERE ts>=?",
+                                              (now - WINDOW_S,)):
+            k = (buyer, url, sku)
+            last_break[k] = max(ts, last_break.get(k, ts))
     finally:
         if own:
             db.close()
+    rows = [r[:7] + (int(last_break.get((r[7], r[8], r[3]), -1) >= r[1]),) for r in raw]
     cat = _catalog()
     by, skipped = {}, {"broken": 0, "food": 0, "share": 0, "excluded": 0}
     for seq, ts, shop, sku, name, grade, honest, broken in rows:
