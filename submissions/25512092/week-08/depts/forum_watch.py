@@ -16,6 +16,8 @@ import json
 import os
 import re
 import sqlite3
+
+import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
 import subprocess
 import tempfile
 import time
@@ -62,7 +64,7 @@ def criticises(text):
     return False
 
 def db():
-    d = sqlite3.connect(DB_PATH, timeout=30)
+    d = dbutil.connect(DB_PATH)
     d.execute("CREATE TABLE IF NOT EXISTS forum_posts (id INTEGER PRIMARY KEY, ts REAL, author TEXT, role TEXT, "
               "owner TEXT, thread INTEGER, text TEXT, refs TEXT, first_seen REAL, last_seen REAL, likes INTEGER, "
               "dislikes INTEGER, score REAL)")

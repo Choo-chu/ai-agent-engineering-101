@@ -49,7 +49,8 @@ def measure(r, now=None):
     with open(os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8") as f:
         inv = json.load(f)
     held = [u for u in inv.get("units", []) if u.get("grade") != "expired"]
-    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+    import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
+    db = dbutil.connect(os.path.join(HERE, "market.db"))
     try:
         ages = [x[0] for x in db.execute(
             "SELECT s.ts - m.supplied_at FROM settles s JOIN my_stock m ON m.unit=s.unit WHERE s.shop=? AND s.ts>=? "

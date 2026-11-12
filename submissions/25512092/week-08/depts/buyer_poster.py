@@ -136,7 +136,8 @@ def next_post(st, now):
         st["once_done"].append(once["key"])
         return f"once {once['key']}", {k: once[k] for k in ("post", "refs", "as", "thread") if k in once}
     catalog = json.load(open(os.path.join(MD, "catalog.json"), encoding="utf-8"))
-    db = sqlite3.connect(cs.DB_PATH, timeout=30)
+    import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
+    db = dbutil.connect(cs.DB_PATH)
     try:
         if now - st.get("report_ts", 0) >= REPORT_EVERY_S:
             p = cs.market_report(db, catalog, st)

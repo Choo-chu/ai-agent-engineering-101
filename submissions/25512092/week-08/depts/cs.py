@@ -25,6 +25,8 @@ import json
 import os
 import random
 import sqlite3
+
+import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
 import time
 
 import strategy
@@ -379,7 +381,7 @@ def run(state_dir, inv, catalog, log=print):
     POST_EVERY_S, BUYER_TURNS = policy.values("cs", "post_every_s", "buyer_turns")
     path, st = _state(state_dir)
     now = time.time()
-    db = sqlite3.connect(DB_PATH, timeout=30)
+    db = dbutil.connect(DB_PATH)
     try:
         collect(st, inv, db, log)
         if now - st["shop_ts"] >= POST_EVERY_S:

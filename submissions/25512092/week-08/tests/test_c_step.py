@@ -8,6 +8,8 @@ import time
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 from depts import high_ask, open_expiry, overcost, sofa  # noqa: E402
+from depts import sales as _sales  # noqa: E402
+_sales.LOSS_RULE = os.path.join(tempfile.mkdtemp(), "loss_rule.json")   # 11/12: the live switch is on; tests start off
 
 
 def tmp(obj):

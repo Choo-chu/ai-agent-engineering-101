@@ -644,7 +644,8 @@ def injection_report(seen, log=print, now=None):
                     amount += int(d.get("value") or 0)
                     k = (d.get("reason") or "").split(":")[0]
                     flags[k] = flags.get(k, 0) + 1
-    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+    import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
+    db = dbutil.connect(os.path.join(HERE, "market.db"))
     try:
         rows = db.execute("SELECT outcome, reason, price, list_price FROM buyer_deals WHERE buyer_case='injection_code' "
                           "AND ts>=? AND ts<?", (since, t1)).fetchall()
@@ -677,7 +678,8 @@ def post_report(seen, log=print, now=None):
     seen[f"post_report:{int(since)}"] = now
     import re
     import sqlite3
-    db = sqlite3.connect(os.path.join(HERE, "market.db"), timeout=30)
+    import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
+    db = dbutil.connect(os.path.join(HERE, "market.db"))
 
     def win(t0, t1):
         n, kinds = 0, {}

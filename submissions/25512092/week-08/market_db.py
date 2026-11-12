@@ -31,6 +31,8 @@ import time
 
 import httpx
 
+import dbutil  # 11/12 ~15:15: busy 10 s + retries while db_safe.json is on
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "market.db")
 STATS_PATH = os.path.join(HERE, "market_stats.json")
@@ -45,7 +47,7 @@ BOOTSTRAP = 20000        # ledger entries read back on the first refresh
 
 
 def connect():
-    db = sqlite3.connect(DB_PATH, timeout=30)
+    db = dbutil.connect(DB_PATH)
     db.executescript("""
     CREATE TABLE IF NOT EXISTS settles (seq INTEGER PRIMARY KEY, ts REAL, buyer TEXT, shop_url TEXT, shop TEXT,
         sku TEXT, name TEXT, grade TEXT, amount INTEGER, claim_honest INTEGER, market_avg_at REAL);
@@ -184,6 +186,8 @@ def refresh(force=False, log=print):
         added += 1
     if entries:
         db.execute("INSERT OR REPLACE INTO meta VALUES ('last_seq', ?)", (str(entries[-1]["seq"]),))
+    if dbutil.on():                                   # 11/12 ~15:15: the new rows committed before the long part
+        db.commit()
     backfill_units(db)
     match_broken(db)
     board_snapshot(db, now, log)
@@ -238,12 +242,18 @@ def board_snapshot(db, now, log=print):
     """Every 30 min: my shop's and my buyer's board rows (stars, deals, book, profit, surplus, all) -> board_hist."""
     if now - float(meta(db, "board_ts", 0)) < BOARD_EVERY_S:
         return
-    db.execute("INSERT OR REPLACE INTO meta VALUES ('board_ts', ?)", (str(now),))
+    early = not dbutil.on()                           # 11/12 ~15:15: on -> the board call outside the write
+    if early:
+        db.execute("INSERT OR REPLACE INTO meta VALUES ('board_ts', ?)", (str(now),))
     try:
         j = httpx.get(f"{MARKET}/api/board", params={"round": 3}, timeout=30).json()
     except Exception as e:
         log(f"[market_db] board unavailable: {e}")
+        if not early:
+            db.execute("INSERT OR REPLACE INTO meta VALUES ('board_ts', ?)", (str(now),))
         return
+    if not early:
+        db.execute("INSERT OR REPLACE INTO meta VALUES ('board_ts', ?)", (str(now),))
     keep = lambda x: {k: v for k, v in (x or {}).items() if k not in ("owner", "card")}
     shop = next((x for x in j.get("shops", []) if x.get("name") == ME), None)
     buyer = next((x for x in j.get("buyers", []) if x.get("name") == ME), None)

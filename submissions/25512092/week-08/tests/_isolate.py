@@ -38,6 +38,16 @@ def policy(data=None):
         W.RULES, W.KIT_LOGS = tmp_path("supply_window.json"), [tmp_path("market-kit.log")]
     except Exception:
         pass
+    try:                                          # 11/12 ~14:40: below cost only by the stoploss (off unless a test sets it)
+        from depts import sales as SL
+        SL.LOSS_RULE = tmp_path("loss_rule.json")
+    except Exception:
+        pass
+    try:                                          # 11/12 ~15:15: db lock safety switch (off unless a test sets it)
+        import dbutil
+        dbutil.RULES = tmp_path("db_safe.json")
+    except Exception:
+        pass
     try:                                          # 11/12 ~14:20: the wider-buying trial B / C and its line log
         from depts import wide_trial as WT
         WT.RULES, WT.LINES = tmp_path("wide_trial.json"), tmp_path("wide_trial.jsonl")
