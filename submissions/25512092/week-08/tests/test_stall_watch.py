@@ -90,9 +90,38 @@ def test_two_empty_windows_with_cash():
     assert why == []
 
 
+def test_board_offline():
+    """11/12 ~09:30 (person): our shop offline on 2 board reads in a row -> one urgent only, never a restart; a failed
+    read neither counts nor resets; back online -> logged; the summary line shows both. The reader picks the shop
+    row (not the buyer row) from a board shaped like the live one."""
+    board = {"shops": [{"name": "x", "alive": True, "deals": 1}, {"name": "choo-chu", "alive": False, "deals": 5}],
+             "buyers": [{"name": "choo-chu", "alive": True, "orders": 3, "deals": 2}]}
+    assert W.board_alive(board) is False and W.board_alive({"shops": []}) is None
+    log, _ = paths()
+    s, sent = {}, []
+    send = lambda lv, k, t: sent.append((lv, k, t))
+    W.check_board(s, NOW, False, send, log_path=log)
+    assert not sent
+    W.check_board(s, NOW + 300, None, send, log_path=log)                    # read failed: no change
+    assert not sent and s["off_n"] == 1
+    W.check_board(s, NOW + 600, False, send, log_path=log)
+    assert len(sent) == 1 and sent[0][:2] == ("urgent", "board_offline") and "재시작은 하지 않음" in sent[0][2]
+    W.check_board(s, NOW + 900, False, send, log_path=log)                   # still offline: no second alert
+    assert len(sent) == 1
+    W.check_board(s, NOW + 1200, True, send, log_path=log)
+    assert "off_n" not in s and len(sent) == 1
+    txt = W.summary_line(NOW - 60, NOW + 3600, path=log)
+    assert "보드 offline 2번 연속" in txt and "보드 online 복귀" in txt, txt
+    s2 = {}                                                                  # offline once, then online: nothing
+    W.check_board(s2, NOW, False, send, log_path=log)
+    W.check_board(s2, NOW + 300, True, send, log_path=log)
+    assert len(sent) == 1
+
+
 if __name__ == "__main__":
     test_fine()
     test_no_orders_then_still_then_recovered()
     test_no_sales()
     test_two_empty_windows_with_cash()
+    test_board_offline()
     print("ok")

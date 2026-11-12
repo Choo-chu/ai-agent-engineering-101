@@ -2,7 +2,9 @@
   shop   no sale of mine in the last 30 min (market.db settles), or cash >= 5M and the last 2 supply windows in a row
          with no supply line in (kit log "[supply]" lines inside each window; windows from .market/inventory.json)
   buyer  no order in the last 10 min (kit log "[order o-" lines)
-Any of them: one kit restart (tools/watchdog.restart_kit; keepalive starts the kit again) and an urgent Telegram. Still
+  board  11/12 ~09:30 (person): our shop "alive": false on the board 2 reads in a row -> one urgent Telegram only (no
+         restart; the market's own check flaps), and a line when it is back
+Any of the first three: one kit restart (tools/watchdog.restart_kit; keepalive starts the kit again) and an urgent Telegram. Still
 stalled 15 min after the restart: one more urgent Telegram, nothing else is touched until it clears. Every step goes to
 logs/stall_watch.jsonl (the 08:00 summary counts them) and a stall left unsolved to logs/needs.jsonl (the summary's
 decisions needed).
@@ -26,6 +28,7 @@ KIT_LOG = os.path.join(HERE, "logs", "market-kit.log")
 INV = os.path.join(HERE, ".market", "inventory.json")
 DB = os.path.join(HERE, "market.db")
 CHECK_S, SALE_S, ORDER_S, AFTER_S, CASH_MIN, WINDOWS = 300, 1800, 600, 900, 5_000_000, 2
+OFF_N = 2
 TS = re.compile(r"^(\d\d):(\d\d):(\d\d) ")
 ME = "choo-chu"
 
@@ -83,6 +86,48 @@ def sales(t0, db_path=None):
 def window_lines(lines, w):
     return sum(1 for t, x in lines if w["opens_at"] - 5 <= t <= w["closes_at"] + 40 and "[supply]" in x
                and "refused" not in x)
+
+
+def board_alive(board=None):
+    """Our shop's "alive" on the live board (None: read failed / not found)."""
+    try:
+        if board is None:
+            import board_read
+            board = board_read.board()
+        stack = [board]
+        while stack:
+            o = stack.pop()
+            if isinstance(o, dict):
+                if o.get("name") == ME and "alive" in o and "deals" in o and "orders" not in o:
+                    return bool(o["alive"])
+                stack.extend(o.values())
+            elif isinstance(o, list):
+                stack.extend(o)
+    except Exception:
+        return None
+    return None
+
+
+def check_board(s, now, alive, send, log_path=None):
+    """11/12 ~09:30 (person): offline on OFF_N board reads in a row -> one urgent, no restart; back online -> logged.
+    A failed read (None) neither counts nor resets."""
+    lp = log_path or LOG
+    if alive is None:
+        return
+    if alive:
+        if s.get("off_warned"):
+            _append(lp, {"ts": round(now), "event": "board_online", "since": s["off_warned"]})
+        s.pop("off_n", None)
+        s.pop("off_warned", None)
+        s.pop("off_since", None)
+        return
+    s["off_n"] = s.get("off_n", 0) + 1
+    s.setdefault("off_since", round(now))
+    if s["off_n"] >= OFF_N and not s.get("off_warned"):
+        s["off_warned"] = round(now)
+        send("urgent", "board_offline", f"보드에 우리 가게 offline {s['off_n']}번 연속 ({datetime.fromtimestamp(s['off_since']):%H:%M}부터, "
+                                        f"{CHECK_S // 60}분 간격). kit 재시작은 하지 않음, 확인 필요")
+        _append(lp, {"ts": round(now), "event": "board_offline", "why": [f"보드 offline {s['off_n']}번 연속"]})
 
 
 def check(s, now, lines, inv, n_sales, restart, send, log_path=None, needs_path=None):
@@ -145,6 +190,10 @@ def summary_line(t0, t1, path=None):
             parts.append(f"{t} 재시작 15분 뒤에도 멈춤 -> 긴급 알림만")
         elif e["event"] == "recovered":
             parts.append(f"{t} 회복")
+        elif e["event"] == "board_offline":
+            parts.append(f"{t} 보드 offline 2번 연속 -> 긴급 알림만")
+        elif e["event"] == "board_online":
+            parts.append(f"{t} 보드 online 복귀")
         else:
             parts.append(f"{t} 감시 오류 {'; '.join(e.get('why') or [])[:80]}")
     return f"멈춤 감지 {sum(1 for e in ev if e['event'] == 'restart')}번: " + "; ".join(parts)
@@ -161,6 +210,10 @@ def main():
         s = _load(STATE, {})
         try:
             check(s, now, kit_tail(now), _load(INV, {}), sales(now - SALE_S), restart, alerts.send)
+        except Exception as e:
+            _append(LOG, {"ts": round(now), "event": "error", "why": [f"{type(e).__name__}: {e}"[:200]]})
+        try:
+            check_board(s, now, board_alive(), alerts.send)
         except Exception as e:
             _append(LOG, {"ts": round(now), "event": "error", "why": [f"{type(e).__name__}: {e}"[:200]]})
         _save(STATE, s)
