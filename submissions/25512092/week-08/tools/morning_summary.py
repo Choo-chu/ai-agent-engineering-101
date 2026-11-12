@@ -179,7 +179,87 @@ def summary(t0, t1):
         lines.append("28. " + aged_high_trend(t1))
     except Exception as e:
         lines.append(f"28. 12시간+ 미판매 고가 추이 계산 실패 {type(e).__name__}: {e}")
+    try:                                          # 11/13 ~00:05 (person): the 11/13 08:00 additions
+        lines += night_1113(t0, t1)
+    except Exception as e:
+        lines.append(f"29. 11/13 추가 항목 실패 {type(e).__name__}: {e}")
     return "\n".join(lines)
+
+
+C_FROM = datetime(2026, 11, 12, 23, 20).timestamp()       # grade C first offer 0.55 from here
+GRADE_FROM = datetime(2026, 11, 12, 18, 16).timestamp()   # the grade rule (C 0.65) from here
+REV_1112 = ("11/12 매출 2.59억 vs 11/11 3.77억 (-1.18억) 중 -1.10억이 고가: 고가 매입 520개 3.0억 -> 373개 1.8억 "
+            "(high_max 100에 보유 88~100으로 붙어 자리 부족, 12시간+ 미판매가 자리 차지)으로 고가 판매 498 -> 357개; "
+            "시장 전체 거래액도 -11%")
+
+
+def rank_parse(text):
+    """(rank, total, 9th, gap to 9th) from a student_rank Telegram text, or None."""
+    import re
+    m = re.search(r"(\d+)위/\d+ .*?합계 ([\d.]+); 9위 ([\d.]+) \(([-+][\d.]+)\)", text or "")
+    return (int(m[1]), float(m[2]), float(m[3]), m[4]) if m else None
+
+
+def night_1113(t0, t1, db_path=None, board=None, alerts_path=None):
+    """11/13 ~00:05 (person): student rank at 03 / 06 / now with the 9th gap, the high 1 -> 2 3 h check, cash, C 0.55
+    effect by grade, saved vs 11im, deal rate and deals per hour, the 11/12 revenue cause, the decisions needed."""
+    import student_rank_watch as SR
+    L = []
+    pts = []
+    path = alerts_path or os.path.join(HERE, "logs", "alerts.jsonl")
+    with open(path, encoding="utf-8") as f:
+        for ln in f:
+            try:
+                a = json.loads(ln)
+            except ValueError:
+                continue
+            if a.get("key", "").startswith("student_rank:") and t0 <= a["ts"] < t1:
+                r = rank_parse(a.get("text"))
+                if r:
+                    pts.append(f"{datetime.fromtimestamp(a['ts']):%H:%M} {r[0]}위 합계 {r[1]:.3f} (9위와 {r[3]})")
+    x = None
+    try:
+        x = SR.numbers(board if board is not None else SR.fetch())
+        g9 = "-" if x["ninth"] is None else f"{x['total'] - x['ninth']:+.3f}"
+        pts.append(f"지금 {x['rank']}위 합계 {x['total']:.3f} (9위와 {g9})")
+    except Exception as e:
+        pts.append(f"지금: 보드 읽기 실패 {type(e).__name__}")
+    L.append("29. 학생 순위 추이: " + " -> ".join(pts))
+    a = last_alert("high_two_report:", t0, t1, path=path)
+    L.append("30. 고가 1→2 3시간 점검: " + (a["text"].replace("\n", " / ")[:900] if a else "결과 없음 (아직 안 옴)"))
+    db = db_path or os.path.join(HERE, "market.db")
+    d = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=30)
+    try:
+        cs = []
+        for t in (t0, t0 + 3 * 3600, t0 + 6 * 3600, t0 + 9 * 3600, t1):
+            r = d.execute("SELECT ts, balance, stock_cost FROM cash WHERE ts<=? ORDER BY ts DESC LIMIT 1", (t,)).fetchone()
+            if r:
+                cs.append(f"{datetime.fromtimestamp(t):%H:%M} {r[1]:,} (재고 원가 {r[2]:,})")
+    finally:
+        d.close()
+    L.append("31. 현금: " + " -> ".join(cs) + " | 12시간+ 미판매 고가 추이는 28번")
+    h_new, h_old = max((t1 - C_FROM) / 3600, 0.01), (C_FROM - GRADE_FROM) / 3600
+    now_g, old_g = SR.grade_stats(t1, h_new, db), SR.grade_stats(C_FROM, h_old, db)
+    f = lambda gs, h: ", ".join(f"{k} {n}건({n / h:.1f}/h) {v:.3f}" for k, (n, v) in gs[0].items()) or "없음"
+    L.append(f"32. C 0.55 효과 (등급별 거래, 새 saved 추정 점수): 23:20 이후 {f(now_g, h_new)} vs 18:16~23:20 {f(old_g, h_old)}")
+    rate = SR.deal_rate(t0, t1, db)
+    dph = SR.grade_stats(t1, (t1 - t0) / 3600, db)[1]
+    sv = (f"saved {x['saved']} vs 학생 1위 11im {x['rival']} ({x['saved'] - x['rival']:+.4f}), 학생 saved {x['saved_rank']}위"
+          if x and x.get("rival") is not None and x.get("saved") is not None else "saved 읽기 실패")
+    L.append(f"33. {sv}; 성사율 {rate[0]}/{rate[1]} ({rate[0] / rate[1]:.0%}); 시간당 deals {dph:.1f}" if rate[1]
+             else f"33. {sv}; 주문 없음")
+    L.append("34. " + REV_1112)
+    need = needs_items(t0, t1)
+    try:
+        from depts import wide_trial
+        r = wide_trial.rules()
+        if r.get("off_ts"):
+            need.append(f"고가 안전장치로 B·C·1→2 꺼짐 ({datetime.fromtimestamp(r['off_ts']):%m-%d %H:%M}, {r.get('off_why')}): "
+                        "다시 켤지")
+    except Exception:
+        pass
+    L.append("35. 결정 필요 목록: " + ("; ".join(need) if need else "없음"))
+    return L
 
 
 CHECK_KEYS = (("check_top15", "23:35 150만 초과 고가 점검"), ("check_release", "00:31 차단 해제 가게 점검"))
@@ -218,7 +298,7 @@ def needs_items(t0, t1, now=None):
     try:
         pins = json.load(open(os.path.join(HERE, "policy_pins.json"), encoding="utf-8"))
         pol = json.load(open(os.path.join(HERE, "policy.json"), encoding="utf-8")).get("purchasing") or {}
-        for k, want in (("high_share", 0.7), ("high_max", 100)):
+        for k, want in (("high_share", 0.7), ("high_max", 200)):   # 11/13 ~00:00 (person): high_max 100 -> 200
             if float(pins.get(f"purchasing.{k}") or 0) < end or pol.get(k) != want:
                 out.append(f"{k} {want} 고정 11/13 12:00까지가 적용 안 됨 (고정 {pins.get(f'purchasing.{k}')}, 값 {pol.get(k)})")
     except (OSError, ValueError) as e:
