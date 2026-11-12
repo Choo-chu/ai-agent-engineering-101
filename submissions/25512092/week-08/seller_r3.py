@@ -38,6 +38,7 @@ from depts import substitute  # 11/07: a named SKU I do not hold -> candidates, 
 from depts import open_expiry  # 11/09 ~11:30: a negotiation quiet for 10 min is closed as expired, its unit freed
 from depts import nostock_cause  # 11/09 ~15:15: why "not in stock" for a held SKU (lock / receipt / policy / other)
 from depts import b_warranty  # 11/09 ~11:30: B grade high-price warranty (TV / 냉방 on, 침대/매트리스 50% trial)
+from depts import food_need  # 11/12 ~16:40: food only with the shelf life the buyer asked for (food_need.json)
 WORDS = {48: "forty-eight", 72: "seventy-two"}
 import strategy
 from market_db import connect, load_stats, price_of
@@ -87,9 +88,10 @@ def build_receipt(deal, u, price, task_id):
     return receipt
 
 
-def find_unit(text, taken=()):
+def find_unit(text, taken=(), need_text=None):
     """The in-stock unit that fits what the buyer asked for (category, name or SKU) and expires first,
-    skipping units already promised in another open negotiation."""
+    skipping units already promised in another open negotiation; 11/12 ~16:40: food only with the shelf life the buyer
+    asked for in `need_text` (default `text`; depts/food_need.py, while food_need.json is on)."""
     want = text.lower()
     try:
         inv = json.loads((MARKET_DIR / "inventory.json").read_text(encoding="utf-8"))
@@ -103,6 +105,11 @@ def find_unit(text, taken=()):
     fit = [u for u in units if u["grade"] != "expired" and u["unit"] not in taken and
            ((u.get("category") or "").split(">")[-1].lower() in want or (u.get("name") or "").lower() in want
             or u["sku"].lower() in want)]
+    n0 = len(fit)
+    fit = food_need.keep(fit, need_text or text)          # 11/12 ~16:40: enough shelf life for this buyer
+    if n0 and not fit:
+        print(f"[food_need] {food_need.need_hours(need_text or text)} h asked: no unit with enough shelf life -> none",
+              flush=True)
     named = [u for u in fit if u["sku"].lower() in want]
     fit = named or fit                                   # a SKU the buyer named comes first
     return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
@@ -295,7 +302,7 @@ class Seller(AgentExecutor):
             self.sold = {k: t for k, t in self.sold.items() if now - t < hold}
             taken = {d["unit"]["unit"] for d in self.open.values() if d.get("unit") and d["unit"]["unit"]} \
                 | set(self.sold)
-            quoted = tier = subst_arm = n_off = None
+            quoted = tier = subst_arm = n_off = need_text = None
             if deal is not None:                        # 11/07: waiting for the buyer to name one of my candidates
                 pick = substitute.chosen(text, deal["subst"])
                 if pick is None and deal.get("subst_arm") == "A":      # 11/08 experiment A: a number = an offer
@@ -317,7 +324,8 @@ class Seller(AgentExecutor):
                                                 + ", ".join(deal["subst"]) + "."))
                     return
                 tier, quoted = deal["subst"][pick]
-                unit = find_unit(pick, taken)
+                need_text = deal["lines"][0]                # the first message carries the hours the buyer needs
+                unit = find_unit(pick, taken, need_text)
                 if unit is None or unit["sku"] != pick:
                     msg_log(task.id, "shop", f"subst {pick} gone -> reject", pick)
                     del self.open[task.id]
@@ -381,7 +389,8 @@ class Seller(AgentExecutor):
                                          "case": case, "warranty": strategy.warranty_hours(unit, case, load_stats()),
                                          "key": None, "variant": None, "mult": 1.0,
                                          "haggle": haggle_pick(unit), "calls": 0,      # 11/07: code vs harness arm
-                                         "quoted": quoted, "subst_tier": tier}
+                                         "quoted": quoted, "subst_tier": tier,
+                                         "need_h": food_need.need_hours(need_text or text)}   # 11/12 ~16:40
             deal["receipt_item"] = None if quoted else receipt_exp.category_item(text, unit, substitute.named_sku(text))
             if quoted and subst_arm == "A":             # 11/08 experiment A: the order's category name on the receipt
                 deal["receipt_item"] = subst_exp.category_name(unit)
@@ -488,6 +497,27 @@ class Seller(AgentExecutor):
                     decisions.record("cs", "receipt_fixed", u["sku"], [deal["offer"], agreed],
                                      f"task {task.id}: {why}; receipt issued at {agreed}")
                     deal["offer"] = agreed
+        if action == "accept" and not food_need.fits(u, deal.get("need_h")):   # 11/12 ~16:40: checked again
+            alt = next((x for x in inventory_units() if x["sku"] == u["sku"] and x.get("grade") == u.get("grade")
+                        and x["unit"] != u["unit"] and x["unit"] not in self.sold
+                        and x["unit"] not in {d["unit"]["unit"] for d in self.open.values() if d.get("unit")}
+                        and food_need.fits(x, deal.get("need_h"))), None)
+            left = food_need.left_h(u)
+            if alt:
+                print(f"[food_need] {u['sku']} unit {u['unit']} {left:.1f} h < {deal['need_h']} h -> unit {alt['unit']}",
+                      flush=True)
+                deal["unit"] = u = alt
+            else:
+                print(f"[food_need] {u['sku']} {left:.1f} h < {deal['need_h']} h asked, no other unit -> no receipt",
+                      flush=True)
+                decisions.record("cs", "food_need_refuse", u["sku"], [round(left or 0, 1), deal["need_h"]],
+                                 f"task {task.id}: shelf life {left:.1f} h < {deal['need_h']} h asked: no receipt")
+                msg_log(task.id, "shop", f"food_need refuse {left:.1f} h < {deal['need_h']} h", u["sku"])
+                finish(task.id, "food_need")
+                del self.open[task.id]
+                await up.reject(say(f"Sorry, the {u['name']} we have left has only {left:.1f} h of shelf life, "
+                                    f"less than the {deal['need_h']:g} h you need. No deal."))
+                return
         if action == "accept":
             price = deal["offer"]
             receipt = sign(build_receipt(deal, u, price, task.id))

@@ -7,6 +7,7 @@ report failure, due ~17:59; at the latest LATEST), in one go:
   4. (person 11/12 ~16:20, with the same restarts) end_rules.json on: restock stops 6 h before the end (11/17 17:59),
      the scheduled end cap and the automatic cap end then too, the endgame markdown 12 h before the end (11/17 11:59);
      the values read back in a fresh process go into the Telegram
+  5. (person 11/12 ~16:45) food_need.json on: the seller sells food only with the shelf life the buyer asked for
 One Telegram when applied; 1 h later one Telegram: lock errors since (kit log, analyst log), my sales, supplies and
 buyer deals in the hour vs the hour before.
     python tools/db_safe_rollout.py [--now] [--report-dry=EPOCH]      (log in logs/db_safe_rollout.log)
@@ -33,6 +34,7 @@ KIT_LOG = os.path.join(HERE, "logs", "market-kit.log")
 ANALYST_LOG = os.path.join(HERE, "logs", "analyst.log")
 DB = os.path.join(HERE, "market.db")
 END_RULES = os.path.join(HERE, "end_rules.json")
+FOOD_NEED = os.path.join(HERE, "food_need.json")
 FROM = datetime(2026, 11, 12, 17, 59).timestamp()
 LATEST = datetime(2026, 11, 12, 18, 30).timestamp()
 PY = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".venv", "Scripts", "python.exe"))
@@ -73,6 +75,14 @@ def apply_end(path=END_RULES, now=None):
         json.dump({"enabled": True, "restock_stop_h": 6, "endgame_h": 12, "since": round(now or time.time()),
                    "why": "person 11/12 ~16:20: sell to the end - restock stop 36 -> 6 h, end cap at the stop, endgame 48 -> "
                           "12 h; food unchanged"}, f)
+    os.replace(path + ".tmp", path)
+
+
+def apply_food(path=FOOD_NEED, now=None):
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump({"enabled": True, "margin_h": 0.5, "since": round(now or time.time()),
+                   "why": "person 11/12 ~16:45: food only with the shelf life the buyer asked for (+0.5 h), checked "
+                          "again before the receipt"}, f)
     os.replace(path + ".tmp", path)
 
 
@@ -164,6 +174,7 @@ def main():
     t = time.time()
     mode = apply()
     apply_end(now=t)
+    apply_food(now=t)
     from seller_conc_rollout import restart_seller, seller_back
     killed = restart_seller()
     old, pid = restart_analyst()
@@ -178,7 +189,8 @@ def main():
                 + (f"정상 ({back})" if back else "후 확인 안 됨, 점검 필요") + f", 분석관 재시작 (pid {pid})"
                 + (" | 하한 규칙 보고가 18:30까지 안 나가 그대로 적용" if late else "")
                 + f" | 끝까지 팔기: 매입 중단 {ev.get('stop_at')} (종료 {ev.get('restock_stop_h')}시간 전), 예약 재고 한도 "
-                  f"{ev.get('cap_end_at')}, 막바지 할인 종료 {ev.get('endgame_h')}시간 전부터" + (f" (확인 실패 {ev.get('error')})"
+                  f"{ev.get('cap_end_at')}, 막바지 할인 종료 {ev.get('endgame_h')}시간 전부터 | 식품 유통기한 확인 "
+                  f"{'켬' if json.load(open(FOOD_NEED, encoding='utf-8')).get('enabled') else '안 켜짐'}" + (f" (확인 실패 {ev.get('error')})"
                                                                                   if ev.get("error") else ""), log)
     while time.time() < t + 3600:
         time.sleep(60)

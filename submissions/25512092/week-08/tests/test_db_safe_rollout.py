@@ -48,6 +48,9 @@ def test_apply_and_report():
     assert R.apply(rules, db) == "wal" and json.load(open(rules))["enabled"]
     er = os.path.join(D, "end_rules.json")                     # 11/12 ~16:20: lever 1 with the same restarts
     R.apply_end(er)
+    fn = os.path.join(D, "food_need.json")
+    R.apply_food(fn)
+    assert json.load(open(fn))["enabled"] and json.load(open(fn))["margin_h"] == 0.5
     assert json.load(open(er))["restock_stop_h"] == 6 and json.load(open(er))["endgame_h"] == 12
     ev = R.end_values(env=dict(os.environ, W08_END_RULES=er, PYTHONUTF8="1"))
     assert ev["restock_stop_h"] == 6 and ev["stop_at"] == "11-17 17:59" and ev["cap_end_at"] == "11-17 17:59" and ev["endgame_h"] == 12, ev
