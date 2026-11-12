@@ -13,6 +13,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 ME = "Choo-chu"
 HOURS = 3
+RIVAL = "11im"                                             # 11/12 ~23:20 (person): saved gap to 11im
 END = datetime(2026, 11, 17, 23, 59).timestamp()
 
 
@@ -36,7 +37,7 @@ def numbers(j, me=ME):
     return {"pct": mine.get("student_pct"), "rank": rank, "n": len(st), "total": mine["student_total"],
             "saved_1": sv[0] if sv else None, "saved_3": sv[2] if len(sv) > 2 else None,
             "ninth": tot[8] if len(tot) > 8 else None, "tenth": tot[9] if len(tot) > 9 else None,
-            "saved": saved.get(my_b), "second": others[0] if others else None,
+            "rival": saved.get(RIVAL), "saved": saved.get(my_b), "second": others[0] if others else None,
             "saved_rank": 1 + sum(1 for v, _ in others if v > (saved.get(my_b) or 0))}
 
 
@@ -51,6 +52,13 @@ def text(x, now=None):
     if x.get("saved_1") is not None and x.get("saved") is not None:
         out += (f" | 학생 saved 1위 {x['saved_1']} ({x['saved'] - x['saved_1']:+.4f})"
                 + (f", 3위 {x['saved_3']} ({x['saved'] - x['saved_3']:+.4f})" if x.get("saved_3") is not None else ""))
+    if x.get("rival") is not None and x.get("saved") is not None:
+        out += f" | {RIVAL} saved {x['rival']} (차이 {x['saved'] - x['rival']:+.4f})"
+    if x.get("prev_grades") is not None and x.get("grades") is not None:
+        c, pc = x["grades"][0].get("C"), x["prev_grades"][0].get("C")
+        f = lambda v: "0건" if not v else f"{v[0]}건 {v[1]:.3f}"
+        out += (f" | C등급(첫 제안 0.55, 11/12 23:20~): 최근 {HOURS}시간 {f(c)} vs 그 전 {HOURS}시간 {f(pc)}; "
+                f"시간당 deals {x['grades'][1]:.1f} vs {x['prev_grades'][1]:.1f}")
     if x.get("grades") is not None:
         gs, dph = x["grades"]
         out += (f" | 최근 {HOURS}시간 등급별 거래(새 saved 추정 점수): "
@@ -91,6 +99,7 @@ def main():
     if "--dry" in sys.argv:
         x = numbers(fetch())
         x["grades"] = grade_stats()
+        x["prev_grades"] = grade_stats(time.time() - HOURS * 3600)
         print(text(x))
         return
     import alerts
@@ -103,6 +112,7 @@ def main():
                 x = numbers(fetch())
                 try:
                     x["grades"] = grade_stats(now)
+                    x["prev_grades"] = grade_stats(now - HOURS * 3600)
                 except Exception as e:
                     print(f"grade stats failed: {type(e).__name__}: {e}", flush=True)
                 alerts.send("daily", f"student_rank:{int(mark)}", text(x, now))

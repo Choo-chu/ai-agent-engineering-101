@@ -81,6 +81,22 @@ def test_moves_by_grade():
     assert r["grade_used"] == "A" and sent[1] == "6500", sent
 
 
+def test_c_first():
+    # 11/12 ~23:20: grade C's first offer 0.55 x avg; A / B unchanged; accept for C still 1.00 x
+    c = dict(ON, C={"first": 0.55})
+    r, sent = run(10400, "C", rules=c)
+    assert r["grade_used"] == "C" and sent[1] == "5500", sent
+    r, sent = run(10000, "C", rules=c)                          # <= 1.00 x avg -> accept at once
+    assert r["deal"] and sent[-1] == "10000", sent
+    r, sent = run(10400, "B", rules=c)
+    assert sent[1] == "6500", sent
+    r, sent = run(12000, "A", rules=c)
+    assert sent[1] == "7500", sent
+    r, sent = run(10400, "B", rules=c, flags={"fake": {"deals": 100, "dishonest": 30}})   # B counted as C
+    assert r["grade_used"] == "C" and sent[1] == "5500", sent
+    assert G.moves("C", ON)["first"] == 0.65                    # without the key: BC's
+
+
 def test_break_cap():
     # list 15000, B (cost 50%), p 0.10: expected >= 0.65 needs P <= 15000 - 0.83 x 7500 = 8775
     r, sent = run(9000, "B", list_price=15000, p=0.10)
@@ -133,6 +149,7 @@ def test_saved_guard_a_switch():
 
 if __name__ == "__main__":
     test_moves_by_grade()
+    test_c_first()
     test_break_cap()
     test_shop_order_and_grades()
     test_saved_guard_a_switch()

@@ -4,7 +4,8 @@ min(1, (list - price) / (list - the unit's cost)) / (deals + 100)). Rules in gra
           dishonest share of grade claims (market_stats shop_flags, >= min_deals deals) is >= dishonest_share (20%)
           counts one grade lower; unknown -> B
   moves   A: first offer 0.75 x market average, accept at once <= 1.05 x; B / C / unknown: 0.65 x, 1.00 x
-          (soft_neg's code moves; high_accept keeps only its extra haggle). a_as_bc (set by the saved guard,
+          (soft_neg's code moves; high_accept keeps only its extra haggle). 11/12 ~23:20: optional "C" key overrides
+          BC for grade C used (incl. a dishonest shop's B counted as C): C first offer 0.55 x. a_as_bc (set by the saved guard,
           tools/saved_guard_watch.py: my saved within 0.008 of the student just below me) -> A uses B / C's moves
   break   goods without a warranty in a break-rule SKU (depts/buyer_break): expected score = (list - price) /
           (list - cost_share[grade] x list) - 1.8 x break rate; no price with an expected score under min_score
@@ -65,6 +66,8 @@ def moves(grade, r=None):
     """{"first", "accept"} for the grade used (A -> B / C's while a_as_bc)."""
     r = rules() if r is None else r
     key = "A" if grade == "A" and not r.get("a_as_bc") else "BC"
+    if grade == "C" and r.get("C"):               # 11/12 ~23:20 (person): C's own override over BC (first 0.55)
+        return dict(r["BC"], **r["C"])
     return dict(r[key])
 
 

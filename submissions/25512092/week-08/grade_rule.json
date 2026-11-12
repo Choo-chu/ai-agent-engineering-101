@@ -19,5 +19,10 @@
  "break_loss": 1.8,
  "min_score": 0.65,
  "a_as_bc": false,
- "why": "person 11/12 ~18:30: moves by grade for the new saved (agent.md patch 3.6); break: expected score >= 0.65"
+ "why": "person 11/12 ~18:30: moves by grade for the new saved (agent.md patch 3.6); break: expected score >= 0.65",
+ "C": {
+  "first": 0.55
+ },
+ "C_since": 1794493092,
+ "why_c": "person 11/12 ~23:20: grade C first offer 0.65 -> 0.55 x avg (A / B unchanged)"
 }

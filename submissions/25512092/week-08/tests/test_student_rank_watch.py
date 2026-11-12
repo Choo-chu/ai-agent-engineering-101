@@ -15,8 +15,10 @@ def board():
     pl = [{"player": f"p{i}", "student": True, "student_total": 2.0 - i * 0.01, "student_pct": round(1 - i / 11, 3),
            "buyer": {"name": f"b{i}"}} for i in range(12)]
     pl[10] = {"player": "Choo-chu", "student": True, "student_total": 1.9, "student_pct": 0.09, "buyer": {"name": "choo-chu"}}
+    pl[4]["buyer"] = {"name": "11im"}
     pl.append({"player": "outsider", "student_total": 9, "buyer": {"name": "x"}})        # not a student: out
     buyers = [{"name": "choo-chu", "saved": 0.406}, {"name": "b3", "saved": 0.381}, {"name": "b4", "saved": 0.37},
+              {"name": "11im", "saved": 0.41},
               {"name": "x", "saved": 0.44}]
     return {"players": pl, "buyers": buyers}
 
@@ -24,10 +26,16 @@ def board():
 def test_numbers_and_text():
     x = W.numbers(board())
     assert x["rank"] == 11 and x["n"] == 12 and abs(x["ninth"] - 1.92) < 1e-9 and abs(x["tenth"] - 1.91) < 1e-9, x
-    assert x["saved_rank"] == 1 and x["second"] == (0.381, "b3"), x
+    assert x["saved_rank"] == 2 and x["second"] == (0.41, "11im") and x["rival"] == 0.41, x
     t = W.text(x, datetime(2026, 11, 12, 18, 0).timestamp())
     assert "11위/12" in t and "9위 1.92 (-0.020)" in t and "10위 1.91 (-0.010)" in t, t
-    assert "다음 학생 b3 0.381 (차이 +0.0250)" in t, t
+    assert "다음 학생 11im 0.41 (차이 -0.0040)" in t, t
+    assert "11im saved 0.41 (차이 -0.0040)" in t, t
+    x["grades"] = ({"A": (3, 0.9), "C": (5, 0.8)}, 4.0)
+    x["prev_grades"] = ({"B": (2, 0.7)}, 3.0)
+    t = W.text(x)
+    assert "C등급(첫 제안 0.55, 11/12 23:20~): 최근 3시간 5건 0.800 vs 그 전 3시간 0건" in t, t
+    assert "시간당 deals 4.0 vs 3.0" in t, t
 
 
 def test_due():

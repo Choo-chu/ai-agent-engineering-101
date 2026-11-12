@@ -49,6 +49,11 @@ def policy(data=None):
         dbutil.RULES = tmp_path("db_safe.json")
     except Exception:
         pass
+    try:                                          # 11/12 ~18:30: buyer moves by grade (off unless a test sets it)
+        from depts import grade_rule as GR
+        GR.RULES, GR.CACHE = tmp_path("grade_rule.json"), tmp_path("shop_grades.json")
+    except Exception:
+        pass
     try:                                          # 11/12 ~14:20: the wider-buying trial B / C and its line log
         from depts import wide_trial as WT
         WT.RULES, WT.LINES = tmp_path("wide_trial.json"), tmp_path("wide_trial.jsonl")
