@@ -2,6 +2,7 @@
  "enabled": true,
  "since": 1794460609,
  "applied": [
+  "C",
   "B"
  ],
  "B_min_margin": 0.06,
@@ -15,5 +16,8 @@
  "check_h": 3,
  "why": "person 11/12 ~14:20: idle cash; of A-D (24 h simulation) the best two by expected profit / 12 h+ unsold increase at cost, normal goods first when close: C (hot fast normal goods my_share 0.8 -> 1.2) and B (high-price margin filter 8% -> 6% for SKUs my shop has sold); guard: 12 h+ unsold high-price +10 units or +5,000,000 over the value when applied -> both off + urgent Telegram; 3 h report",
  "C_off": 1794467288,
- "C_off_why": "person 11/12 ~16:30: C (hot fast normal goods my_share 1.2) back to 0.8; B (high margin 6%) kept"
+ "C_off_why": "person 11/12 ~16:30: C (hot fast normal goods my_share 1.2) back to 0.8; B (high margin 6%) kept",
+ "reported": 1794471417,
+ "C_on_again": 1794471692,
+ "C_on_why": "person 11/12 (after the 3 h report: C raised sales and profit): C (hot fast normal goods my_share 1.2) on again; guard unchanged"
 }
