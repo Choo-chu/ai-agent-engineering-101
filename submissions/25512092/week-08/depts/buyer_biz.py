@@ -381,7 +381,7 @@ def ask_price(text, budget=None):
 
 def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OFFERS, first_offer=FIRST_OFFER,
               force_first=False, kind=None, need_hours=None, tactic_line=None, market_avg=None, no_warranty_cap=None,
-              soft=None, shop=None, high=None, ok_skus=None):
+              soft=None, shop=None, high=None, ok_skus=None, grade_ctx=None):
     res = {"deal": False, "receipt": None, "agreed": None, "first_ask": None, "last_ask": None,
            "injection": False, "solicit": False, "last_state": "", "error": None, "offers": 0,
            "guard_last": False, "ended": "", "harness_calls": 0, "tactic_used": False}
@@ -460,6 +460,35 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                 res["ended"], res["skip"] = "precheck", why
                 client.cancel(tid)
                 return res
+            if grade_ctx is not None:                 # 11/12 ~18:30: moves by grade for the new saved (depts/grade_rule)
+                from depts import grade_rule
+                gr = grade_ctx["rules"]
+                cert = find_cert(task.get("status", {}).get("message")) or find_cert(task.get("artifacts"))
+                g0 = grade_rule.claimed(cert, text)
+                g, gwhy = grade_rule.effective(g0, shop, SHOP_FLAGS, gr)
+                mv = grade_rule.moves(g, gr)
+                res["grade_claimed"], res["grade_used"] = g0, g
+                if soft is not None:
+                    soft = dict(soft, first=mv["first"], accept=mv["accept"])
+                if market_avg and not res["injection"]:
+                    budget = min(budget, int(market_avg * mv["accept"]))
+                log(f"[grade] {gwhy}: first {mv['first']} x avg, accept <= {mv['accept']} x avg -> cap {budget}"
+                    + (" (A as B/C: saved guard)" if g == "A" and gr.get("a_as_bc") else ""))
+                w = WARRANTY_RE.search(text)
+                if grade_ctx.get("p") is not None and grade_ctx.get("list") and not (
+                        w and float(w.group(1) or w.group(2) or 0) > 0):
+                    bc = grade_rule.break_cap(grade_ctx["list"], g, grade_ctx["p"], gr)
+                    if bc <= 0:
+                        log(f"[grade] break rate {grade_ctx['p']:.1%}, no warranty: expected score under "
+                            f"{gr['min_score']} at any price -> walk")
+                        res["ended"], res["skip"] = "break_score", f"expected score < {gr['min_score']}"
+                        client.cancel(tid)
+                        return res
+                    if bc < budget:
+                        log(f"[grade] break rate {grade_ctx['p']:.1%}, no warranty: cap {budget} -> {bc} "
+                            f"(expected score >= {gr['min_score']})")
+                        budget = bc
+                        res["break_cap"] = bc
             if no_warranty_cap is not None:           # 11/09 break rule: no warranty -> worth list x (1 - p)
                 w = WARRANTY_RE.search(text)
                 if not (w and float(w.group(1) or w.group(2) or 0) > 0) and no_warranty_cap < budget:
@@ -732,6 +761,15 @@ def main():
             ordered = buyer_break.order_shops(ordered, args.item, catalog, log=log)
         except Exception as e:
             log(f"[break rule] shop order failed: {type(e).__name__}")
+    from depts import grade_rule                     # 11/12 ~18:30: within the first TRIES_N, more A / B sellers first
+    g_rules = grade_rule.rules()
+    if grade_rule.on(g_rules):
+        try:
+            gs = grade_rule.shop_grades()
+            ordered = grade_rule.order_first(ordered, TRIES_N, gs)
+            log("[grade] shop order: " + ", ".join(f"{c['name']} {gs.get(c['name'], '-')}" for c in ordered[:TRIES_N]))
+        except Exception as e:
+            log(f"[grade] shop order failed: {type(e).__name__}")
     tries = ordered[:TRIES_N]  # next candidate when a shop does not answer or fails the precheck
     from depts import high_accept, second_shop as d2
     ss_on = sn_arm == "soft" and d2.on()            # 11/09 plan D: a 2nd shop in the time under the 20 s spacing
@@ -752,6 +790,9 @@ def main():
                 cap = min(args.budget, int(avg))      # endgame: the budget is the cap
                 if sn_arm == "soft" and sn_rules.get("accept", soft_neg.ACCEPT) > 1:   # 11/11 person: soft_neg x 1.05
                     cap = min(args.budget, int(avg * sn_rules["accept"]))
+                if sn_arm == "soft" and grade_rule.on(g_rules):   # 11/12 ~18:30: the grade's bound is set at the reply
+                    cap = min(args.budget, int(avg * max(grade_rule.moves("A", g_rules)["accept"],
+                                                         grade_rule.moves("B", g_rules)["accept"])))
             lp = (catalog.get(o["sku"]) or {}).get("list_price")
             mine = stats.get("my_buys", {}).get(o["sku"])
             market = (f"Market data for this item: list price {lp}; "
@@ -764,11 +805,18 @@ def main():
                 cap = max(cap, min(args.budget, int(avg * hf)))
                 log(f"[{high_accept.TAG}] {o['sku']} list {lp}: accept up to {hf} x market avg")
             log(f"[price] {o['sku']} list {lp}, market avg {avg} (n={n}), budget {args.budget} -> cap {cap}")
-            nw_cap = None
+            nw_cap = g_ctx = None
+            if grade_rule.on(g_rules):
+                g_ctx = {"rules": g_rules, "list": lp, "p": None}
             if br and lp and buyer_break.applies(o["sku"], catalog):
                 pb = buyer_break.p_break(o["sku"], stats)
-                nw_cap = buyer_break.value_cap(lp, pb)
-                log(f"[break rule] {o['sku']}: break rate {pb:.1%}, without a warranty worth {nw_cap + 1}, cap at most {nw_cap}")
+                if g_ctx is not None:                 # 11/12 ~18:30: the expected new-saved score decides (grade_rule)
+                    g_ctx["p"] = pb
+                    log(f"[break rule] {o['sku']}: break rate {pb:.1%}: cap set at the reply by the grade (expected "
+                        f"score >= {g_rules['min_score']})")
+                else:
+                    nw_cap = buyer_break.value_cap(lp, pb)
+                    log(f"[break rule] {o['sku']}: break rate {pb:.1%}, without a warranty worth {nw_cap + 1}, cap at most {nw_cap}")
         t_line = None
         try:
             if sn_arm == "soft":
@@ -789,7 +837,7 @@ def main():
                             soft=(dict(sn_rules, accept=max(sn_rules.get("accept", 1.0), hf),       # 11/09 ~21:20: +1 haggle
                                        haggles=sn_rules.get("haggles", soft_neg.HAGGLES) + high_accept.extra_haggles())
                                   if hf else sn_rules)
-                            if sn_arm == "soft" else None, shop=c["name"], high=hf,
+                            if sn_arm == "soft" else None, shop=c["name"], high=hf, grade_ctx=g_ctx if offers else None,
                             ok_skus=(set(acceptable) | ({sku} if offers and sku else set())) if acceptable else None)
             res["secs"] = round(time.time() - t_neg, 1)
             if res.get("ended") == "seller_ended" and d2.STOCK.search(res.get("end_text") or ""):

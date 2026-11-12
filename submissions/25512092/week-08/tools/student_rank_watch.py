@@ -32,7 +32,9 @@ def numbers(j, me=ME):
     my_b = (mine.get("buyer") or {}).get("name")
     saved = {b["name"]: b.get("saved") for b in j.get("buyers") or [] if b["name"] in stud_buyers and b.get("saved") is not None}
     others = sorted(((v, n) for n, v in saved.items() if n != my_b), reverse=True)
+    sv = sorted(saved.values(), reverse=True)              # 11/12 ~18:30: student saved 1st / 3rd
     return {"pct": mine.get("student_pct"), "rank": rank, "n": len(st), "total": mine["student_total"],
+            "saved_1": sv[0] if sv else None, "saved_3": sv[2] if len(sv) > 2 else None,
             "ninth": tot[8] if len(tot) > 8 else None, "tenth": tot[9] if len(tot) > 9 else None,
             "saved": saved.get(my_b), "second": others[0] if others else None,
             "saved_rank": 1 + sum(1 for v, _ in others if v > (saved.get(my_b) or 0))}
@@ -44,8 +46,38 @@ def text(x, now=None):
     sec = x["second"]
     s = (f"saved {x['saved']} 학생 {x['saved_rank']}위, 다음 학생 {sec[1]} {sec[0]} (차이 {x['saved'] - sec[0]:+.4f})"
          if sec and x["saved"] is not None else f"saved {x['saved']}")
-    return (f"학생 순위 {datetime.fromtimestamp(now):%m-%d %H:%M}: {x['rank']}위/{x['n']} (student_pct {x['pct']}), "
-            f"합계 {x['total']:.3f}; 9위 {x['ninth']} ({g(x['ninth'])}), 10위 {x['tenth']} ({g(x['tenth'])}) | " + s)
+    out = (f"학생 순위 {datetime.fromtimestamp(now):%m-%d %H:%M}: {x['rank']}위/{x['n']} (student_pct {x['pct']}), "
+           f"합계 {x['total']:.3f}; 9위 {x['ninth']} ({g(x['ninth'])}), 10위 {x['tenth']} ({g(x['tenth'])}) | " + s)
+    if x.get("saved_1") is not None and x.get("saved") is not None:
+        out += (f" | 학생 saved 1위 {x['saved_1']} ({x['saved'] - x['saved_1']:+.4f})"
+                + (f", 3위 {x['saved_3']} ({x['saved'] - x['saved_3']:+.4f})" if x.get("saved_3") is not None else ""))
+    if x.get("grades") is not None:
+        gs, dph = x["grades"]
+        out += (f" | 최근 {HOURS}시간 등급별 거래(새 saved 추정 점수): "
+                + (", ".join(f"{k} {n}건 {v:.3f}" for k, (n, v) in gs.items()) or "없음") + f"; 시간당 deals {dph:.1f}")
+    return out
+
+
+def grade_stats(now=None, hours=HOURS, db_path=None):
+    """11/12 ~18:30: my buys of the last `hours` by the grade settled: (n, estimated new-saved score per deal) - the
+    score with the unit cost at grade_rule's cost share of list (A 65%, B 50%, C 35%), capped at 1; and deals per hour."""
+    import sqlite3
+    from depts import grade_rule
+    now = now or time.time()
+    cs = grade_rule.rules()["cost_share"]
+    d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=10)
+    try:
+        lp = dict(d.execute("SELECT sku, MAX(list_price) FROM buyer_deals WHERE ts>=? GROUP BY sku", (now - 3 * 86400,)))
+        rows = d.execute("SELECT sku, grade, amount FROM settles WHERE buyer='choo-chu' AND ts>=? AND ts<?",
+                         (now - hours * 3600, now)).fetchall()
+    finally:
+        d.close()
+    out = {}
+    for sku, g, amt in rows:
+        L = lp.get(sku)
+        if g in cs and L:
+            out.setdefault(g, []).append(min(1.0, (L - amt) / (L - cs[g] * L)))
+    return {g: (len(v), sum(v) / len(v)) for g, v in sorted(out.items())}, len(rows) / hours
 
 
 def due(now, last):
@@ -57,7 +89,9 @@ def due(now, last):
 
 def main():
     if "--dry" in sys.argv:
-        print(text(numbers(fetch())))
+        x = numbers(fetch())
+        x["grades"] = grade_stats()
+        print(text(x))
         return
     import alerts
     last = None
@@ -66,7 +100,12 @@ def main():
         mark = due(now, last)
         if mark and now - mark < 1800:
             try:
-                alerts.send("daily", f"student_rank:{int(mark)}", text(numbers(fetch()), now))
+                x = numbers(fetch())
+                try:
+                    x["grades"] = grade_stats(now)
+                except Exception as e:
+                    print(f"grade stats failed: {type(e).__name__}: {e}", flush=True)
+                alerts.send("daily", f"student_rank:{int(mark)}", text(x, now))
                 last = mark
             except Exception as e:
                 print(f"{datetime.now():%H:%M:%S} failed: {type(e).__name__}: {e}", flush=True)

@@ -60,7 +60,16 @@ def board():
     j = httpx.get("https://market.ourolabs.ai/api/board", params={"round": 3}, timeout=30).json()
     out = b(j)
     out["student_second"] = student_second(j)
+    out["student_below"] = student_below(j, out["saved"])
     return out
+
+
+def student_below(j, mine, me="choo-chu"):
+    """11/12 ~18:30: the best saved among the other student buyers that is not above mine (the one just below me)."""
+    stud = {(p.get("buyer") or {}).get("name") for p in j.get("players") or [] if p.get("student")}
+    v = [x["saved"] for x in j.get("buyers") or [] if x["name"] in stud and x["name"] != me
+         and x.get("saved") is not None and x["saved"] <= mine]
+    return max(v) if v else None
 
 
 def student_second(j, me="choo-chu"):
@@ -69,29 +78,31 @@ def student_second(j, me="choo-chu"):
     return max(v) if v else None
 
 
-INSURE_NAMES = {"accept": "soft_neg 즉시 수락 기준", "first": "soft_neg 첫 제안"}
-
-
-def insure(b, alerts, decisions, now=None):
-    """11/12 ~16:20 (person): soft_neg accept x 1.05 <-> x 1.00 and first 0.75 <-> 0.65 by my saved vs the student 2nd
-    (depts/saved_guard.insure); each change: soft_neg.json, a decision and a Telegram. Returns [(step, value)]."""
+def a_guard(b, alerts, decisions, now=None, path=None):
+    """11/12 ~18:30 (person): grade_rule.json a_as_bc by my saved vs the student just below me (depts/saved_guard.a_switch);
+    each change: the rules file, a decision and a Telegram. Returns the new value or None."""
+    from depts import grade_rule
     now = now or time.time()
-    r = soft_neg.rules()
-    out = []
-    for step, field, val, why in saved_guard.insure(b, r):
-        old = r.get(field)
-        going_safe = val == saved_guard.INSURE[step]["safe"]
-        kw = {field: val, f"insured_{step}": going_safe}
-        if going_safe:
-            kw[f"insured_{step}_prev"] = old
-        kw[f"insured_{step}_ts"] = round(now)
-        set_rules(soft_neg, **kw)
-        r = soft_neg.rules()
-        decisions.record("buyer", f"soft_neg_insure_{step}", "soft_neg.json", [old, val], why)
-        alerts.send("urgent", f"soft_neg_insure_{step}:{int(now)}", f"buyer {INSURE_NAMES[step]} {old} -> {val}: {why}", log=log)
-        log(f"insure {step}: {old} -> {val} ({why})")
-        out.append((step, val))
-    return out
+    path = path or grade_rule.RULES
+    r = grade_rule.rules(path)
+    sw = saved_guard.a_switch(b, bool(r.get("a_as_bc")))
+    if sw is None:
+        return None
+    val, why = sw
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except (OSError, ValueError):
+        raw = {}
+    raw.update(a_as_bc=val, a_as_bc_ts=round(now), a_as_bc_why=why)
+    with open(path + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(raw, f, ensure_ascii=False)
+    os.replace(path + ".tmp", path)
+    decisions.record("buyer", "grade_a_as_bc", "grade_rule.json", val, why)
+    alerts.send("urgent", f"grade_a_as_bc:{int(now)}", "buyer A등급 " + ("B·C 기준으로 전환 (첫 제안 0.65, 즉시 수락 1.00)"
+                if val else "원래 기준으로 복귀 (첫 제안 0.75, 즉시 수락 1.05)") + f": {why}", log=log)
+    log(f"a_as_bc -> {val} ({why})")
+    return val
 
 
 def on_kw(key, now):
@@ -261,7 +272,8 @@ def main():
     import alerts
     import decisions
     from limits import ROUND_END
-    log("start (absolute saved guard, off and on again: " + "; ".join(f"{k} {saved_guard.text(k)}" for k in saved_guard.BASE) + "; 4th > 0.375 raises them" + ")")
+    log(f"start (11/12 ~18:30: fixed thresholds removed; A as B/C when saved < student below + {saved_guard.A_BELOW}, back at "
+        f"+ {saved_guard.A_BACK})")
     while time.time() < ROUND_END:
         st = state()
         ss = second_shop.rules()
@@ -278,8 +290,7 @@ def main():
         try:                                       # 11/11 ~10:30: every time (switching on again too)
             b = board()
             log(f"check {b}")
-            check(b, alerts, decisions)
-            insure(b, alerts, decisions)
+            a_guard(b, alerts, decisions)               # 11/12 ~18:30: the only saved rule (fixed thresholds removed)
         except Exception as e:
             log(f"check failed: {type(e).__name__}: {e}")
         try:

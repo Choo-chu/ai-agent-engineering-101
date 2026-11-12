@@ -187,23 +187,12 @@ def test_soft_move_accept():
 
 
 def test_saved_guard():
-    # 11/11 ~10:40 (person): absolute thresholds with a 0.005 gap, raised over the 4th; no rank / 2nd / 3rd condition
+    # 11/12 ~18:30 (person, saved rescaled by agent.md patch 3.6): every fixed threshold removed - saved never switches
+    # a feature now (the A-grade switch is in depts/saved_guard.a_switch, tests/test_grade_rule.py)
     b = lambda s, f4=None: {"saved": s, "second": 0.6, "third": 0.5, "fourth": f4, "saved_rank": 3}
-    w, k = saved_guard.why, saved_guard.back
-    assert w("high_accept", b(0.3949)) and not w("high_accept", b(0.395)) and k("high_accept", b(0.400))         and not k("high_accept", b(0.3999))
-    assert w("second_shop", b(0.3899)) and not w("second_shop", b(0.390)) and k("second_shop", b(0.395))
-    assert w("soft_neg", b(0.3829)) and not w("soft_neg", b(0.383)) and k("soft_neg", b(0.388))         and not k("soft_neg", b(0.3879))
-    assert w("accept_rule", b(0.3829)) and k("accept_rule", b(0.388))
-    assert not w("soft_neg", b(0.3829 + 0.0002, f4=0.375))              # 4th not over 0.375: base
-    # 4th 0.3773 > 0.375: off at 4th + 0.018 / 0.013 / 0.008, on 0.005 above
-    t = saved_guard.thresholds
-    assert t("high_accept", b(0, 0.3773))[:2] == (0.3953, 0.4003) and t("second_shop", b(0, 0.3773))[:2] == (0.3903, 0.3953)
-    assert t("soft_neg", b(0, 0.3773))[:2] == (0.3853, 0.3903)
-    assert w("soft_neg", b(0.385, 0.3773)) and not w("soft_neg", b(0.3855, 0.3773)) and "4위" in w("soft_neg", b(0.385, 0.3773))
-    assert not k("soft_neg", b(0.390, 0.3773)) and k("soft_neg", b(0.3903, 0.3773))
-    assert t("soft_neg", b(0, 0.370))[:2] == (0.383, 0.388)                # never under the base
-    assert not w("soft_neg", b(0.4145, 0.3773))
-    assert not w("high_accept", {"saved": None}) and not k("high_accept", {"saved": None})
+    for f in ("high_accept", "second_shop", "soft_neg", "accept_rule"):
+        for v in (0.1, 0.3829, 0.395, 0.8):
+            assert saved_guard.why(f, b(v, 0.3773)) is None and saved_guard.back(f, b(v)) is None
 
 
 def test_apply_and_watch():
@@ -223,27 +212,13 @@ def test_apply_and_watch():
         t = mid.apply_d_high({"saved": 0.42}, 1000, dec)
         assert d2.rules()["enabled"] and d2.rules()["applied_by"] == "soft_neg_mid" and high_accept.rules()["factor"] == high_accept.FACTOR
         assert "적용" in t and len(rec) == 2
-        assert gw.check({"saved": 0.393}, al, dec) == [("high_accept", "off")]                 # < 0.395
-        assert not high_accept.rules()["enabled"] and high_accept.rules()["guard_off"] and d2.rules()["enabled"]
-        assert gw.check({"saved": 0.399}, al, dec) == []                                       # gap: not on yet
-        assert gw.check({"saved": 0.400}, al, dec) == [("high_accept", "on")]
-        assert high_accept.rules()["enabled"] and high_accept.on() and not high_accept.rules()["guard_off"]
-        assert gw.check({"saved": 0.382}, al, dec) == [("high_accept", "off"),            # 11/12 ~16:20: D is no
-                                                       ("soft_neg", "off"), ("accept_rule", "off")]   # longer switched
-        assert d2.rules()["enabled"]                                                     # by saved
-        assert not soft_neg.on() and not accept_rule.on()
-        assert gw.check({"saved": 0.388}, al, dec) == [("soft_neg", "on"), ("accept_rule", "on")]
-        assert soft_neg.on() and soft_neg.rules()["share"] == 1.0 and accept_rule.on()
-        assert gw.check({"saved": 0.41}, al, dec) == [("high_accept", "on")]
-        assert all(m.on() for m in (high_accept, d2, soft_neg, accept_rule))
-        assert sum(1 for a in sent if a[0] == "urgent") == len(sent) == 8
-        # switched off by the person (no guard_off): never switched on by the guard
-        r = accept_rule.rules(); r.update(enabled=False); J("ar.json", r)
-        assert gw.check({"saved": 0.45}, al, dec) == [] and not accept_rule.on()
+        for v in (0.393, 0.382, 0.41, 0.8):                  # 11/12 ~18:30: saved switches nothing any more
+            assert gw.check({"saved": v}, al, dec) == []
+        assert all(m.on() for m in (high_accept, d2, soft_neg, accept_rule)) and not sent
         # at 20:27 already under the guard: high not switched on, D on
         os.remove(d2.RULES); os.remove(high_accept.RULES)
         t = mid.apply_d_high({"saved": 0.392}, 1000, dec)
-        assert d2.rules()["enabled"] and not high_accept.rules() and "적용 안 함" in t
+        assert d2.rules()["enabled"] and high_accept.rules()["enabled"]   # 11/12 ~18:30: no saved threshold blocks it
 
 
 def test_d_effect():
