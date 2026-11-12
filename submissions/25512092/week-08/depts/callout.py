@@ -22,15 +22,30 @@ next 24 h of that shop's claimed settles (same counting: breakage left out, food
             follow-up 24 h later
   otherwise nothing. Facts and numbers only (no sarcasm: FU_BANNED is checked too). Telegram approval, buyer post,
   one follow-up per shop per 24 h, one per draft.
+
+Stricter rules (person 11/12 ~14:40, after #82556 needed a correction):
+  1. evidence the market judged only: ledger claim_honest = false (breakage left out); a draft from our own buyer's
+     judgement (item mismatch, receipt refusal: kind 'item') is refused in send()
+  2. a shop needs >= MIN_TOTAL (3) claimed settles in 24 h with an untrue share >= MIN_SHARE (50%); its food settles
+     count only when it has >= FOOD_MIN_N (3) of them with an untrue share >= FOOD_SHARE (80%)
+  3. re-checked before it is queued (approve -> recheck): every listed ledger number read again (shop, SKU, actual
+     grade, claim_honest = false, no breakage) must match the draft; one callout per shop per PER_SHOP_S (72 h)
+  4. a correction (kind 'correction') takes the shop off callouts for EXCLUDE_S (7 days): callout_rules.json
+     excluded {shop: until}. A wrong post gets its correction within 1 h (the person's rule; drafted by hand).
 """
 import json
 import os
+import re
 import time
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MIN_N = 2
+MIN_TOTAL, MIN_SHARE = 3, 0.5           # 11/12 ~14:40 (person): >= 3 claimed settles, >= 50% untrue
+FOOD_MIN_N, FOOD_SHARE = 3, 0.8         # food: >= 3 food settles, >= 80% untrue, else food left out
+EXCLUDE_S = 7 * 86400                   # after a correction: no callout on that shop for 7 days
+RULES = os.path.join(HERE, "callout_rules.json")
 WINDOW_S = 24 * 3600
-PER_SHOP_S = 24 * 3600
+PER_SHOP_S = 72 * 3600                  # 11/12 ~14:40 (person): one callout per shop per 72 h (was 24 h)
 EXPIRE_S = 3 * 3600
 CHECK_EVERY_S = 300
 MAX_LISTED = 8
@@ -52,35 +67,75 @@ def _catalog():
         return {}
 
 
+def rules(path=None):
+    try:
+        with open(path or RULES, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def excluded(shop, now=None, path=None):
+    """True while the shop is off callouts after a correction (callout_rules.json excluded {shop: until})."""
+    return (now or time.time()) < float((rules(path).get("excluded") or {}).get(shop, 0))
+
+
+def exclude(shop, now=None, path=None, why=""):
+    path = path or RULES
+    r = rules(path)
+    r.setdefault("excluded", {})[shop] = round((now or time.time()) + EXCLUDE_S)
+    if why:
+        r.setdefault("why", {})[shop] = why
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(r, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
 def candidates(now=None, db=None):
-    """{shop: [(seq, ts, sku, name, grade), ...]} meeting the condition, and the counts left out per reason."""
+    """{shop: [(seq, ts, sku, name, grade), ...]} meeting the condition (11/12 ~14:40: >= MIN_TOTAL claimed settles
+    in 24 h, breakage left out, untrue share >= MIN_SHARE, >= MIN_N untrue; food only with >= FOOD_MIN_N food settles
+    >= FOOD_SHARE untrue; not an excluded shop), and the untrue counts left out per reason."""
     from market_db import connect
     now = now or time.time()
     own = db is None
     db = db or connect()
     try:
-        rows = db.execute("SELECT s.seq, s.ts, COALESCE(s.shop, s.shop_url), s.sku, s.name, s.grade, "
+        rows = db.execute("SELECT s.seq, s.ts, COALESCE(s.shop, s.shop_url), s.sku, s.name, s.grade, s.claim_honest, "
                           "EXISTS (SELECT 1 FROM broken b WHERE b.buyer=s.buyer AND b.shop_url=s.shop_url "
-                          "AND b.sku=s.sku AND b.ts>=s.ts) FROM settles s WHERE s.claim_honest=0 AND s.ts>=? "
+                          "AND b.sku=s.sku AND b.ts>=s.ts) FROM settles s WHERE s.claim_honest IS NOT NULL AND s.ts>=? "
                           "AND COALESCE(s.shop, s.shop_url) IS NOT NULL AND COALESCE(s.shop, '')!=? ORDER BY s.seq",
                           (now - WINDOW_S, ME)).fetchall()
-        share = {s: (b or 0) / n for s, n, b in db.execute(
-            "SELECT COALESCE(shop, shop_url), COUNT(*), SUM(claim_honest=0) FROM settles WHERE ts>=? AND "
-            "claim_honest IS NOT NULL GROUP BY 1", (now - WINDOW_S,))} if FOOD_SHARE_MIN else {}
     finally:
         if own:
             db.close()
     cat = _catalog()
-    out, skipped = {}, {"broken": 0, "food": 0}
-    for seq, ts, shop, sku, name, grade, broken in rows:
+    by, skipped = {}, {"broken": 0, "food": 0, "share": 0, "excluded": 0}
+    for seq, ts, shop, sku, name, grade, honest, broken in rows:
         if broken:
-            skipped["broken"] += 1
+            skipped["broken"] += not honest
             continue
-        if (cat.get(sku) or {}).get("kind") == "food" and not (FOOD_SHARE_MIN and share.get(shop, 0) >= FOOD_SHARE_MIN):
-            skipped["food"] += 1
+        kind = "food" if (cat.get(sku) or {}).get("kind") == "food" else "goods"
+        by.setdefault(shop, {"food": [], "goods": []})[kind].append((seq, ts, sku, name, grade, honest))
+    out = {}
+    for shop, g in by.items():
+        f = g["food"]
+        f_bad = sum(1 for x in f if not x[5])
+        food_ok = len(f) >= FOOD_MIN_N and f_bad / len(f) >= FOOD_SHARE
+        if not food_ok:
+            skipped["food"] += f_bad
+        use = g["goods"] + (f if food_ok else [])
+        bad = [x[:5] for x in sorted(use) if not x[5]]
+        if not bad:
             continue
-        out.setdefault(shop, []).append((seq, ts, sku, name, grade))
-    return {s: v for s, v in out.items() if len(v) >= MIN_N}, skipped
+        if len(use) < MIN_TOTAL or len(bad) < MIN_N or len(bad) / len(use) < MIN_SHARE:
+            skipped["share"] += len(bad)
+            continue
+        if excluded(shop, now):
+            skipped["excluded"] += len(bad)
+            continue
+        out[shop] = bad
+    return out, skipped
 
 
 def draft(shop, rows):
@@ -167,7 +222,7 @@ def followup_draft(shop, t, food, db=None):
                 f"표시한 건은 {k}건({_pct(k, n)})입니다. {prev} 예: ledger "
                 + ", ".join(f"#{x}" for x in good[:5]) + ". ledger 번호로 직접 확인할 수 있습니다.")
         kind, refs = "improved", good[:5]
-    elif n and k >= MIN_N and k / n >= FU_BAD:
+    elif n >= MIN_TOTAL and k >= MIN_N and k / n >= FU_BAD:      # 11/12 ~14:40: >= 3 settles too
         listed = ", ".join(f"#{seq} ({sku}, 실제 등급 {grade})" for seq, sku, grade in bad[:MAX_LISTED])
         more = f" 외 {k - MAX_LISTED}건" if k > MAX_LISTED else ""
         text = (f"[정산 기록 후속] {shop}: 지난 24시간 {scope}등급 주장이 있는 정산 {n}건 중 {k}건({_pct(k, n)})을 "
@@ -226,6 +281,10 @@ def followups(now=None):
             continue
         if fu_recent:
             continue
+        if kind == "relapsed" and (recent(shop, now) or excluded(shop, now)):   # 11/12 ~14:40: 72 h, exclusion
+            decisions.record("cs", "callout_followup", shop, out["refs"], f"after draft #{pid}: relapse, but a callout "
+                             f"in the last 72 h or the shop is excluded: no post")
+            continue
         sent.append(send(shop, out, len(out["refs"]), kind=kind))
     return sent
 
@@ -244,6 +303,10 @@ def send(shop, post, n, kind=None):
     import decisions
     from depts import analyst
     now = time.time()
+    if kind == "item":                           # 11/12 ~14:40 (person) 1: our own buyer's judgement is no evidence
+        raise ValueError("callout refused: an item-mismatch draft rests on our buyer's judgement, not the market's")
+    if kind == "correction":                     # 11/12 ~14:40 (person) 4: corrected -> off callouts for 7 days
+        exclude(shop, now, why=f"correction at {now:.0f}")
     d = analyst.db()
     try:
         key = f"followup.{shop}" if kind == "improved" else f"callout.{shop}"   # a relapse counts as a callout
@@ -297,9 +360,43 @@ def tick(now=None):
     return sent
 
 
+def recheck(shop, post, db=None):
+    """11/12 ~14:40 (person) 3: every listed ledger number read again -> (ok, why). A callout / relapse lists only
+    settles of this shop with claim_honest = false, no breakage after, and the SKU / actual grade the draft names."""
+    from market_db import connect
+    seqs = [int(x) for x in re.findall(r"#(\d+) \(", post["post"])] or list(post.get("refs") or [])
+    if not seqs:
+        return False, "ledger 번호 없음"
+    own = db is None
+    db = db or connect()
+    try:
+        for seq in seqs:
+            r = db.execute("SELECT COALESCE(s.shop, s.shop_url), s.sku, s.grade, s.claim_honest, EXISTS (SELECT 1 FROM "
+                           "broken b WHERE b.buyer=s.buyer AND b.shop_url=s.shop_url AND b.sku=s.sku AND b.ts>=s.ts) "
+                           "FROM settles s WHERE s.seq=?", (seq,)).fetchone()
+            if not r:
+                return False, f"#{seq} 원장에 없음"
+            if r[0] != shop or r[3] != 0 or r[4]:
+                return False, f"#{seq}: 가게 {r[0]}, claim_honest {r[3]}, 고장 {bool(r[4])}"
+            if f"#{seq} (" in post["post"] and f"#{seq} ({r[1]}, 실제 등급 {r[2]})" not in post["post"]:
+                return False, f"#{seq}: 원장은 {r[1]} 실제 등급 {r[2]}"
+    finally:
+        if own:
+            db.close()
+    return True, f"{len(seqs)}건 재확인"
+
+
 def approve(p):
-    """HANDLERS['callout']: queue the approved draft as a one-off buyer post (forum_once.json)."""
+    """HANDLERS['callout']: queue the approved draft as a one-off buyer post (forum_once.json); a callout / relapse
+    only after recheck() and not while the shop is excluded (11/12 ~14:40)."""
     post = json.loads(p["value"])
+    kind0, shop0 = p["key"].split(".", 1)
+    if kind0 == "callout" and not post["post"].startswith("[정산 기록 정정]"):
+        if excluded(shop0):
+            return f"게시 안 함: {shop0}는 정정 후 7일 제외 중"
+        ok, why = recheck(shop0, post)
+        if not ok:
+            return f"게시 안 함: 원장 재확인 실패 ({why})"
     path = os.path.join(HERE, "forum_once.json")
     try:
         items = json.load(open(path, encoding="utf-8"))

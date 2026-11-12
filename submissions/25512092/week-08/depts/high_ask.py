@@ -100,7 +100,9 @@ def floor(u, avg, reserve, case=None, now=None, rule=None):
         reserve = min(reserve, new) if str(rule or "").startswith(MARKDOWNS) else new
         if oc:                                     # never under cost; 11/09 ~15:15: but the stoploss stays (cost
             low = int(u["cost"])                   # at most STOPLOSS_SHARE above the average: sold at the average)
-            if avg and u["cost"] - avg <= overcost.STOPLOSS_SHARE * u["cost"]:
+            from depts import sales               # 11/12 ~14:40: days left x 1% while loss_rule.json is on
+            w = sales.within_stoploss(u["cost"], avg, now)
+            if avg and (w if w is not None else u["cost"] - avg <= overcost.STOPLOSS_SHARE * u["cost"]):
                 low = min(low, int(avg))       # cost under the average (a listed unit): cost stays the floor
             reserve = max(reserve, low)
         else:

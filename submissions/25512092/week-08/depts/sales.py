@@ -34,6 +34,40 @@ ENDGAME_STEP_H = 6
 ENDGAME_CUT = 0.10
 
 
+LOSS_RULE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "loss_rule.json")
+
+
+def loss_rule():
+    """11/12 ~14:40 (person), loss_rule.json (read on every call): below cost only by the stoploss -
+      aging stops at cost; the overstock floor variant never under cost (food clearance and the endgame unchanged)
+      stoploss share = days left to the round end x per_day (1%): cost at most that share above the market
+      average -> sold at the average (high price and sofas too: a sofa floor above the average with cost above it);
+      more above it: never under cost. The endgame (11/15 23:59 on) keeps its own rules first."""
+    try:
+        with open(LOSS_RULE, encoding="utf-8") as f:
+            r = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return r if r.get("enabled") else {}
+
+
+def stoploss_share(now=None, r=None):
+    """The share cost may be above the market average for the stoploss: days left x per_day while loss_rule.json is
+    on, else the old 2 days of 1% storage."""
+    r = loss_rule() if r is None else r
+    if not r:
+        return STOPLOSS_DAYS * STORAGE_PER_DAY
+    return max(0.0, (ROUND_END - (now or time.time())) / 86400) * float(r.get("per_day", 0.01))
+
+
+def within_stoploss(cost, avg, now=None):
+    """loss_rule.json on: cost above the average by at most stoploss_share (of the average). None while off."""
+    r = loss_rule()
+    if not r or not avg:
+        return None
+    return avg < cost <= avg * (1 + stoploss_share(now, r))
+
+
 def clearance(u, avg, now=None):
     """(floor, hours_left) for a unit near expiry, else (None, hours_left)."""
     NEAR_EXPIRY_H, CUT_PER_H, MAX_CUT = policy.values("logistics", "near_expiry_h", "clearance_cut_per_h",
@@ -59,6 +93,8 @@ def aging(u, avg, now=None):
         return None, None
     step = int((age_h - AGING_AFTER_H) // AGING_STEP_H)
     base = avg if avg is not None else u["list_price"] * 0.7
+    if loss_rule():                                   # 11/12 ~14:40 (person): aging stops at cost
+        AGING_MIN_COST = max(1.0, AGING_MIN_COST)
     return max(int(u["cost"] * AGING_MIN_COST), int(base * (1 - AGING_CUT * step))), step
 
 
@@ -86,8 +122,9 @@ def floor(u, avg, case, now=None, overstock_mult=1.0):
         from depts import sofa
         if sofa.applies(u):
             r = sofa.floor(u, now)
-            if r:
-                return r
+            if r:                                    # 11/12 ~14:40 (person): sofa floor above the average, cost above it
+                s = stoploss(u, avg, case, now) if loss_rule() and avg and r[0] > avg else None
+                return (s, "stoploss") if s is not None else r     # too: the stoploss rule like any high unit
     vol = None
     if case != "endgame":                            # every category: volume pricing (depts/volume.py), when on
         from depts import volume
@@ -99,8 +136,8 @@ def floor(u, avg, case, now=None, overstock_mult=1.0):
         cands = [(e, f"endgame step {step}")] if e is not None else [(u["cost"], "cost")]
     elif case == "cash_low":
         cands = [(u["cost"], "cash_low")]
-    elif case == "overstock":
-        cands = [(int(u["cost"] * overstock_mult), "overstock")]
+    elif case == "overstock":                        # 11/12 ~14:40 (person): never under cost (loss_rule.json)
+        cands = [(int(u["cost"] * (max(1.0, overstock_mult) if loss_rule() else overstock_mult)), "overstock")]
     else:
         cands = [(max(u["cost"], int(avg)), "normal") if avg is not None else (u["cost"], "cost")]
     if case in ("normal", "overstock"):              # endgame: no aging below cost (ALL uses book)
@@ -133,6 +170,9 @@ def stoploss(u, avg, case, now=None):
         near = policy.get("logistics", "near_expiry_h") or NEAR_EXPIRY_H
         left = ((u.get("expires_at") or 0) - (now or time.time())) / 3600
         return int(avg) if u.get("expires_at") and left < near else None
+    w = within_stoploss(u["cost"], avg, now)          # 11/12 ~14:40: days left x 1% while loss_rule.json is on
+    if w is not None:
+        return int(avg) if w else None
     return int(avg) if u["cost"] - avg < STOPLOSS_DAYS * STORAGE_PER_DAY * u["cost"] else None
 
 
