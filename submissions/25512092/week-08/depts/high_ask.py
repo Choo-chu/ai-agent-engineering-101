@@ -65,6 +65,22 @@ def c_step_floor(u, now=None, cs=None):
     return None
 
 
+def age_ab_floor(u, now=None, ab=None):
+    """A / B grade high-price units (not sofas; checked by the caller) over h (24) hours after supply (person's
+    decision 11/12 ~14:25, high_ask.json age_ab.enabled): max(cost x 1.00, 48 h market median x 0.70); never under
+    cost. None when it does not apply. A lower floor of an existing markdown (C grade steps, overcost_high, stoploss)
+    is kept by the caller."""
+    ab = ab if ab is not None else (rules().get("age_ab") or {})
+    if not ab.get("enabled") or u.get("grade") not in ab.get("grades", ["A", "B"]) or not u.get("supplied_at"):
+        return None
+    if ((now or time.time()) - u["supplied_at"]) / 3600 <= ab.get("h", 24):
+        return None
+    from depts import sofa
+    med = sofa.market(u["sku"], now)[0]
+    cost = int(u["cost"])
+    return max(cost, int(cost * ab.get("cost", 1.00)), int(med * ab.get("median", 0.70)) if med else 0)
+
+
 MARKDOWNS = ("aging", "stoploss", "clearance", "endgame", "cash_low", "overstock")   # the old markdowns (depts/sales
 #   floor rule names); 11/08 ~17:50 (person): one principle, a markdown floor lower than the new floor is kept
 
@@ -91,6 +107,9 @@ def floor(u, avg, reserve, case=None, now=None, rule=None):
             step = c_step_floor(u, now, r.get("c_step") or {})
             if step is not None and step < reserve:  # 11/09 ~15:05: C grade steps down; lower markdowns kept
                 reserve = step
+        aged = age_ab_floor(u, now, r.get("age_ab") or {})
+        if aged is not None and aged < reserve:     # 11/12 ~14:25: A / B over 24 h; a lower floor stays
+            reserve = aged
     share = (r.get("clear") or {}).get(u.get("sku"))
     if share is None or not avg:
         return reserve
