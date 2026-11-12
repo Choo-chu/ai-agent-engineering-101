@@ -40,7 +40,7 @@ def stats(cat):
     return {"skus": sk, "hot": list(sk), "wanted": [], "wanted_cats": [], "sku_break": {}, "sku_n": {}}
 
 
-def plan_with(units, rules=RULES, high_max=3_000_000, deep_limit=5):
+def plan_with(units, rules=RULES, high_max=3_000_000, deep_limit=5, actual=None):
     cat = catalog()
     st = stats(cat)
     P = mock.patch.object
@@ -48,6 +48,7 @@ def plan_with(units, rules=RULES, high_max=3_000_000, deep_limit=5):
     with contextlib.ExitStack() as es:
         for obj, name, val in (
                 (top_high, "RULES", tmp_json(rules, "top_high")), (PU, "HIGH_MAX", high_max),
+                (top_high, "last_costs", lambda *a, **k: dict(actual or {})),
                 (PU, "load_stats", lambda: st), (PU, "price_of", lambda k, s=None: (s or st)["skus"][k]["avg"] and
                                                  ((s or st)["skus"][k]["avg"], 50)),
                 (PU, "busy_categories", lambda c, top=5: ["TV"]), (PU, "c_rules", lambda: {}),
@@ -194,7 +195,47 @@ def test_check_top15_report():
     assert "지금 보유 1개" in t and "현금 50,000,000 -> 47,000,000 (-3,000,000)" in t and "Book 100 vs 33" in t, t
 
 
+def test_actual_cost_and_20_3():
+    """11/12 ~09:50 (person): held at most 20 over 1.5M, 3 a SKU; "over 1.5M" on max(estimate, recent actual supply
+    cost): MID is estimated at 600k but was supplied at 1.6M -> capped like an over-1.5M SKU."""
+    r = dict(RULES, max_units=20, max_per_sku=3)
+    old = PU.MAX_LINES
+    PU.MAX_LINES = 20
+    try:
+        plan, logs = plan_with([], rules=dict(r, max_units=100), actual={"MID": 1_600_000})
+        q = {p["sku"]: p["qty"] for p in plan}
+        assert q.get("MID") == 3, q                                   # deep 5 cut to 3 by the actual cost
+        assert all(v <= 3 for k, v in q.items() if k.startswith("T"))
+        plan, logs = plan_with([], rules=r, actual={"MID": 1_600_000})
+        q = {p["sku"]: p["qty"] for p in plan}
+        assert sum(v for k, v in q.items() if k.startswith("T") or k == "MID") == 20, q   # MID counts in the 20
+        plan, _ = plan_with([], rules=r)                              # no actual cost known: MID stays at 5
+        assert {p["sku"]: p["qty"] for p in plan}.get("MID") == 5
+        plan, _ = plan_with(unit("T0", 2_400_000, 3) + unit("T1", 2_400_000, 16), rules=r)   # 19 held: room 1
+        q = {p["sku"]: p["qty"] for p in plan}
+        assert "T0" not in q and sum(v for k, v in q.items() if k.startswith("T")) == 1, q
+    finally:
+        PU.MAX_LINES = old
+
+
+def test_last_costs_reads_recent_max():
+    p = os.path.join(tempfile.mkdtemp(), "m.db")
+    d = sqlite3.connect(p)
+    d.execute("CREATE TABLE my_stock (unit, sku, cost, supplied_at)")
+    now = 1_000_000_000
+    d.executemany("INSERT INTO my_stock VALUES (?,?,?,?)", [
+        ("a", "S", 1_537_011, now - 3600), ("b", "S", 1_317_353, now - 60),        # recent: the A-grade cost wins
+        ("c", "OLD", 1_900_000, now - 100 * 3600), ("d", "OLD", 900_000, now - 90 * 3600)])   # none in 48 h: last supply
+    d.commit()
+    d.close()
+    a = top_high.last_costs(p, now=now)
+    assert a == {"S": 1_537_011, "OLD": 900_000}, a
+    assert top_high.judge_cost("S", 1_392_000, a) == 1_537_011 and top_high.judge_cost("Z", 1_392_000, a) == 1_392_000
+
+
 if __name__ == "__main__":
+    test_actual_cost_and_20_3()
+    test_last_costs_reads_recent_max()
     test_plan_caps()
     test_warranty_through_strategy()
     test_cat_break()

@@ -30,6 +30,37 @@ def is_top(cost, r=None):
     return bool(r.get("enabled")) and (cost or 0) > r.get("min_cost", MIN_COST)
 
 
+RECENT_H = 48
+
+
+def last_costs(db_path=None, now=None, hours=RECENT_H):
+    """{sku: the highest unit cost of my supplies of it in the last `hours`, else of its most recent supply} (market.db
+    my_stock); {} when it cannot be read. One supply mixes grades (09:23 G8ec51935: A 1,537,011 / 1,505,184, A
+    1,347,790, later B 1,317,353), so the most recent unit alone can hide the A-grade cost."""
+    import sqlite3
+    now = now or time.time()
+    try:
+        d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=30)
+        try:
+            recent = d.execute("SELECT sku, MAX(cost) FROM my_stock WHERE supplied_at>=? GROUP BY sku",
+                               (now - hours * 3600,)).fetchall()
+            last = d.execute("SELECT sku, MAX(cost) FROM my_stock m WHERE supplied_at = (SELECT MAX(supplied_at) FROM "
+                             "my_stock WHERE sku=m.sku) GROUP BY sku").fetchall()
+        finally:
+            d.close()
+    except sqlite3.Error:
+        return {}
+    out = {s: c for s, c in last if c}
+    out.update({s: c for s, c in recent if c})
+    return out
+
+
+def judge_cost(sku, est, actual):
+    """11/12 ~09:50 (person): "over 1.5M" is judged on the larger of the estimate and the SKU's recent actual supply
+    cost (09:21: G8ec51935 estimated 1,392,000, supplied at 1,505,184 - 1,665,030)."""
+    return max(est or 0, (actual or {}).get(sku) or 0)
+
+
 def per_sku(r=None):
     r = rules() if r is None else r
     return int(r.get("max_per_sku", 2))
@@ -45,23 +76,24 @@ def held(units, r=None):
     return sum(per.values()), per
 
 
-def cap_plan(plan, units, est_cost, log=print, r=None):
+def cap_plan(plan, units, est_cost, log=print, r=None, actual=None):
     """The plan with its > min_cost lines cut so that held + planned <= max_units and <= max_per_sku per SKU (in plan
-    order: the first lines keep their units)."""
+    order: the first lines keep their units). A line's cost: judge_cost (estimate vs last actual supply cost)."""
     r = rules() if r is None else r
     if not r.get("enabled"):
         return plan
+    actual = last_costs() if actual is None else actual
     n, per = held(units, r)
     room = max(0, int(r.get("max_units", 10)) - n)
     out = []
     for p in plan:
-        c = est_cost(p["sku"])
+        c = judge_cost(p["sku"], est_cost(p["sku"]), actual)
         if not is_top(c, r):
             out.append(p)
             continue
         q = min(p["qty"], room, per_sku(r) - per.get(p["sku"], 0))
         if q <= 0:
-            log(f"[top high] {p['sku']} x{p['qty']} (est. cost {int(c):,}): over 1.5M held {n}/{r.get('max_units', 10)}, "
+            log(f"[top high] {p['sku']} x{p['qty']} (cost {int(c):,}, est. or last supply): over 1.5M held {n}/{r.get('max_units', 10)}, "
                 f"this SKU {per.get(p['sku'], 0)}/{per_sku(r)} -> skip")
             continue
         if q < p["qty"]:

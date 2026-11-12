@@ -209,6 +209,7 @@ def make_plan(inv, units, catalog, budget, log):
     no_buy = dict(no_buy, **{k: 'high_cost_exclude' for k in high_cost_exclude.current(log=log)})
     from depts import deep_high                   # 11/10 ~12:30: fast high-price SKUs held up to 2-5 (else 1)
     deep = deep_high.current(log=log)
+    actual = top_high.last_costs()                # 11/12 ~09:50: "over 1.5M" on max(estimate, last actual supply cost)
     from depts import line_rank                   # 11/09 ~14:35: lines after the request lines by expected profit
     rank = line_rank.on()
     if rank:
@@ -241,7 +242,7 @@ def make_plan(inv, units, catalog, budget, log):
         wide = leaf_of(sku) in breadth
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             hold_max = deep_high.limit(sku, deep)  # 11/10 ~12:30: 1, or 2-5 for a fast-selling SKU
-            if top_high.is_top(cost):             # 11/11 ~20:10: over 1.5M at most 2 a SKU, even a deep-stock SKU
+            if top_high.is_top(top_high.judge_cost(sku, cost, actual)):   # 11/11 ~20:10: over 1.5M per-SKU cap
                 hold_max = min(hold_max, top_high.per_sku())
             if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku, 0) >= hold_max:
                 continue
@@ -341,7 +342,7 @@ def make_plan(inv, units, catalog, budget, log):
         sk = {x["sku"] for x in sofa}
         plan = sofa + [p for p in plan if p["sku"] not in sk][:MAX_LINES - len(sofa)]
     # 11/11 ~20:10 (person): over 1.5M at most 10 units held at once (stock + this plan, both halves of a window plan)
-    plan = top_high.cap_plan(plan, units, est, log=log)
+    plan = top_high.cap_plan(plan, units, est, log=log, actual=actual)
     if nm:                                         # 11/11 ~20:50: >= 4 normal lines in each run-sized chunk, first
         plan = normal_min.arrange(plan, is_low, LM.MAX_LINES, nm["min_lines"])
         log(f"[normal min] normal lines per run: " + ", ".join(

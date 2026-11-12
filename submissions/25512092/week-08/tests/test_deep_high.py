@@ -61,7 +61,19 @@ def test_window_stats():
     assert w["out_h"] == 3 + 4, w                             # A out from its sale (3 samples), B all 4
 
 
+def test_fast_cap_7():
+    """11/12 ~09:50 (person): median supply -> sale <= 1.5 h -> held up to 7; the rest of the targets stay at 5."""
+    r = dict(R, fast_median_h=1.5, fast_max_hold=7)
+    rows = ([("F", 1, h, 300_000, 250_000) for h in range(1, 10)]               # median 1 h, 9 in 12 h: 7
+            + [("G", 2, h, 300_000, 250_000) for h in range(1, 10)]             # median 2 h: 5
+            + [("H", 1.5, h, 300_000, 250_000) for h in (1, 2, 3)])             # median 1.5 h, 3 in 12 h: 3
+    out = D.compute(NOW, r, db(rows))
+    assert {k: v["limit"] for k, v in out.items()} == {"F": 7, "G": 5, "H": 3}, out
+    assert D.compute(NOW, R, db(rows))["F"]["limit"] == 5                       # without the rule: 5 as before
+
+
 if __name__ == "__main__":
+    test_fast_cap_7()
     test_window_stats()
     test_compute()
     test_current_off_and_files()

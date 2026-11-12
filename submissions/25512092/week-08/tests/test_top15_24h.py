@@ -55,11 +55,41 @@ def test_summary_line_27():
             mock.patch.object(M, "night_lines", lambda t0, t1: ["20. x"]):
         txt = M.summary(T1 - 12 * 3600, T1)
     line = [x for x in txt.splitlines() if x.startswith("27. ")][0]
+    assert any(x.startswith("28. 12시간+ 미판매 고가 추이") for x in txt.splitlines()), txt[-500:]
     assert "매입 2개 원가 3,600,000" in line and "판매 2개 매출 4,300,000" in line and "이익률 7.0%" in line, line
     assert "환불 1건 2,100,000" in line and "지금 보유 3개" in line, line
+
+
+def test_aged_high_trend():
+    """Line 28 (person 11/12 ~09:50): high-price units unsold over 12 h, every 3 h over the last 12 h."""
+    import json
+    import morning_summary as M
+    d = tempfile.mkdtemp()
+    p = os.path.join(d, "m.db")
+    c = sqlite3.connect(p)
+    c.execute("CREATE TABLE my_stock (unit, sku, cost, supplied_at)")
+    c.execute("CREATE TABLE settles (ts, shop, unit)")
+    c.executemany("INSERT INTO my_stock VALUES (?,?,?,?)", [
+        ("h1", "A", 200_000, T1 - 30 * 3600),      # held all along
+        ("h2", "B", 1_600_000, T1 - 20 * 3600),    # over 12 h at T1 - 6 h and T1 - 3 h, sold at T1 - 2 h
+        ("h3", "C", 300_000, T1 - 13 * 3600),      # over 12 h only at T1 (held now)
+        ("lo", "D", 50_000, T1 - 30 * 3600),       # not high price
+        ("gone", "E", 400_000, T1 - 30 * 3600)])   # neither sold nor held: not counted
+    c.executemany("INSERT INTO settles VALUES (?,?,?)", [(T1 - 2 * 3600, "choo-chu", "h2")])
+    c.commit()
+    c.close()
+    inv = os.path.join(d, "inv.json")
+    with open(inv, "w", encoding="utf-8") as f:
+        json.dump({"units": [{"unit": u, "grade": "A"} for u in ("h1", "h3", "lo")]}, f)
+    line = M.aged_high_trend(T1, inv_path=inv, db_path=p)
+    parts = line.split(": ", 1)[1].split(" -> ")
+    assert [x.split(" ", 1)[1] for x in parts] == ["1개 200,000 (150만 초과 0)", "1개 200,000 (150만 초과 0)",
+                                                   "2개 1,800,000 (150만 초과 1)", "2개 1,800,000 (150만 초과 1)",
+                                                   "2개 500,000 (150만 초과 0)"], parts
 
 
 if __name__ == "__main__":
     test_last24()
     test_summary_line_27()
+    test_aged_high_trend()
     print("ok")

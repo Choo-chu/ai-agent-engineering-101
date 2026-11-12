@@ -175,6 +175,10 @@ def summary(t0, t1):
         lines.append("27. " + check_top15.last24_line(t1))
     except Exception as e:
         lines.append(f"27. 150만 초과 고가 24시간 누적 계산 실패 {type(e).__name__}: {e}")
+    try:                                          # 11/12 ~09:50 (person): for the call on 11/13 morning
+        lines.append("28. " + aged_high_trend(t1))
+    except Exception as e:
+        lines.append(f"28. 12시간+ 미판매 고가 추이 계산 실패 {type(e).__name__}: {e}")
     return "\n".join(lines)
 
 
@@ -381,6 +385,30 @@ def stock_line(t1, inv_path=None, db_path=None):
         db.close()
     return (f"12시간 넘게 안 팔린 재고: 원가 {c(old):,} {len(old)}개 (고가 {c(hi):,} {len(hi)}개 / 일반 {c(lo):,} {len(lo)}개); "
             f"보관비 누적 {sall:,} (최근 12시간 {s12:,}, 지금 하루 {per_day or 0:,})")
+
+
+def aged_high_trend(t1, inv_path=None, db_path=None, step_h=3, span_h=12):
+    """11/12 ~09:50 (person): high-price units (cost > qc.HIGH_MIN) unsold over STALE_H, every step_h over the last
+    span_h: at each time T, my units supplied before T - STALE_H that were still held then (held now, or sold after T;
+    my_stock + settles + the live inventory; a unit that expired / was disposed in between is not counted)."""
+    from depts.qc import HIGH_MIN
+    with open(inv_path or os.path.join(HERE, ".market", "inventory.json"), encoding="utf-8") as f:
+        held = {u["unit"] for u in json.load(f).get("units", []) if u.get("grade") != "expired"}
+    db = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=30)
+    try:
+        st = db.execute("SELECT unit, cost, supplied_at FROM my_stock WHERE cost>? AND supplied_at<=?",
+                        (HIGH_MIN, t1 - STALE_H * 3600)).fetchall()
+        sold = dict(db.execute("SELECT unit, MIN(ts) FROM settles WHERE shop='choo-chu' AND unit IS NOT NULL GROUP BY unit"))
+    finally:
+        db.close()
+    parts = []
+    for k in range(span_h // step_h, -1, -1):
+        T = t1 - k * step_h * 3600
+        xs = [(c, u) for u, c, s in st if s <= T - STALE_H * 3600
+              and ((u in held and (u not in sold or sold[u] > T)) or (u in sold and sold[u] > T))]
+        top = sum(1 for c, _ in xs if c > 1_500_000)
+        parts.append(f"{datetime.fromtimestamp(T):%H:%M} {len(xs)}개 {sum(c for c, _ in xs):,} (150만 초과 {top})")
+    return "12시간+ 미판매 고가 추이 (3시간 단위): " + " -> ".join(parts)
 
 
 WATCH_SKU = "G5e3784e6"                           # 우아미 소파, never bought again (person 11/09 ~11:10)

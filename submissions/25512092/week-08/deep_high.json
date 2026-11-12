@@ -8,5 +8,7 @@
  "recent_h": 12,
  "min_hold": 2,
  "max_hold": 5,
- "why": "person's decision 11/10 ~12:30: fast high-price SKUs (incl. sofas) held up to max(2, 12 h sales), at most 5; others 1; person 11/11 ~10:30: at most 3 (was 5); person 11/11 ~14:50: at most 5 again (target conditions unchanged)"
+ "why": "person's decision 11/10 ~12:30: fast high-price SKUs (incl. sofas) held up to max(2, 12 h sales), at most 5; others 1; person 11/11 ~10:30: at most 3 (was 5); person 11/11 ~14:50: at most 5 again (target conditions unchanged); person 11/12 ~09:50: median supply -> sale <= 1.5 h -> at most 7, other targets 5",
+ "fast_median_h": 1.5,
+ "fast_max_hold": 7
 }

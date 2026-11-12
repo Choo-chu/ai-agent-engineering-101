@@ -57,7 +57,10 @@ def compute(now=None, r=None, db_path=None):
         if med > r["median_h"] or margin < r["min_margin"]:
             continue
         n12 = sum(1 for ts, *_ in xs if ts >= now - r["recent_h"] * 3600)
-        out[sku] = {"limit": min(r["max_hold"], max(r["min_hold"], n12)), "sold": len(xs), "sold_12h": n12,
+        cap = r["max_hold"]                       # 11/12 ~09:50 (person): median <= fast_median_h (1.5 h) -> fast_max_hold (7)
+        if r.get("fast_max_hold") and med <= r.get("fast_median_h", 0):
+            cap = r["fast_max_hold"]
+        out[sku] = {"limit": min(cap, max(r["min_hold"], n12)), "sold": len(xs), "sold_12h": n12,
                     "median_h": round(med, 2), "margin": round(margin, 4), "name": xs[-1][4]}
     return out
 

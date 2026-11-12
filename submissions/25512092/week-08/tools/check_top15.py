@@ -94,6 +94,14 @@ def last24_line(t1, db_path=None):
             f"{'-' if n_held is None else n_held}개 (SKU당 최다 {'-' if most is None else most}) | HIGH_MAX 고정 11-13 12:00까지")
 
 
+def top_high_rules():
+    try:
+        from depts import top_high
+        return top_high.rules()
+    except Exception:
+        return {}
+
+
 def held_now(state=None):
     try:
         with open(os.path.join(state or os.path.join(HERE, ".market"), "inventory.json"), encoding="utf-8") as f:
@@ -135,7 +143,7 @@ def report(s, now=None, cur=None, board=None, db_path=None, clock=time.time, sta
     L.append(f"- 회전(입고→판매 중앙값) {f0(a['med_h']) if a['med_h'] is None else format(a['med_h'], '.2f')}시간 vs "
              f"{'-' if p['med_h'] is None else format(p['med_h'], '.2f')}시간; 보증 붙은 판매 {a['warranty']} vs {p['warranty']}개; "
              f"환불 {a['refunds']}건 {a['refund_amt']:,} vs {p['refunds']}건 {p['refund_amt']:,}")
-    L.append(f"- 150만 초과 지금 보유 {n_held if n_held is not None else '-'}개 (한도 10), SKU당 최다 {most if most is not None else '-'}개 (한도 2)")
+    L.append(f"- 150만 초과 지금 보유 {n_held if n_held is not None else '-'}개 (한도 {top_high_rules().get('max_units', 10)}), SKU당 최다 {most if most is not None else '-'}개 (한도 {top_high_rules().get('max_per_sku', 2)})")
     if c0 and c1:
         L.append(f"- 현금 {c0[1]:,} -> {c1[1]:,} ({c1[1] - c0[1]:+,}), 재고 원가 {c0[2]:,} -> {c1[2]:,} ({c1[2] - c0[2]:+,})")
     if cur is None:
