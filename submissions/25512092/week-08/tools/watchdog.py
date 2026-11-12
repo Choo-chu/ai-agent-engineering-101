@@ -103,8 +103,9 @@ def urgent(key, text):
 
 
 def start_analyst():
+    """Detached in a new process group, stdin / stdout / stderr to DEVNULL (11/12 ~23:45: also used by the rollouts)."""
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    subprocess.Popen([VENV_PY, "-X", "utf8", "analyst_main.py"], cwd=HERE, creationflags=flags,
+    return subprocess.Popen([VENV_PY, "-X", "utf8", "analyst_main.py"], cwd=HERE, creationflags=flags,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
 
 

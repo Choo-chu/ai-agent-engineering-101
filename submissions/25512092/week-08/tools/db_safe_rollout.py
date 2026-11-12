@@ -65,8 +65,10 @@ def restart_analyst():
           "'*analyst_main.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; $_.ProcessId }")
     r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True, timeout=60)
     time.sleep(2)
-    p = subprocess.Popen([PY, "-X", "utf8", "analyst_main.py"], cwd=HERE, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, creationflags=0x00000008 | 0x08000000)   # detached, no window
+    # 11/12 ~23:45 (person): launched exactly like the watchdog (new process group, stdin too to DEVNULL); the 18:01
+    # launch (DETACHED | CREATE_NO_WINDOW, stdin inherited) exited at once and the watchdog restarted it
+    import watchdog
+    p = watchdog.start_analyst()
     return r.stdout.split(), p.pid
 
 

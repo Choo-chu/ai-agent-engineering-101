@@ -59,6 +59,9 @@ def text(x, now=None):
         f = lambda v: "0건" if not v else f"{v[0]}건 {v[1]:.3f}"
         out += (f" | C등급(첫 제안 0.55, 11/12 23:20~): 최근 {HOURS}시간 {f(c)} vs 그 전 {HOURS}시간 {f(pc)}; "
                 f"시간당 deals {x['grades'][1]:.1f} vs {x['prev_grades'][1]:.1f}")
+    if x.get("rate") is not None:
+        r = lambda v: f"{v[0]}/{v[1]} ({v[0] / v[1]:.0%})" if v[1] else "0/0"
+        out += f" | 성사율 최근 {HOURS}시간 {r(x['rate'])} vs 그 전 {HOURS}시간 {r(x['prev_rate'])}"
     if x.get("grades") is not None:
         gs, dph = x["grades"]
         out += (f" | 최근 {HOURS}시간 등급별 거래(새 saved 추정 점수): "
@@ -88,6 +91,18 @@ def grade_stats(now=None, hours=HOURS, db_path=None):
     return {g: (len(v), sum(v) / len(v)) for g, v in sorted(out.items())}, len(rows) / hours
 
 
+def deal_rate(t0, t1, db_path=None):
+    """11/12 ~23:45 (person): (deals, orders) of my buyer in [t0, t1) from buyer_deals."""
+    import sqlite3
+    d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=10)
+    try:
+        o, n = d.execute("SELECT COUNT(*), COALESCE(SUM(outcome='deal'), 0) FROM buyer_deals WHERE ts>=? AND ts<?",
+                         (t0, t1)).fetchone()
+    finally:
+        d.close()
+    return int(n), int(o)
+
+
 def due(now, last):
     """The latest HOURS-th hour mark at or before now, if it was not reported yet."""
     t = datetime.fromtimestamp(now)
@@ -100,6 +115,8 @@ def main():
         x = numbers(fetch())
         x["grades"] = grade_stats()
         x["prev_grades"] = grade_stats(time.time() - HOURS * 3600)
+        t = time.time()
+        x["rate"], x["prev_rate"] = deal_rate(t - HOURS * 3600, t), deal_rate(t - 2 * HOURS * 3600, t - HOURS * 3600)
         print(text(x))
         return
     import alerts
@@ -113,6 +130,8 @@ def main():
                 try:
                     x["grades"] = grade_stats(now)
                     x["prev_grades"] = grade_stats(now - HOURS * 3600)
+                    x["rate"] = deal_rate(now - HOURS * 3600, now)
+                    x["prev_rate"] = deal_rate(now - 2 * HOURS * 3600, now - HOURS * 3600)
                 except Exception as e:
                     print(f"grade stats failed: {type(e).__name__}: {e}", flush=True)
                 alerts.send("daily", f"student_rank:{int(mark)}", text(x, now))

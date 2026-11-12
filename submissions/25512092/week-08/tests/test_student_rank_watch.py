@@ -36,6 +36,8 @@ def test_numbers_and_text():
     t = W.text(x)
     assert "C등급(첫 제안 0.55, 11/12 23:20~): 최근 3시간 5건 0.800 vs 그 전 3시간 0건" in t, t
     assert "시간당 deals 4.0 vs 3.0" in t, t
+    x["rate"], x["prev_rate"] = (29, 100), (41, 100)
+    assert "성사율 최근 3시간 29/100 (29%) vs 그 전 3시간 41/100 (41%)" in W.text(x)
 
 
 def test_due():
