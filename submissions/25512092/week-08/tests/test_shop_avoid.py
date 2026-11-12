@@ -98,22 +98,37 @@ def test_missed_and_summary():
     assert "놓친 주문 2건" in line and "two [회피] 품목·금액 불일치 2건" in line and "놓친 주문 2" in line, line
 
 
-def test_guard_warns_on_drop():
+def test_guard_warns_on_missed_orders():
+    """11/12 ~09:10 (person): the warning only when orders missed because of the avoid / back rules reach 5 in 2 h;
+    a close-rate drop alone no longer warns. Back shops come from the real choose() (B.BACKED)."""
+    p = setup(mem=[(NOW - 3000, "two", "item_mismatch")])                   # two: one mismatch -> back
+    got, _ = choose(p, ["two", "fine", "ok2"])
+    assert got[-1] == "two" and B.BACKED == ["two"], (got, B.BACKED)
     d = tempfile.mkdtemp()
-    sn = os.path.join(d, "sn.jsonl")
-    since = NOW - 3 * 3600
+    mp = os.path.join(d, "missed.jsonl")
+    sn = os.path.join(d, "sn.jsonl")                                         # a big close-rate drop: ignored now
     with open(sn, "w") as f:
-        for i in range(300):                                                 # before: 60% close, 6 h
-            f.write(json.dumps({"ts": since - 6 * 3600 + i * 70, "deal": i % 10 < 6, "paid_ok": i % 10 < 6}) + "\n")
-        for i in range(150):                                                 # last 2 h: 40%
-            f.write(json.dumps({"ts": NOW - 2 * 3600 + i * 45, "deal": i % 10 < 4, "paid_ok": i % 10 < 4}) + "\n")
-    rp = tmp_json({"enabled": True, "since": since}, "avoid")
+        for i in range(300):
+            f.write(json.dumps({"ts": NOW - 9 * 3600 + i * 70, "deal": True, "paid_ok": True}) + "\n")
+        for i in range(150):
+            f.write(json.dumps({"ts": NOW - 2 * 3600 + i * 45, "deal": False, "paid_ok": False}) + "\n")
+    rp = tmp_json({"enabled": True, "since": NOW - 10 * 3600}, "avoid")
     sent = []
-    with mock.patch.object(A, "STATE", os.path.join(d, "s.json")), mock.patch.object(A, "MISSED", os.path.join(d, "m")):
-        why = A.guard(now=NOW, sn_path=sn, send=lambda *a: sent.append(a), rules_path=rp)
-        assert why and "성사율 40.0% < 적용 전 60.0%" in why and sent and sent[0][1] == "shop_avoid_drop"
-        assert A.guard(now=NOW + 60, sn_path=sn, send=lambda *a: sent.append(a), rules_path=rp) is None   # 10 min
-        assert len(sent) == 1
+    with mock.patch.object(A, "MISSED", mp), mock.patch.object(A, "STATE", os.path.join(d, "s.json")):
+        with mock.patch.object(A.time, "time", lambda: NOW - 3 * 3600):      # 3 h ago: outside the 2 h window
+            A.note_missed("o-0", "과자", [], "walk", back=list(B.BACKED))
+        for i in range(4):
+            with mock.patch.object(A.time, "time", lambda: NOW - 600 * (i + 1)):
+                A.note_missed(f"o-{i + 1}", "과자", ["bad"] if i == 0 else [], "walk", back=list(B.BACKED))
+        assert A.guard(now=NOW, sn_path=sn, send=lambda *a: sent.append(a), rules_path=rp) is None and not sent
+        with mock.patch.object(A.time, "time", lambda: NOW + 30):
+            A.note_missed("o-5", "과자", [], "no_deal", back=["two"])
+        why = A.guard(now=NOW + 700, send=lambda *a: sent.append(a), rules_path=rp)
+        assert why and "최근 2시간 5건" in why and "two 5" in why and "bad 1" in why, why
+        assert len(sent) == 1 and sent[0][1] == "shop_avoid_drop"
+        assert A.guard(now=NOW + 1400, send=lambda *a: sent.append(a), rules_path=rp) and len(sent) == 1  # once / 2 h
+        line = A.summary_line(NOW + 1400, NOW - 12 * 3600)
+    assert "회피·맨 뒤 때문에 놓친 주문 6건" in line, line
 
 
 def test_injection_phrases():
@@ -193,7 +208,7 @@ if __name__ == "__main__":
     test_injection()
     test_cheated_kept_and_no_fallback_to_avoided()
     test_missed_and_summary()
-    test_guard_warns_on_drop()
+    test_guard_warns_on_missed_orders()
     test_injection_phrases()
     test_item_draft()
     test_wrong_item_not_accepted()

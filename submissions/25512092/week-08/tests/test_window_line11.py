@@ -88,9 +88,31 @@ def test_closed_before_the_change_not_counted():
         assert W.rules()["sec_per_line"] == 11 and W.rules()["closed_now"] == 0
 
 
+def test_115s_and_6_closed():
+    """11/12 ~09:10 (person): 11.5 s a line, back to 12 s only past 6 lines refused as closed in 3 h."""
+    d = tempfile.mkdtemp()
+    with mock.patch.object(W, "RULES", rules(d, sec_per_line=11.5, max_closed=6)),             mock.patch.object(W, "KIT_LOGS", [kit_log(d, 0)]):
+        assert len(second_plan_lines(d, 55)) == 5                        # ~47 s left: 47 / 11.5 -> 4 + 1
+    d = tempfile.mkdtemp()
+    with mock.patch.object(W, "RULES", os.path.join(d, "none.json")):
+        assert len(second_plan_lines(d, 55)) == 4                        # 12 s: 47 / 12 -> 3 + 1
+    d = tempfile.mkdtemp()
+    sent = []
+    with mock.patch.object(W, "RULES", rules(d, sec_per_line=11.5, max_closed=6)),             mock.patch.object(W, "KIT_LOGS", [kit_log(d, 6)]), mock.patch("alerts.send", lambda *a, **k: sent.append(a)):
+        second_plan_lines(d, 55)
+        r = W.rules()
+    assert r["sec_per_line"] == 11.5 and r["closed_now"] == 6 and not sent and not r.get("reverted")
+    d = tempfile.mkdtemp()
+    with mock.patch.object(W, "RULES", rules(d, sec_per_line=11.5, max_closed=6)),             mock.patch.object(W, "KIT_LOGS", [kit_log(d, 7)]), mock.patch("alerts.send", lambda *a, **k: sent.append(a)):
+        assert len(second_plan_lines(d, 55)) == 4                        # reverted in the same run
+        r = W.rules()
+    assert r["sec_per_line"] == 12 and r["reverted_from"] == 11.5 and sent and "11.5초 -> 12초" in sent[0][2]         and "6줄 초과" in sent[0][2], sent
+
+
 if __name__ == "__main__":
     test_11s_fits_one_more()
     test_guard_reverts_on_4_closed()
     test_guard_keeps_11_at_3_closed()
     test_closed_before_the_change_not_counted()
+    test_115s_and_6_closed()
     print("ok")

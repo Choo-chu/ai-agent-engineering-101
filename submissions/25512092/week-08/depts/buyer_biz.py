@@ -140,6 +140,7 @@ def summarize(shop, memory):
 
 
 AVOIDED = []          # the shops depts/shop_avoid kept out of the last choose() (missed orders)
+BACKED = []           # the shops it put at the back of the last choose()'s candidates (11/12 ~09:10)
 RELEASED = set()      # shops out of the permanent "cheated me before" block (shop_avoid.json released)
 
 
@@ -154,6 +155,7 @@ def choose(shops, memory, item, scores, reorder=None):
         log(f"[avoid] released list failed: {type(e).__name__}: {e}")
     infos = [summarize(s, memory) for s in shops if s.get("name") and s.get("url")]
     AVOIDED.clear()
+    BACKED.clear()
     back = {}
     try:                                              # 11/11 ~21:00 (person): depts/shop_avoid, on top of "cheated me"
         from depts import shop_avoid
@@ -183,6 +185,7 @@ def choose(shops, memory, item, scores, reorder=None):
             allowed = reorder(allowed)
         except Exception as e:                        # never lose the order over it: shop-score order
             log(f"[shop_order] failed: {type(e).__name__}: {e}")
+    BACKED[:] = [c["name"] for c in allowed if c["name"] in back]    # 11/12 ~09:10: missed orders count them too
     if back and len(allowed) > 1:                     # 11/11 ~21:00: one item_mismatch in 24 h -> the back
         allowed = [c for c in allowed if c["name"] not in back] + [c for c in allowed if c["name"] in back]
         for n, why in back.items():
@@ -848,10 +851,15 @@ def main():
               "deal": res["deal"], "flag": flag, "stars": stars})
     log(f"stars {stars} ({flag}): {review}")
     refused = res["deal"] and refuse_receipt(flag, res, chosen["name"], args.item, order.get("order"), log=log)
-    if AVOIDED and not (res["deal"] and not refused):  # 11/11 ~21:00: an avoided shop had it, the order ended without
-        try:                                          # a deal -> a missed order
+    try:                                              # 11/12 ~09:10: back shops never reached count as well
+        tried = {c["name"] for c in tries[:tries.index(chosen) + 1]} if chosen in tries else {chosen["name"]}
+        untried_back = [n for n in BACKED if n not in tried]
+    except Exception:
+        untried_back = []
+    if (AVOIDED or untried_back) and not (res["deal"] and not refused):  # 11/11 ~21:00: an avoided shop had it, the
+        try:                                          # order ended without a deal -> a missed order
             from depts import shop_avoid
-            shop_avoid.note_missed(order.get("order"), args.item, list(AVOIDED), flag)
+            shop_avoid.note_missed(order.get("order"), args.item, list(AVOIDED), flag, back=untried_back)
         except Exception:
             pass
     out = {"shop": chosen["url"], "receipt": res["receipt"] if res["deal"] and not refused else None,

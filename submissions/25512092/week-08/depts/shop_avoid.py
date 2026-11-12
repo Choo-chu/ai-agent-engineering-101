@@ -31,7 +31,8 @@ DB = os.path.join(HERE, "market.db")
 EVERY_S = 120
 DEFAULTS = {"avoid_h": 24, "item_window_h": 24, "item_avoid_n": 2, "grade_window_h": 48, "grade_min_claims": 5,
             "grade_max_false": 0.20, "inj_window_h": 24, "inj_avoid_n": 2,
-            "guard_after_h": 2, "guard_h": 2, "guard_min_orders": 100, "rate_drop": 0.05, "dph_drop": 0.20}
+            "guard_after_h": 2, "guard_h": 2, "guard_min_orders": 100, "rate_drop": 0.05, "dph_drop": 0.20,
+            "missed_h": 2, "missed_min": 5}
 
 
 def rules(path=None):
@@ -201,11 +202,13 @@ def current(state=None, now=None):
     return {s: v for s, v in state.get("shops", {}).items() if v["until"] > now}
 
 
-def note_missed(order, item, shops, outcome, path=None):
+def note_missed(order, item, shops, outcome, path=None, back=()):
+    """An order that ended without a deal while avoided shops were left out, or back-of-the-list shops were never
+    tried (11/12 ~09:10: both count)."""
     try:
         with open(path or MISSED, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"ts": round(time.time(), 1), "order": order, "item": item, "avoided": shops,
-                                "outcome": outcome}, ensure_ascii=False) + "\n")
+            f.write(json.dumps({"ts": round(time.time(), 1), "order": order, "item": item, "avoided": list(shops),
+                                "back": list(back), "outcome": outcome}, ensure_ascii=False) + "\n")
     except OSError:
         pass
 
@@ -222,14 +225,14 @@ def summary_line(now=None, t0=None):
     miss = missed_since(t0)
     per = {}
     for m in miss:
-        for s in m.get("avoided") or []:
+        for s in (m.get("avoided") or []) + (m.get("back") or []):
             per[s] = per.get(s, 0) + 1
     if not cur and not miss:
         return "회피 가게 없음 (영구 차단 '이전에 속임' 가게는 별도)"
     parts = [f"{s} [{'회피' if v['kind'] == 'avoid' else '맨 뒤'}] {v['reason']}, "
              f"{datetime.fromtimestamp(v['until']):%m-%d %H:%M}까지, 놓친 주문 {per.get(s, 0)}" for s, v in
              sorted(cur.items(), key=lambda x: -x[1]["until"])]
-    return (f"회피·맨 뒤 가게 {len(cur)}곳, 회피 때문에 놓친 주문 {len(miss)}건 (최근 {(now - t0) / 3600:.0f}시간): "
+    return (f"회피·맨 뒤 가게 {len(cur)}곳, 회피·맨 뒤 때문에 놓친 주문 {len(miss)}건 (최근 {(now - t0) / 3600:.0f}시간): "
             + ("; ".join(parts) if parts else "지금 회피 중인 가게 없음"))
 
 
@@ -241,35 +244,37 @@ def _sn_stats(t0, t1, path=None):
             "dph": sum(1 for e in R if e.get("paid_ok")) / h}
 
 
-def guard(now=None, r=None, sn_path=None, send=None, rules_path=None):
-    """A warning when the close rate or paid deals per hour dropped since the rules started (the shop_order guard's
-    way). Returns the reason or None. The base (6 h before the start) is kept in shop_avoid.json."""
+def guard(now=None, r=None, sn_path=None, send=None, rules_path=None, missed_path=None):
+    """The warning (person 11/12 ~09:10; replaces the close-rate / deals-per-hour drop warning of 11/11): only when
+    orders missed because of the avoid / back rules (logs/shop_avoid_missed.jsonl) reach missed_min (5) in the last
+    missed_h (2) hours; at most one warning per missed_h. The rules themselves are unchanged. Returns the reason or
+    None. (sn_path is kept for old callers and unused.)"""
     now = now or time.time()
     rp = rules_path or RULES
     raw = _load(rp, {})
     r = rules(rp) if r is None else r
-    if not r or not raw.get("since") or now - raw["since"] < r["guard_after_h"] * 3600:
+    if not r or not raw.get("since"):
         return None
     if now - raw.get("guard_checked", 0) < 600:
         return None
-    base = raw.get("base") or _sn_stats(raw["since"] - 6 * 3600, raw["since"], sn_path)
-    s = _sn_stats(now - r["guard_h"] * 3600, now, sn_path)
-    raw.update(guard_checked=round(now), base=base)
+    h, need = r["missed_h"], r["missed_min"]
+    miss = [m for m in missed_since(now - h * 3600, missed_path) if m.get("ts", 0) <= now]
+    raw["guard_checked"] = round(now)
     why = None
-    if s["n"] >= r["guard_min_orders"] and s["rate"] is not None and base.get("rate") is not None:
-        if s["rate"] < base["rate"] - r["rate_drop"]:
-            why = (f"성사율 {s['rate']:.1%} < 적용 전 {base['rate']:.1%} - {r['rate_drop'] * 100:.0f}%p "
-                   f"(최근 {r['guard_h']}시간 {s['n']}건)")
-        elif s["dph"] < base["dph"] * (1 - r["dph_drop"]):
-            why = (f"시간당 deals {s['dph']:.1f} < 적용 전 {base['dph']:.1f} x {1 - r['dph_drop']:.0%} "
-                   f"(최근 {r['guard_h']}시간 {s['n']}건)")
-    if why and now - raw.get("warned", 0) >= 6 * 3600:
-        raw["warned"] = round(now)
+    if len(miss) >= need:
+        per = {}
+        for m in miss:
+            for s in (m.get("avoided") or []) + (m.get("back") or []):
+                per[s] = per.get(s, 0) + 1
+        top = ", ".join(f"{s} {n}" for s, n in sorted(per.items(), key=lambda x: -x[1])[:5])
+        why = f"회피·맨 뒤 때문에 놓친 주문 최근 {h}시간 {len(miss)}건 (기준 {need}건 이상; 가게별 {top})"
+    if why and now - raw.get("missed_warned", 0) >= h * 3600:
+        raw["missed_warned"] = round(now)
         try:
             if send is None:
                 import alerts
                 send = alerts.send
-            send("urgent", "shop_avoid_drop", f"가게 회피 규칙 뒤 buyer {why}. 규칙은 켜진 채, 끌지 판단 필요. 지금 "
+            send("urgent", "shop_avoid_drop", f"가게 회피 규칙: {why}. 규칙은 켜진 채, 끌지 판단 필요. 지금 "
                  + summary_line(now, raw["since"]))
         except Exception:
             pass
