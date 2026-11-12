@@ -1,20 +1,20 @@
 {
  "metrics": {
-  "sales_without_cost": 14,
-  "receipts_unpaid": 60,
-  "decisions_logged": 7661,
-  "refresh_age_s": 27
+  "sales_without_cost": 16,
+  "receipts_unpaid": 75,
+  "decisions_logged": 8385,
+  "refresh_age_s": 14
  },
  "issues": [
   {
    "level": "warn",
-   "text": "14 of my sales have no recorded unit cost",
+   "text": "16 of my sales have no recorded unit cost",
    "refs": []
   }
  ],
  "dept": "qc",
- "ts": 1794408903,
- "policy_version": 23,
+ "ts": 1794495452,
+ "policy_version": 25,
  "window_h": 6,
  "requests": []
 }
