@@ -1,0 +1,18 @@
+{
+ "enabled": true,
+ "since": 1794460609,
+ "applied": [
+  "C",
+  "B"
+ ],
+ "B_min_margin": 0.06,
+ "C_share": 1.2,
+ "base": {
+  "n": 63,
+  "cost": 35875897
+ },
+ "max_add_n": 10,
+ "max_add_cost": 5000000,
+ "check_h": 3,
+ "why": "person 11/12 ~14:20: idle cash; of A-D (24 h simulation) the best two by expected profit / 12 h+ unsold increase at cost, normal goods first when close: C (hot fast normal goods my_share 0.8 -> 1.2) and B (high-price margin filter 8% -> 6% for SKUs my shop has sold); guard: 12 h+ unsold high-price +10 units or +5,000,000 over the value when applied -> both off + urgent Telegram; 3 h report"
+}

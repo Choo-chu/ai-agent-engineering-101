@@ -123,7 +123,7 @@ def excluded():
         return {}
 
 
-def make_plan(inv, units, catalog, budget, log):
+def make_plan(inv, units, catalog, budget, log, record=True):
     """The buy lines for this budget (unchanged rules; moved out of main so cap_record can run it without the cap)."""
     held, held_high = {}, 0
     stats0 = load_stats()
@@ -139,6 +139,11 @@ def make_plan(inv, units, catalog, budget, log):
             held_high += u.get("cost", 0) > HIGH_MIN and u.get("unit") not in oc
     if oc:
         log(f"[overcost] {len(oc)} high-price units with cost above the market average: not counted in high_max")
+    from depts import wide_trial                  # 11/12 ~14:20 (person): B / C on, off by its guard (wide_trial.json)
+    try:
+        wide_trial.guard(units, log=log)
+    except Exception as e:
+        log(f"[wide trial] guard failed: {type(e).__name__}: {e}")
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
     (MIN_MARGIN, MY_SHARE, WANTED_QTY, MIN_SOLD_30M, FOOD_MIN_SHELF_H, MAX_BREAK, TRIAL_MARKET_30M,
      TRIAL_QTY) = policy.values("purchasing", "min_margin", "my_share", "wanted_qty", "min_sold_30m",
@@ -204,6 +209,12 @@ def make_plan(inv, units, catalog, budget, log):
     except Exception as e:
         log(f"[hot fast] failed: {type(e).__name__}: {e}")
         fast_share = {}
+    base_share, c_extra, b_skus = dict(fast_share), {}, set()
+    try:                                         # 11/12 ~14:20 (person) C: normal goods on it 0.8 -> 1.2 (wide_trial.json)
+        fast_share = wide_trial.c_shares(fast_share, lambda k: (catalog.get(k) or {}).get("list_price", 0) * COST_SHARE.get(
+            (catalog.get(k) or {}).get("kind", "goods"), 0.6) * surge.get(k, 1.0) > HIGH_MIN)
+    except Exception as e:
+        log(f"[wide trial] C failed: {type(e).__name__}: {e}")
     no_buy = excluded()
     from depts import high_cost_exclude           # 11/09 ~23:40: our 48 h cost > 95% of the market average
     no_buy = dict(no_buy, **{k: 'high_cost_exclude' for k in high_cost_exclude.current(log=log)})
@@ -234,8 +245,12 @@ def make_plan(inv, units, catalog, budget, log):
         cost = c["list_price"] * COST_SHARE.get(kind, 0.6) * surge.get(sku, 1.0)
         # 11/11 ~14:50 (person): high price (cost > HIGH_MIN) needs 8% (high_margin.json), the rest MIN_MARGIN (10%)
         mm = high_margin(MIN_MARGIN) if cost > HIGH_MIN else MIN_MARGIN
+        if cost > HIGH_MIN:                       # 11/12 ~14:20 (person) B: 6% for a SKU my shop has sold
+            mm0, mm = mm, wide_trial.b_margin(sku, mm)
         if cost > HIGH_MAX or avg < cost * (1 + mm):
             continue
+        if cost > HIGH_MIN and avg < cost * (1 + mm0):
+            b_skus.add(sku)
         if sofa_rules.on() and sofa_rules.is_sofa(sku) and kind != "food" and cost >= sofa_rules.MIN_COST \
                 and not sofa_rules.buy_ok(sku, cost)[0]:   # sofa buying rule E
             continue
@@ -275,6 +290,9 @@ def make_plan(inv, units, catalog, budget, log):
             if sku not in hot and not forum or (s["sold_30m"] < MIN_SOLD_30M and not forum):
                 continue
             target = max(math.ceil(s["sold_30m"] * (20 / 30) * fast_share.get(sku, MY_SHARE)), WANTED_QTY if forum else 0)
+            if fast_share.get(sku) != base_share.get(sku):   # C: the units over the 0.8 target
+                c_extra[sku] = target - max(math.ceil(s["sold_30m"] * (20 / 30) * base_share.get(sku, MY_SHARE)),
+                                            WANTED_QTY if forum else 0)
             tier, qty = "low", min(MAX_QTY, target - held.get(sku, 0))
         if wide and tier == "low":                # bundle 2 (13): spread, at most BREADTH_MAX held per SKU
             qty = min(qty, BREADTH_MAX - held.get(sku, 0))
@@ -347,6 +365,10 @@ def make_plan(inv, units, catalog, budget, log):
         plan = normal_min.arrange(plan, is_low, LM.MAX_LINES, nm["min_lines"])
         log(f"[normal min] normal lines per run: " + ", ".join(
             str(sum(1 for p in plan[i:i + LM.MAX_LINES] if is_low(p["sku"]))) for i in range(0, len(plan), LM.MAX_LINES)))
+    if record:                                    # not for cap_record's plan without the cap
+        wide_trial.note([{"opt": "B", "sku": p["sku"], "qty": p["qty"]} for p in plan if p["sku"] in b_skus]
+                        + [{"opt": "C", "sku": p["sku"], "qty": min(p["qty"], c_extra[p["sku"]])} for p in plan
+                           if c_extra.get(p["sku"], 0) > 0], log)
     return plan
 
 
@@ -460,7 +482,7 @@ def cap_record(inv, units, catalog, budget, plan, case):
     if free <= 0 or free <= budget + 1:
         return                                              # the cap did not bind: cash did, or nothing
     try:
-        free_plan = make_plan(inv, units, catalog, free, lambda m: None)
+        free_plan = make_plan(inv, units, catalog, free, lambda m: None, record=False)
     except Exception as e:
         log(f"[cap] plan without the cap failed: {e}")
         free_plan = []

@@ -69,7 +69,7 @@ def run(name, label):
     out["buy"] = {}
     for tag, b in (("real", real), ("free", free), ("1M", 1_000_000)):
         lines = []
-        plan = restock.make_plan(inv, inv["units"], cat, b, lines.append) if b > 0 else []
+        plan = restock.make_plan(inv, inv["units"], cat, b, lines.append, record=False) if b > 0 else []
         out["buy"][tag] = {"budget": int(b), "plan": plan, "log": lines}
 
     endgame_t = pricing.ROUND_END - 40 * 3600
