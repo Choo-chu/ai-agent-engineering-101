@@ -269,9 +269,17 @@ WANT = re.compile(r"구합니다|구해요|찾습니다|찾아요|삽니다|want
 SKU_RE = re.compile(r"\bG[0-9a-f]{8}\b")   # 11/11 ~21:50: was backspace characters (never matched)
 FORUM_PATH = os.path.join(HERE, ".market", "forum.json")
 BAD_DISHONEST = 2          # a shop with this many dishonest grade claims is avoided ...
-BAD_DISHONEST_SHARE = 0.05  # ... and only when they are at least this share of its settles (person's decision 11/07
+BAD_DISHONEST_SHARE = 0.40  # 11/14 ~03:00 (person): 0.05 -> 0.40 with the shop_avoid grade rule (20-40%: negotiate, grade
+#                            one lower; ovotnwjd-maker 12% was blocked). ... at least this share of its settles (person's decision 11/07
 #                            ~16:10: a count alone blocked Kiro729 / 11im / winun1127 at 0.1-0.5% untrue claims)
 BAD_BROKEN_SHARE = 0.10    # ... or with this share of its sold units broken (at least 3)
+
+
+def is_bad(f):
+    """A shop the buyer avoids on the ledger: dishonest grade claims (BAD_DISHONEST and BAD_DISHONEST_SHARE) or broken units."""
+    d = f["dishonest"] + f.get("forum_dishonest", 0)
+    return bool((d >= BAD_DISHONEST and d / max(f["deals"], 1) >= BAD_DISHONEST_SHARE)
+                or (f["broken"] >= 3 and f["broken"] / max(f["deals"], 1) >= BAD_BROKEN_SHARE))
 
 
 def catalog_leaves():
@@ -373,9 +381,7 @@ def signals(db, names):
                 flag(url, "forum_dishonest")
                 flag(names.get(url), "forum_dishonest")
     for f in flags.values():
-        d = f["dishonest"] + f["forum_dishonest"]
-        f["bad"] = ((d >= BAD_DISHONEST and d / max(f["deals"], 1) >= BAD_DISHONEST_SHARE)
-                    or (f["broken"] >= 3 and f["broken"] / max(f["deals"], 1) >= BAD_BROKEN_SHARE))
+        f["bad"] = is_bad(f)
     sku_n = {sku: n for sku, n in db.execute("SELECT sku, COUNT(*) FROM settles GROUP BY sku HAVING COUNT(*) >= 5")}
     grade_break = {}                              # per grade: breaks / units sold, over SKUs that ever broke;
     sold = dict(db.execute("SELECT grade, COUNT(*) FROM settles WHERE sku IN (SELECT DISTINCT sku FROM broken) "

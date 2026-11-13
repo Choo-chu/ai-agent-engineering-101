@@ -230,6 +230,35 @@ def test_cleared_shop():
     assert got == ["fine", "ry"] and not avoided, (got, avoided)            # after the clear: back again
 
 
+def test_grade_40():
+    """11/14 ~03:00 (person): avoid only over 40% untrue claims; 20-40%: negotiate (the grade one lower, grade_rule);
+    the ledger block (market_db.is_bad, BAD_DISHONEST_SHARE 0.40) the same: ovotnwjd-maker 37/302 negotiates,
+    elm-street 78/85 stays blocked."""
+    import market_db
+    p = setup(settles=[(NOW - 3600, "mid", 0)] * 3 + [(NOW - 3600, "mid", 1)] * 7              # 30%: not avoided
+              + [(NOW - 3600, "liar", 0)] * 3 + [(NOW - 3600, "liar", 1)] * 2)                # 60%: avoided
+    p["RULES"] = tmp_json({"enabled": True, "since": NOW - 60, "grade_max_false": 0.40}, "avoid40")
+    flags = {"ovotnwjd-maker": {"deals": 302, "dishonest": 37, "forum_dishonest": 0, "broken": 1},
+             "elm-street": {"deals": 85, "dishonest": 78, "forum_dishonest": 0, "broken": 0}}
+    for f in flags.values():
+        f["bad"] = market_db.is_bad(f)
+    with mock.patch.dict(B.SHOP_FLAGS, flags, clear=True):
+        got, avoided = choose(p, ["mid", "liar", "ovotnwjd-maker", "elm-street"])
+    assert got == ["mid", "ovotnwjd-maker"] and avoided == ["liar"], (got, avoided)
+    # cleared: a shop tripped before the cleared ts is out of the avoid list at once
+    p2 = setup(settles=[(NOW - 3600, "x", 0)] * 5)
+    choose(p2, ["x"])
+    rules = json.load(open(p2["RULES"], encoding="utf-8"))
+    rules["cleared"] = {"x": NOW + 1}
+    json.dump(rules, open(p2["RULES"], "w", encoding="utf-8"))
+    st = A._drop_cleared(A._load(p2["STATE"], {"shops": {}}), p2["RULES"])
+    assert "x" not in st["shops"], st
+    # the grade one lower for a shop at >= 20% untrue (grade_rule.effective, min_deals 20)
+    from depts import grade_rule
+    g, why = grade_rule.effective("A", "mid30", {"mid30": {"deals": 100, "dishonest": 30}}, dict(grade_rule.DEFAULT))
+    assert g == "B", why
+
+
 if __name__ == "__main__":
     test_item_mismatch()
     test_grade_claims()
@@ -242,4 +271,5 @@ if __name__ == "__main__":
     test_item_draft()
     test_wrong_item_not_accepted()
     test_released_and_amount_rule()
+    test_grade_40()
     print("ok")
