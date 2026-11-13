@@ -8,7 +8,7 @@
   "food_min_shelf_h": 24,
   "max_break": 0.15,
   "perishable_trial_market_30m": 3,
-  "perishable_trial_qty": 2,
+  "perishable_trial_qty": 3,
   "sofa_trial_start": 1793951508,
   "sofa_trial_end": 1794797940,
   "high_max": 200,
@@ -44,8 +44,8 @@
   "min_offers": 3,
   "first_offer": 0.6
  },
- "version": 25,
- "ts": 1794495179,
- "by": "person",
- "reason": "person 11/13 ~00:00: high SKU 1 -> 2, high_max 100 -> 200"
+ "version": 26,
+ "ts": 1794531299,
+ "by": "analyst+person",
+ "reason": "analyst #87 approved: purchasing.perishable_trial_qty -> 3"
 }
