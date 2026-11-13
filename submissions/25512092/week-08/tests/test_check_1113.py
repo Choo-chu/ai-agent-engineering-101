@@ -101,6 +101,29 @@ def test_build():
     assert "적용 전" in off and "9. 구매량 변화" not in off, off
 
 
+def kit_logs():
+    """11/13 ~13:40: two kit logs with HH:MM:SS only - yesterday 23:30 (outside), then 08:00 / 11:00 / 12:30 today."""
+    a, b = tmp_json({}, "kit1"), tmp_json({}, "kit2")
+    with open(a, "w", encoding="utf-8") as f:
+        f.write("23:30:00 [acp] not paying: grade C, the policy accepts ['A', 'B']\n23:59:00 [buyer] x\n")
+    with open(b, "w", encoding="utf-8") as f:
+        f.write("00:01:00 [buyer] x\n08:00:00 [acp] not paying: grade C, the policy accepts ['A', 'B']\n"
+                "11:00:00 [acp] not paying: 162.85 h of shelf life left, the policy asks for 360.0\n"
+                "12:30:00 [acp] not paying: grade C, the policy accepts ['A', 'B']\n12:59:00 [acp] paid 100\n")
+    return [a, b]
+
+
+def test_acp():
+    t = C.acp_text(NOW, kit_logs())
+    assert t == ("14. kit 결제 거절: 2건 vs 1건; grade C, the policy accepts ['A', 'B'] 1 vs 1, "
+                 "N h of shelf life left, the policy asks for N 1 vs 0"), t
+    assert [round(ts) for ts, _ in C.acp_lines(NOW, kit_logs())] == [NOW - 13.5 * 3600, NOW - 5 * 3600, NOW - 2 * 3600,
+                                                                      NOW - 1800]
+    t = C.build(NOW, db_path=make_db(), board=BOARD, units=[], sofa_numbers=sofa_numbers, is_sofa=lambda s: False,
+                a3_path=A3, catalog=CAT, shop_scores=SCORES, board_path=BOOK, kit_logs=kit_logs())
+    assert "14. kit 결제 거절: 2건 vs 1건" in t, t
+
+
 def test_once():
     p = make_db()
     sent = []
@@ -116,5 +139,6 @@ def test_once():
 
 if __name__ == "__main__":
     test_build()
+    test_acp()
     test_once()
     print("ok")

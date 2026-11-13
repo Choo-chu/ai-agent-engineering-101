@@ -12,6 +12,7 @@ unchanged). One Telegram ("daily") at every 3rd hour (12, 15, 18 ...), each numb
   9. inextro / cheapest-in-town / nocha12 purchases per hour since that warranty went live vs the 24 h before
   10-13 (11/13 ~13:10): student saved rank with the gaps above / below, my buys' score and count by grade, top shops
      by my saved score (grade_rule.shop_scores, the buyer's shop order), Book per hour
+  14 (11/13 ~13:40): the kit's payment refusals ('[acp] not paying') by reason, from logs/market-kit.log(.1)
 Read-only.
     python tools/check_1113.py [--once | --dry]
 """
@@ -97,7 +98,7 @@ def text(now, cur, prev, sofa3, sofa3p, sofa48, cash_now, cash_prev, aged, guard
 
 
 def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=None, a3_path=None, catalog=None,
-          shop_scores=None, board_path=None):
+          shop_scores=None, board_path=None, kit_logs=None):
     import alerts
     from depts import wide_trial
     sofa_numbers = sofa_numbers or alerts.sofa_numbers
@@ -118,7 +119,7 @@ def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=
     r = a3_warranty.rules(a3_path)
     out += "\n" + a3_text(now, r, a3(t0, now, set(r.get("skus") or {}), db_path),
                           a3(tp, t0, set(r.get("skus") or {}), db_path), db_path)
-    return out + "\n" + buyer_text(now, board, db_path, catalog, shop_scores, board_path)
+    return out + "\n" + buyer_text(now, board, db_path, catalog, shop_scores, board_path, kit_logs)
 
 
 def saved_line(j, me=ME):
@@ -173,7 +174,7 @@ def book_rate(t0, t1, path=None, me=ME):
     return (b["s"][me]["book"] - a["s"][me]["book"]) / ((b["ts"] - a["ts"]) / 3600)
 
 
-def buyer_text(now, board, db_path=None, catalog=None, shop_scores=None, board_path=None):
+def buyer_text(now, board, db_path=None, catalog=None, shop_scores=None, board_path=None, kit_logs=None):
     """11/13 ~13:10 (person): 10. student saved 2nd / 3rd gap, 11. score and deals by grade, 12. top shops by my
     score, 13. Book per hour (3 h vs the 3 h before)."""
     t0, tp = now - H * 3600, now - 2 * H * 3600
@@ -200,7 +201,59 @@ def buyer_text(now, board, db_path=None, catalog=None, shop_scores=None, board_p
         out.append(f"13. Book 시간당: {r(a)} vs {r(b)}")
     except OSError:
         out.append("13. Book 시간당: 읽기 실패")
+    try:
+        out.append(acp_text(now, kit_logs))
+    except OSError:
+        out.append("14. kit 결제 거절: 로그 읽기 실패")
     return "\n".join(out)
+
+
+KIT_LOGS = [os.path.join(HERE, "logs", "market-kit.log.1"), os.path.join(HERE, "logs", "market-kit.log")]
+
+
+def acp_lines(now, paths=None):
+    """[(ts, line)] of the kit's '[acp] not paying: <reason>' lines. The log has only HH:MM:SS: dated backwards from
+    the newest line (today, or yesterday when its clock is past now), one day earlier at each wrap."""
+    import re
+    rows = []
+    for p in paths or KIT_LOGS:
+        if not os.path.exists(p):
+            continue
+        with open(p, encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                m = re.match(r"(\d\d):(\d\d):(\d\d) ", ln)
+                if m:
+                    rows.append((int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3]), ln))
+    out = []
+    d = datetime.fromtimestamp(now)
+    day0 = datetime(d.year, d.month, d.day).timestamp()
+    if rows and rows[-1][0] > (now - day0) + 300:
+        day0 -= 86400
+    nxt = None
+    for sec, ln in reversed(rows):
+        if nxt is not None and sec > nxt + 3600:
+            day0 -= 86400
+        nxt = sec
+        if "[acp] not paying:" in ln:
+            out.append((day0 + sec, ln))
+    return out[::-1]
+
+
+def acp_reasons(t0, t1, lines):
+    """{reason with numbers as N: count} of the kit's payment refusals in [t0, t1)."""
+    import re
+    from collections import Counter
+    return Counter(re.sub(r"\d+(?:\.\d+)?", "N", ln.split("not paying:", 1)[1].strip())[:60]
+                   for ts, ln in lines if t0 <= ts < t1)
+
+
+def acp_text(now, paths=None):
+    """14. (11/13 ~13:40) the kit's payment refusals by reason, 3 h vs the 3 h before."""
+    lines = acp_lines(now, paths)
+    cur, prev = acp_reasons(now - H * 3600, now, lines), acp_reasons(now - 2 * H * 3600, now - H * 3600, lines)
+    keys = sorted(set(cur) | set(prev), key=lambda k: -(cur[k] + prev[k]))
+    return (f"14. kit 결제 거절: {sum(cur.values())}건 vs {sum(prev.values())}건"
+            + ("; " + ", ".join(f"{k} {cur[k]} vs {prev[k]}" for k in keys[:5]) if keys else ""))
 
 
 def a3(t0, t1, skus, db_path=None):
