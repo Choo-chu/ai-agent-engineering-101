@@ -234,9 +234,11 @@ Reply with ONE JSON object only, no other text:
 
 SHELF_RE = [re.compile(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:of\s+)?shelf life left", re.I),
             re.compile(r"shelf life left:?\s*(\d+(?:\.\d+)?)\s*h", re.I),
-            re.compile(r"lasts\s+(\d+(?:\.\d+)?)\s+more hours", re.I)]
+            re.compile(r"lasts\s+(\d+(?:\.\d+)?)\s+more hours", re.I),
+            re.compile(r"shelf_left\s*[=:]\s*(\d+(?:\.\d+)?)\s*h", re.I)]      # 11/13 ~13:40: "shelf_left=163h"
 WARRANTY_RE = re.compile(r"(\d+(?:\.\d+)?)[- ]?(?:h|hours?)\b[^.]{0,12}warranty|warranty[^.]{0,20}?(\d+(?:\.\d+)?)\s*h", re.I)
-GRADE_RE = re.compile(r"grade\s+([ABC])\b")
+GRADE_RE = re.compile(r"\bgrade\s*[=:]?\s*([ABC])\b", re.I)    # 11/13 ~13:40: also "grade=C", "Grade: C"
+ACCEPT_GRADES = ("A", "B")                                         # [14] goods without a warranty (main's accept)
 
 
 SKU_RE = re.compile(r"\bG[0-9a-f]{8}\b")
@@ -275,10 +277,12 @@ def find_cert(obj):
 
 
 def precheck(task, text, kind, need_hours):
-    """[2] before the first offer: would the kit's accept policy refuse this unit at checkout?
-    Food: shelf life left < the order's use_within_hours. Goods: grade C without a warranty ([14])."""
+    """[2] before the first offer: would the kit's accept policy refuse this unit at checkout? (-> the next shop)
+    Shelf life left (the certificate's, else what the shop states, e.g. "shelf_left=163h") < the order's
+    use_within_hours: any kind (11/13 ~13:40 person; main's accept min_hours_left is set for every order with it).
+    Goods: a stated grade (certificate, "grade C", "grade=C") outside ACCEPT_GRADES without a warranty ([14])."""
     cert = find_cert(task.get("status", {}).get("message")) or find_cert(task.get("artifacts"))
-    if kind == "food" and need_hours:
+    if need_hours:
         hours = None
         if cert and cert.get("expires_at"):
             hours = (cert["expires_at"] - time.time()) / 3600
@@ -297,8 +301,8 @@ def precheck(task, text, kind, need_hours):
             grade = m.group(1) if m else None
         w = WARRANTY_RE.search(text)
         has_w = bool(w) and float(w.group(1) or w.group(2) or 0) > 0
-        if grade == "C" and not has_w:
-            return "grade C without a warranty"
+        if grade and grade.upper() not in ACCEPT_GRADES and not has_w:
+            return f"grade {grade.upper()} without a warranty (accepts {'/'.join(ACCEPT_GRADES)})"
     return None
 
 
