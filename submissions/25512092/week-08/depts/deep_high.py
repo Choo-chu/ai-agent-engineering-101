@@ -93,6 +93,14 @@ def current(now=None, log=None, write=True):
     return out
 
 
+def outside_high_max(deep, r=None):
+    """11/13 ~15:40 (person): with "outside_high_max" in deep_high.json, the deep SKUs (this run's list) are out of the
+    high_max count and room - their held units do not count, their lines fill up to the deep limit whatever the room;
+    the other high-price SKUs keep high_max. Returns the set of those SKUs (empty while the rule is off)."""
+    r = rules() if r is None else r
+    return set(deep) if r.get("enabled") and r.get("outside_high_max") else set()
+
+
 def limit(sku, deep):
     """Units of `sku` a run may hold (high price): the deep limit, else 1 - or 2 for a SKU my shop sold in the last
     24 h while wide_trial's TWO is on (11/13 ~00:00, person)."""

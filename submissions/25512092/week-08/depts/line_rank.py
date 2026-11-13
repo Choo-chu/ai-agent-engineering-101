@@ -77,12 +77,13 @@ def pick(cands, left, high_room, n_free, log=print, min_low=0, is_low=None):
         if len(out) >= n_free:
             break
         q = min(c["qty"], int(left[c["tier"]] // c["cost"])) if c["cost"] > 0 else c["qty"]
-        if c["tier"] == "high":
+        room = c["tier"] == "high" and not c.get("free")   # 11/13 ~15:40: a deep SKU is out of high_max
+        if room:
             q = min(q, high_room)
         if q <= 0:
             continue
         left[c["tier"]] -= q * c["cost"]
-        if c["tier"] == "high":
+        if room:
             high_room -= q
         out.append({"sku": c["sku"], "qty": q})
         log(f"[rank] {c['sku']} ({c['tier']}, {c['src']}): expected profit {int(c['score']):,}, est. cost {int(c['cost']):,} "

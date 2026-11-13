@@ -133,12 +133,20 @@ def make_plan(inv, units, catalog, budget, log, record=True):
     except Exception as e:
         log(f"[overcost] failed: {type(e).__name__}: {e}")
         oc = set()
+    from depts import deep_high                   # 11/10 ~12:30: fast high-price SKUs held up to 2-7 (else 1)
+    deep = deep_high.current(log=log)
+    free = deep_high.outside_high_max(deep)       # 11/13 ~15:40 (person): deep SKUs out of the high_max count / room
+    n_free = 0
     for u in units:
         if u.get("grade") != "expired":
             held[u["sku"]] = held.get(u["sku"], 0) + 1
-            held_high += u.get("cost", 0) > HIGH_MIN and u.get("unit") not in oc
+            hi = u.get("cost", 0) > HIGH_MIN and u.get("unit") not in oc
+            n_free += hi and u["sku"] in free
+            held_high += hi and u["sku"] not in free
     if oc:
         log(f"[overcost] {len(oc)} high-price units with cost above the market average: not counted in high_max")
+    if free:
+        log(f"[deep high] {len(free)} deep SKUs ({n_free} high units held) out of high_max: filled to their deep limit")
     from depts import wide_trial                  # 11/12 ~14:20 (person): B / C on, off by its guard (wide_trial.json)
     try:
         wide_trial.guard(units, log=log)
@@ -218,9 +226,7 @@ def make_plan(inv, units, catalog, budget, log, record=True):
     no_buy = excluded()
     from depts import high_cost_exclude           # 11/09 ~23:40: our 48 h cost > 95% of the market average
     no_buy = dict(no_buy, **{k: 'high_cost_exclude' for k in high_cost_exclude.current(log=log)})
-    from depts import deep_high                   # 11/10 ~12:30: fast high-price SKUs held up to 2-5 (else 1)
-    deep = deep_high.current(log=log)
-    actual = top_high.last_costs()                # 11/12 ~09:50: "over 1.5M" on max(estimate, last actual supply cost)
+    actual =top_high.last_costs()                # 11/12 ~09:50: "over 1.5M" on max(estimate, last actual supply cost)
     from depts import line_rank                   # 11/09 ~14:35: lines after the request lines by expected profit
     rank = line_rank.on()
     if rank:
@@ -279,7 +285,9 @@ def make_plan(inv, units, catalog, budget, log, record=True):
                 if high_room > 0:
                     log(f"[guard] {s['name'] or sku}: {g} -> skip")
                 continue
-            tier, qty = "high", min(hold_max - held.get(sku, 0), high_room)
+            tier, qty = "high", hold_max - held.get(sku, 0)
+            if sku not in free:                   # 11/13 ~15:40: a deep SKU is not limited by high_max
+                qty = min(qty, high_room)
             if avg < cost * (1 + MIN_MARGIN):     # 11/11 ~14:50: in the 8-10% band only thanks to high_margin.json
                 band.append(sku)
         elif src == "breadth":                    # bundle 2 (13): a SKU I do not hold, 1-2 units
@@ -314,7 +322,8 @@ def make_plan(inv, units, catalog, budget, log, record=True):
             c0 = cands.get(sku)
             if c0 is None or qty > c0["qty"]:
                 sc = line_rank.score(avg, cost, qty, m24.get(sku, 0), fast_share.get(sku, MY_SHARE))
-                cands[sku] = {"sku": sku, "qty": qty, "tier": tier, "cost": cost, "score": sc, "src": src}
+                cands[sku] = {"sku": sku, "qty": qty, "tier": tier, "cost": cost, "score": sc, "src": src,
+                              "free": sku in free}
             continue
         if sku in line_of:                        # second time this run: keep one line, the larger qty
             i, first = line_of[sku]
@@ -322,14 +331,14 @@ def make_plan(inv, units, catalog, budget, log, record=True):
             q = max(q1, qty)
             log(f"[dedup] {sku} {first} {q1} / {src} {qty} -> {q}")
             left[tier] -= (q - q1) * cost
-            if tier == "high":
+            if tier == "high" and sku not in free:
                 high_room -= q - q1
             plan[i]["qty"] = q
             continue
         line_of[sku] = (len(plan), src)
         n_breadth += src == "breadth"
         left[tier] -= qty * cost
-        if tier == "high":
+        if tier == "high" and sku not in free:
             high_room -= qty
         plan.append({"sku": sku, "qty": qty})
         log(f"[{tier}] {s['name'] or sku}: sold {s['sold_5m']}/5m {s['sold_30m']}/30m, avg {avg}, est. cost {int(cost)}, "
