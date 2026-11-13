@@ -96,9 +96,13 @@ def test_build():
     assert "8. 고가 A등급 보증(3% 목록 1개, " in t, t
     assert "보증 협상 영수증 1/5 (20.0%) vs 0/0; 판매 1개 600,000 vs 0개 0; 환불 1건 600,000 vs 0건 0" in t, t
     assert "9. 구매량 변화" in t and "inextro 0.5 vs 0.0" in t, t
-    off = C.build(NOW, db_path=p, board=BOARD, units=[], sofa_numbers=sofa_numbers, is_sofa=lambda s: False,
+    # 15 (11/13 ~15:20): H1 any warranty since applied (2 h) vs the 2 h before vs the 24 h before x 2/24
+    assert ("15. 보증 SKU 1개(보증 유무 무관) 적용 후 2.0시간: 협상 10.0 영수증 1.0 (10.0%) 판매 1.0개 600,000 환불 1.0건 "
+            "600,000 | 직전 같은 길이: 협상 4.0 영수증 2.0 (50.0%) 판매 1.0개 550,000 환불 0.0건 0 | "
+            "적용 전 24시간을 2.0시간으로 환산: 협상 0.3 영수증 0.2 (50.0%) 판매 0.1개 45,833 환불 0.0건 0") in t, t
+    off =C.build(NOW, db_path=p, board=BOARD, units=[], sofa_numbers=sofa_numbers, is_sofa=lambda s: False,
                   a3_path=tmp_json({"enabled": False, "skus": {"H1": {}}}, "a3off"))
-    assert "적용 전" in off and "9. 구매량 변화" not in off, off
+    assert "적용 전" in off and "9. 구매량 변화" not in off and "15. 보증 SKU 적용 후 비교: 적용 전" in off, off
 
 
 def kit_logs():

@@ -13,6 +13,8 @@ unchanged). One Telegram ("daily") at every 3rd hour (12, 15, 18 ...), each numb
   10-13 (11/13 ~13:10): student saved rank with the gaps above / below, my buys' score and count by grade, top shops
      by my saved score (grade_rule.shop_scores, the buyer's shop order), Book per hour
   14 (11/13 ~13:40): the kit's payment refusals ('[acp] not paying') by reason, from logs/market-kit.log(.1)
+  15 (11/13 ~15:20, for 18:00): the 3% list SKUs (any warranty) since the A warranty went live vs the same length before,
+     and the 24 h before scaled to that length: negotiations, receipts, sales, refunds
 Read-only.
     python tools/check_1113.py [--once | --dry]
 """
@@ -119,6 +121,7 @@ def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=
     r = a3_warranty.rules(a3_path)
     out += "\n" + a3_text(now, r, a3(t0, now, set(r.get("skus") or {}), db_path),
                           a3(tp, t0, set(r.get("skus") or {}), db_path), db_path)
+    out += "\n" + a3_since_text(now, r, db_path)
     return out + "\n" + buyer_text(now, board, db_path, catalog, shop_scores, board_path, kit_logs)
 
 
@@ -256,20 +259,21 @@ def acp_text(now, paths=None):
             + ("; " + ", ".join(f"{k} {cur[k]} vs {prev[k]}" for k in keys[:5]) if keys else ""))
 
 
-def a3(t0, t1, skus, db_path=None):
+def a3(t0, t1, skus, db_path=None, warranty_only=True):
     """11/13 ~10:40: listed high-price A SKUs with a warranty in [t0, t1): negotiations, receipts, sales (n, revenue),
-    refunds (n, amount)."""
+    refunds (n, amount). warranty_only=False (11/13 ~15:20, item 15): the same SKUs with or without a warranty."""
     from depts.qc import HIGH_MIN
     if not skus:
         return {"nego": 0, "rec": 0, "sold": 0, "rev": 0, "ref": 0, "ref_amt": 0}
     q = ",".join("?" * len(skus))
+    w = " AND warranty_hours>0" if warranty_only else ""
     d = _db(db_path)
     try:
         nego, rec = d.execute(f"SELECT COUNT(*), COALESCE(SUM(outcome='receipt'), 0) FROM shop_deals WHERE sku IN ({q}) "
-                              "AND cost>? AND warranty_hours>0 AND outcome!='open' AND ts>=? AND ts<?",
+                              f"AND cost>?{w} AND outcome!='open' AND ts>=? AND ts<?",
                               (*skus, HIGH_MIN, t0, t1)).fetchone()
-        sold, rev = d.execute(f"SELECT COUNT(*), COALESCE(SUM(amount), 0) FROM settles WHERE shop=? AND sku IN ({q}) "
-                              "AND warranty_hours>0 AND ts>=? AND ts<?", (ME, *skus, t0, t1)).fetchone()
+        sold, rev = d.execute(f"SELECT COUNT(*), COALESCE(SUM(amount), 0) FROM settles WHERE shop=? AND sku IN ({q})"
+                              f"{w} AND ts>=? AND ts<?", (ME, *skus, t0, t1)).fetchone()
         ref, amt = d.execute(f"SELECT COUNT(*), COALESCE(SUM(refunded), 0) FROM broken WHERE shop=? AND sku IN ({q}) "
                              "AND refunded>0 AND ts>=? AND ts<?", (ME, *skus, t0, t1)).fetchone()
     finally:
@@ -298,6 +302,23 @@ def a3_text(now, r, cur, prev, db_path=None):
         out.append("9. 구매량 변화(우리 가게, 시간당; 보증 적용 후 vs 적용 전 24시간): "
                    + ", ".join(f"{k} {a[k]:.1f} vs {b[k]:.1f}" for k in BUYERS))
     return "\n".join(out)
+
+
+def a3_since_text(now, r, db_path=None):
+    """11/13 ~15:20 (person, for the 18:00 check): the 3% list SKUs (with or without a warranty) since the warranty went
+    live (L h) vs the same L h right before it, and the 24 h before it scaled to L h."""
+    since, skus = r.get("applied_ts"), set(r.get("skus") or {})
+    if not (since and r.get("enabled") and now > since and skus):
+        return "15. 보증 SKU 적용 후 비교: 적용 전"
+    L = now - since
+    a, b, c = (a3(since, now, skus, db_path, False), a3(since - L, since, skus, db_path, False),
+               a3(since - 86400, since, skus, db_path, False))
+    f = L / 86400
+    one = lambda x, k=1.0: (f"협상 {x['nego'] * k:.1f} 영수증 {x['rec'] * k:.1f}"
+                            + (f" ({x['rec'] / x['nego']:.1%})" if x["nego"] else "")
+                            + f" 판매 {x['sold'] * k:.1f}개 {x['rev'] * k:,.0f} 환불 {x['ref'] * k:.1f}건 {x['ref_amt'] * k:,.0f}")
+    return (f"15. 보증 SKU {len(skus)}개(보증 유무 무관) 적용 후 {L / 3600:.1f}시간: {one(a)} | 직전 같은 길이: {one(b)} | "
+            f"적용 전 24시간을 {L / 3600:.1f}시간으로 환산: {one(c, f)}")
 
 
 def main():
