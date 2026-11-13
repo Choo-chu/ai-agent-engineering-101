@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "tools"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolate import policy  # noqa: E402
+from _isolate import policy, tmp_json  # noqa: E402
 
 policy()
 import check_1113 as C  # noqa: E402
@@ -22,8 +22,11 @@ NOW = 1794542400.0                                      # 11/13 13:00 (sofa unit
 def make_db():
     p = os.path.join(tempfile.mkdtemp(), "m.db")
     d = sqlite3.connect(p)
-    d.execute("CREATE TABLE shop_deals (ts REAL, sku TEXT, cost INTEGER, outcome TEXT)")
-    d.execute("CREATE TABLE settles (ts REAL, shop TEXT, buyer TEXT, sku TEXT, amount INTEGER, unit TEXT)")
+    d.execute("CREATE TABLE shop_deals (ts REAL, sku TEXT, cost INTEGER, outcome TEXT, warranty_hours REAL)")
+    d.execute("CREATE TABLE settles (ts REAL, shop TEXT, buyer TEXT, sku TEXT, amount INTEGER, unit TEXT, warranty_hours REAL)")
+    d.execute("CREATE TABLE broken (ts REAL, shop TEXT, sku TEXT, refunded INTEGER)")
+    d.executemany("INSERT INTO broken VALUES (?,?,?,?)", [(NOW - 50, "choo-chu", "H1", 600_000),
+                                                         (NOW - 50, "choo-chu", "L1", 0)])   # no refund
     d.execute("CREATE TABLE my_stock (unit TEXT, cost INTEGER)")
     d.execute("CREATE TABLE cash (ts REAL, balance INTEGER, stock_cost INTEGER)")
     deals = ([(NOW - 100, "H1", 500_000, "receipt")] + [(NOW - 100, "H1", 500_000, "cancelled")] * 9
@@ -31,12 +34,13 @@ def make_db():
              + [(NOW - 100, "L1", 5_000, "receipt")]                     # low price: not counted
              + [(NOW - 100, "H1", 500_000, "open")]                      # open: not counted
              + [(NOW - 4 * 3600, "H1", 500_000, "receipt")] * 2 + [(NOW - 4 * 3600, "H1", 500_000, "cancelled")] * 2)
-    d.executemany("INSERT INTO shop_deals VALUES (?,?,?,?)", deals)
-    d.executemany("INSERT INTO settles VALUES (?,?,?,?,?,?)", [
-        (NOW - 100, "choo-chu", "inextro", "H1", 600_000, "u1"),
-        (NOW - 150, "choo-chu", "nocha12", "L1", 6_000, "u2"),
-        (NOW - 100, "other", "inextro", "H1", 610_000, "x"),             # another shop: not counted
-        (NOW - 4 * 3600, "choo-chu", "inextro", "H1", 550_000, "u3")])
+    deals = [x + ((48 if x[1] == "H1" and i < 5 else 0),) for i, x in enumerate(deals)]   # H1: 1 receipt + 4 warranty
+    d.executemany("INSERT INTO shop_deals VALUES (?,?,?,?,?)", deals)
+    d.executemany("INSERT INTO settles VALUES (?,?,?,?,?,?,?)", [
+        (NOW - 100, "choo-chu", "inextro", "H1", 600_000, "u1", 48),
+        (NOW - 150, "choo-chu", "nocha12", "L1", 6_000, "u2", 0),
+        (NOW - 100, "other", "inextro", "H1", 610_000, "x", 48),         # another shop: not counted
+        (NOW - 4 * 3600, "choo-chu", "inextro", "H1", 550_000, "u3", 0)])
     d.executemany("INSERT INTO my_stock VALUES (?,?)", [("u1", 500_000), ("u2", 5_000), ("u3", 500_000)])
     d.executemany("INSERT INTO cash VALUES (?,?,?)", [(NOW - 3 * 3600 - 60, 60_000_000, 90_000_000),
                                                       (NOW - 60, 55_000_000, 95_000_000)])
@@ -45,6 +49,7 @@ def make_db():
     return p
 
 
+A3 = tmp_json({"enabled": True, "applied_ts": NOW - 7200, "skus": {"H1": {"n": 40, "break": 0.02}}}, "a3")
 BOARD = {"players": [{"player": f"p{i}", "student": True, "student_total": 2 - i / 50, "student_shop": 0.7,
                       "student_buyer": 0.8} for i in range(12)]}
 BOARD["players"][9]["player"] = "Choo-chu"
@@ -57,7 +62,8 @@ def sofa_numbers(t0, t1):
 def test_build():
     p = make_db()
     units = [{"cost": 400_000, "supplied_at": NOW - 13 * 3600, "grade": "A"}, {"cost": 400_000, "supplied_at": NOW - 3600}]
-    t = C.build(NOW, db_path=p, board=BOARD, units=units, sofa_numbers=sofa_numbers, is_sofa=lambda s: s == "SOFA")
+    t = C.build(NOW, db_path=p, board=BOARD, units=units, sofa_numbers=sofa_numbers, is_sofa=lambda s: s == "SOFA",
+                a3_path=A3)
     assert "고가 2/12 (16.7%) vs 2/4 (50.0%)" in t, t
     assert "소파 1/2 (50.0%)" in t, t
     assert "inextro 1건 600,000 vs 1건" in t and "nocha12 1건 6,000" in t and "cheapest-in-town 0건" in t, t
@@ -66,6 +72,12 @@ def test_build():
     assert "12시간+ 미판매 고가: 1개 400,000" in t, t
     assert "10위/12" in t and "9위 p8" in t and "11위 p10" in t and "(+0.020)" in t and "(-0.020)" in t, t
     assert "48시간 환불 300,000 vs 이익 200,000" in t, t
+    assert "8. 고가 A등급 보증(3% 목록 1개, " in t, t
+    assert "보증 협상 영수증 1/5 (20.0%) vs 0/0; 판매 1개 600,000 vs 0개 0; 환불 1건 600,000 vs 0건 0" in t, t
+    assert "9. 구매량 변화" in t and "inextro 0.5 vs 0.0" in t, t
+    off = C.build(NOW, db_path=p, board=BOARD, units=[], sofa_numbers=sofa_numbers, is_sofa=lambda s: False,
+                  a3_path=tmp_json({"enabled": False, "skus": {"H1": {}}}, "a3off"))
+    assert "적용 전" in off and "9. 구매량 변화" not in off, off
 
 
 def test_once():
@@ -74,7 +86,7 @@ def test_once():
     import alerts
     real = C.build
     with mock.patch.object(C, "build", lambda now: real(NOW, db_path=p, board=BOARD, units=[],
-                                                           sofa_numbers=sofa_numbers, is_sofa=lambda s: False)), \
+                                                           sofa_numbers=sofa_numbers, is_sofa=lambda s: False, a3_path=A3)), \
             mock.patch.object(alerts, "send", lambda *a, **k: sent.append(a)), \
             mock.patch.object(C.time, "time", return_value=NOW - 3480), mock.patch.object(sys, "argv", ["x", "--once"]):
         C.main()

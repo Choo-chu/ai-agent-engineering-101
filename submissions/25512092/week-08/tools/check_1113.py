@@ -7,6 +7,9 @@ unchanged). One Telegram ("daily") at every 3rd hour (12, 15, 18 ...), each numb
   5. cash and stock at cost
   6. 12 h+ unsold high-price units (live inventory) vs the 60M guard
   7. student rank, student total, gap to the 9th and 11th
+  8. (11/13 ~10:40) high-price A SKUs on the 3% list (depts/a3_warranty.py) sold with a warranty: negotiations,
+     receipts, sales, refunds
+  9. inextro / cheapest-in-town / nocha12 purchases per hour since that warranty went live vs the 24 h before
 Read-only.
     python tools/check_1113.py [--once | --dry]
 """
@@ -91,7 +94,7 @@ def text(now, cur, prev, sofa3, sofa3p, sofa48, cash_now, cash_prev, aged, guard
     return "\n".join(out)
 
 
-def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=None):
+def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=None, a3_path=None):
     import alerts
     from depts import wide_trial
     sofa_numbers = sofa_numbers or alerts.sofa_numbers
@@ -106,8 +109,56 @@ def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=
         rk = rank(board)
     except Exception:
         rk = None
-    return text(now, cur, prev, sofa_numbers(t0, now), sofa_numbers(tp, t0), sofa_numbers(now - 48 * 3600, now),
-                cash(now, db_path), cash(t0, db_path), aged, guard, rk)
+    out = text(now, cur, prev, sofa_numbers(t0, now), sofa_numbers(tp, t0), sofa_numbers(now - 48 * 3600, now),
+               cash(now, db_path), cash(t0, db_path), aged, guard, rk)
+    from depts import a3_warranty
+    r = a3_warranty.rules(a3_path)
+    return out + "\n" + a3_text(now, r, a3(t0, now, set(r.get("skus") or {}), db_path),
+                                a3(tp, t0, set(r.get("skus") or {}), db_path), db_path)
+
+
+def a3(t0, t1, skus, db_path=None):
+    """11/13 ~10:40: listed high-price A SKUs with a warranty in [t0, t1): negotiations, receipts, sales (n, revenue),
+    refunds (n, amount)."""
+    from depts.qc import HIGH_MIN
+    if not skus:
+        return {"nego": 0, "rec": 0, "sold": 0, "rev": 0, "ref": 0, "ref_amt": 0}
+    q = ",".join("?" * len(skus))
+    d = _db(db_path)
+    try:
+        nego, rec = d.execute(f"SELECT COUNT(*), COALESCE(SUM(outcome='receipt'), 0) FROM shop_deals WHERE sku IN ({q}) "
+                              "AND cost>? AND warranty_hours>0 AND outcome!='open' AND ts>=? AND ts<?",
+                              (*skus, HIGH_MIN, t0, t1)).fetchone()
+        sold, rev = d.execute(f"SELECT COUNT(*), COALESCE(SUM(amount), 0) FROM settles WHERE shop=? AND sku IN ({q}) "
+                              "AND warranty_hours>0 AND ts>=? AND ts<?", (ME, *skus, t0, t1)).fetchone()
+        ref, amt = d.execute(f"SELECT COUNT(*), COALESCE(SUM(refunded), 0) FROM broken WHERE shop=? AND sku IN ({q}) "
+                             "AND refunded>0 AND ts>=? AND ts<?", (ME, *skus, t0, t1)).fetchone()
+    finally:
+        d.close()
+    return {"nego": nego, "rec": rec, "sold": sold, "rev": rev, "ref": ref, "ref_amt": amt}
+
+
+def buyers_per_h(t0, t1, db_path=None):
+    d = _db(db_path)
+    try:
+        return {b: d.execute("SELECT COUNT(*) FROM settles WHERE shop=? AND buyer=? AND ts>=? AND ts<?",
+                             (ME, b, t0, t1)).fetchone()[0] / max((t1 - t0) / 3600, 1e-9) for b in BUYERS}
+    finally:
+        d.close()
+
+
+def a3_text(now, r, cur, prev, db_path=None):
+    rate = lambda x: f"{x['rec']}/{x['nego']} ({x['rec'] / x['nego']:.1%})" if x["nego"] else "0/0"
+    since = r.get("applied_ts")
+    head = (f"8. 고가 A등급 보증(3% 목록 {len(r.get('skus') or {})}개, "
+            + (f"{datetime.fromtimestamp(since):%m-%d %H:%M} 적용" if since and r.get("enabled") else "적용 전") + "): ")
+    out = [head + f"보증 협상 영수증 {rate(cur)} vs {rate(prev)}; 판매 {cur['sold']}개 {cur['rev']:,} vs {prev['sold']}개 "
+                  f"{prev['rev']:,}; 환불 {cur['ref']}건 {cur['ref_amt']:,} vs {prev['ref']}건 {prev['ref_amt']:,}"]
+    if since and r.get("enabled") and now > since:
+        a, b = buyers_per_h(since, now, db_path), buyers_per_h(since - 86400, since, db_path)
+        out.append("9. 구매량 변화(우리 가게, 시간당; 보증 적용 후 vs 적용 전 24시간): "
+                   + ", ".join(f"{k} {a[k]:.1f} vs {b[k]:.1f}" for k in BUYERS))
+    return "\n".join(out)
 
 
 def main():

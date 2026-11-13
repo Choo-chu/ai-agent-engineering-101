@@ -182,6 +182,16 @@ WARRANTY_MIN_N = 5          # the SKU needs this many market sales before its br
 
 
 def warranty_hours(u, case, stats):
+    """The rules below (_rule_hours), plus 11/13 ~10:40 (person): a high-price A grade unit of a low-break SKU
+    (depts/a3_warranty.py, list recomputed hourly) gets its 48 h when the rules below give none."""
+    h = _rule_hours(u, case, stats)
+    if h:
+        return h
+    from depts import a3_warranty
+    return a3_warranty.hours(u, case) or h
+
+
+def _rule_hours(u, case, stats):
     """[16] 48 h for A-grade goods whose market break rate is known and at most 5%, in the normal case only."""
     import policy
     WARRANTY_H, WARRANTY_MAX_BREAK, WARRANTY_MIN_N = policy.values("sales", "warranty_h", "warranty_max_break",
