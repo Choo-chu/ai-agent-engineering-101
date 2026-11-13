@@ -105,6 +105,18 @@ def test_build():
     assert "적용 전" in off and "9. 구매량 변화" not in off and "15. 보증 SKU 적용 후 비교: 적용 전" in off, off
 
 
+def test_deals():
+    """11/13 ~18:10: 16. deals per hour (3 h vs 3 h before) and C since the 0.75 rule vs the same length before."""
+    p = make_db()
+    t = C.build(NOW, db_path=p, board=BOARD, units=[], sofa_numbers=sofa_numbers, is_sofa=lambda s: False,
+                a3_path=A3, catalog=CAT, shop_scores=SCORES, board_path=BOOK)
+    assert "16. 시간당 deals(우리 구매): 0.7 vs 0.3" in t, t
+    cur, prev = C.grade_scores(NOW - 3 * 3600, NOW, p, CAT), C.grade_scores(NOW - 6 * 3600, NOW - 3 * 3600, p, CAT)
+    s = C.deals_text(NOW, cur, prev, p, CAT, c_since=NOW - 1800)
+    assert s.endswith("C등급 0.75 기준 적용(12:30) 후 0.5시간 1건 0.154 (시간당 2.0) vs 직전 같은 길이 0건"), s
+    assert "C등급" not in C.deals_text(NOW, cur, prev, p, CAT, c_since=NOW + 60)
+
+
 def kit_logs():
     """11/13 ~13:40: two kit logs with HH:MM:SS only - yesterday 23:30 (outside), then 08:00 / 11:00 / 12:30 today."""
     a, b = tmp_json({}, "kit1"), tmp_json({}, "kit2")
@@ -144,5 +156,6 @@ def test_once():
 if __name__ == "__main__":
     test_build()
     test_acp()
+    test_deals()
     test_once()
     print("ok")

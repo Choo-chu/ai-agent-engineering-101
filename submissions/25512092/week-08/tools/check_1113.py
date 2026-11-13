@@ -15,6 +15,8 @@ unchanged). One Telegram ("daily") at every 3rd hour (12, 15, 18 ...), each numb
   14 (11/13 ~13:40): the kit's payment refusals ('[acp] not paying') by reason, from logs/market-kit.log(.1)
   15 (11/13 ~15:20, for 18:00): the 3% list SKUs (any warranty) since the A warranty went live vs the same length before,
      and the 24 h before scaled to that length: negotiations, receipts, sales, refunds
+  16 (11/13 ~18:10, for 21:00): my deals per hour, grade C deals / score since the C >= 0.75 rule vs the same length
+     before (10 and 11 already give the student saved 2nd / 3rd gap and the C deals / score of the 3 h)
 Read-only.
     python tools/check_1113.py [--once | --dry]
 """
@@ -208,7 +210,28 @@ def buyer_text(now, board, db_path=None, catalog=None, shop_scores=None, board_p
         out.append(acp_text(now, kit_logs))
     except OSError:
         out.append("14. kit 결제 거절: 로그 읽기 실패")
+    try:
+        out.append(deals_text(now, cur, prev, db_path, catalog))
+    except Exception as e:
+        out.append(f"16. 시간당 deals: 실패 {type(e).__name__}")
     return "\n".join(out)
+
+
+def deals_text(now, cur, prev, db_path=None, catalog=None, c_since=None):
+    """11/13 ~18:10 (person, for 21:00): my deals per hour (3 h vs the 3 h before) and grade C deals / score since the
+    C >= 0.75 rule (grade_rule.json c_min_ts) vs the same length before it."""
+    n = lambda x: sum(v[0] for v in x.values()) / H
+    s = f"16. 시간당 deals(우리 구매): {n(cur):.1f} vs {n(prev):.1f}"
+    if c_since is None:
+        from depts import grade_rule
+        c_since = grade_rule.rules().get("c_min_ts")
+    if c_since and now > c_since:
+        L = now - c_since
+        a, b = grade_scores(c_since, now, db_path, catalog), grade_scores(c_since - L, c_since, db_path, catalog)
+        f = lambda x: (f"{x['C'][0]}건 {x['C'][1]:.3f} (시간당 {x['C'][0] / (L / 3600):.1f})" if "C" in x else "0건")
+        s += (f"; C등급 0.75 기준 적용({datetime.fromtimestamp(c_since):%H:%M}) 후 {L / 3600:.1f}시간 {f(a)} vs 직전 같은 "
+              f"길이 {f(b)}")
+    return s
 
 
 KIT_LOGS = [os.path.join(HERE, "logs", "market-kit.log.1"), os.path.join(HERE, "logs", "market-kit.log")]
