@@ -89,6 +89,16 @@ def break_cap(list_price, grade, p, r=None):
     return max(0, int(list_price - need * margin))
 
 
+def c_cap(list_price, p, r=None):
+    """11/13 ~18:10 (person): grade C is taken only at a price whose expected new-saved score is >= C.min_score (0.75):
+    break_cap with that min_score (p = the break rate without a warranty, else 0). None while C.min_score is unset."""
+    r = rules() if r is None else r
+    ms = (r.get("C") or {}).get("min_score")
+    if ms is None or not list_price:
+        return None
+    return break_cap(list_price, "C", p or 0, dict(r, min_score=float(ms)))
+
+
 def shop_grades(db_path=None, now=None, path=None, max_age=CACHE_S):
     """{shop: share of its market sales (settles) of the last 24 h that were grade A or B}, cached max_age s."""
     now, path = now or time.time(), path or CACHE

@@ -493,6 +493,21 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                             f"(expected score >= {gr['min_score']})")
                         budget = bc
                         res["break_cap"] = bc
+                m_c = GRADE_RE.search(text) if g0 is None else None   # "grade=C" (grade_rule.claimed misses the "=")
+                if g == "C" or (m_c and m_c.group(1).upper() == "C"):   # 11/13 ~18:10 (person): C only at score >= 0.75
+                    has_w = bool(w and float(w.group(1) or w.group(2) or 0) > 0)
+                    cc = grade_rule.c_cap(grade_ctx.get("list"), None if has_w else grade_ctx.get("p"), gr)
+                    if cc is not None:
+                        res["c_cap"] = cc
+                        if cc <= 0:
+                            log(f"[grade C] expected score under {gr['C']['min_score']} at any price -> next shop")
+                            res["ended"], res["skip"] = "c_score", f"grade C: expected score < {gr['C']['min_score']}"
+                            client.cancel(tid)
+                            return res
+                        if cc < budget:
+                            log(f"[grade C] cap {budget} -> {cc} (expected score >= {gr['C']['min_score']}, list "
+                                f"{grade_ctx.get('list')})")
+                            budget = cc
             if no_warranty_cap is not None:           # 11/09 break rule: no warranty -> worth list x (1 - p)
                 w = WARRANTY_RE.search(text)
                 if not (w and float(w.group(1) or w.group(2) or 0) > 0) and no_warranty_cap < budget:
@@ -864,6 +879,8 @@ def main():
                 shop_order.note_no_stock(c["name"], sku if offers else None)     # 11/09 ~21:30: for shop_order
             if second_from is not None:
                 res["second_shop"] = True
+            if res.get("c_cap") and not res["deal"] and not res.get("skip"):   # 11/13 ~18:10: C not at score >= 0.75
+                res["skip"] = f"grade C: no deal at or under {res['c_cap']} (expected score >= 0.75)"
             if res.get("skip") and i + 1 < len(tries) and time.time() - start < DEADLINE - 60:
                 log(f"[choose] {c['name']} skipped ({res['skip']}), trying {tries[i + 1]['name']}")
                 continue
