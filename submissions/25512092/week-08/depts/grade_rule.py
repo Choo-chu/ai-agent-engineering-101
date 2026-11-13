@@ -62,10 +62,17 @@ def effective(grade, shop, flags, r=None):
     return grade, f"claimed {grade}"
 
 
+def a_as_bc(r=None):
+    """A uses B / C's moves: a_as_bc on and not locked (11/13 ~13:20 person: a_as_bc off, a_as_bc_locked keeps it off
+    whatever the saved guard writes)."""
+    r = rules() if r is None else r
+    return bool(r.get("a_as_bc")) and not r.get("a_as_bc_locked")
+
+
 def moves(grade, r=None):
     """{"first", "accept"} for the grade used (A -> B / C's while a_as_bc)."""
     r = rules() if r is None else r
-    key = "A" if grade == "A" and not r.get("a_as_bc") else "BC"
+    key = "A" if grade == "A" and not a_as_bc(r) else "BC"
     if grade == "C" and r.get("C"):               # 11/12 ~23:20 (person): C's own override over BC (first 0.55)
         return dict(r["BC"], **r["C"])
     return dict(r[key])
@@ -110,6 +117,56 @@ def shop_grades(db_path=None, now=None, path=None, max_age=CACHE_S):
     except OSError:
         pass
     return share
+
+
+SCORE_CACHE = os.path.join(HERE, "logs", "shop_scores.json")
+
+
+def shop_scores(db_path=None, now=None, path=None, max_age=CACHE_S, me="choo-chu", min_n=10, catalog=None):
+    """11/13 ~13:20 (person): ({shop: the saved score per deal I actually got from it in the last 24 h}, median).
+    Score of one buy = min(1, (list - paid) / (list - cost_share[grade] x list)) (grade unknown -> B). A shop with
+    under min_n buys gets the median of the shops with min_n or more; the median is also the default for shops not
+    bought from. Cached max_age s."""
+    now, path = now or time.time(), path or SCORE_CACHE
+    try:
+        with open(path, encoding="utf-8") as f:
+            c = json.load(f)
+        if now - c["ts"] < max_age:
+            return c["score"], c["median"]
+    except (OSError, ValueError, KeyError):
+        pass
+    if catalog is None:
+        from depts.substitute import catalog as _cat
+        catalog = _cat()
+    cs = rules().get("cost_share") or DEFAULT["cost_share"]
+    try:
+        d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=10)
+        try:
+            rows = d.execute("SELECT shop, sku, grade, amount FROM settles WHERE buyer=? AND ts>=? AND shop IS NOT NULL "
+                             "AND amount IS NOT NULL", (me, now - 86400)).fetchall()
+        finally:
+            d.close()
+    except sqlite3.Error:
+        return {}, 0.5
+    by = {}
+    for shop, sku, g, amt in rows:
+        lp = (catalog.get(sku) or {}).get("list_price")
+        if not lp:
+            continue
+        m = lp * (1 - cs.get(g if g in cs else "B", 0.5))
+        by.setdefault(shop, []).append(min(1.0, (lp - amt) / m) if m > 0 else 0.0)
+    full = {s: sum(v) / len(v) for s, v in by.items() if len(v) >= min_n}
+    vals = sorted(full.values())
+    med = (vals[len(vals) // 2] if len(vals) % 2 else (vals[len(vals) // 2 - 1] + vals[len(vals) // 2]) / 2) if vals else 0.5
+    score = {s: round(full.get(s, med), 4) for s in by}
+    try:
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"ts": now, "score": score, "median": round(med, 4), "n": {s: len(v) for s, v in by.items()}}, f)
+        os.replace(tmp, path)
+    except OSError:
+        pass
+    return score, round(med, 4)
 
 
 def order_first(cands, k, share, default=0.5):

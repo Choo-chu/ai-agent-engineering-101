@@ -85,6 +85,8 @@ def a_guard(b, alerts, decisions, now=None, path=None):
     now = now or time.time()
     path = path or grade_rule.RULES
     r = grade_rule.rules(path)
+    if r.get("a_as_bc_locked"):                     # 11/13 ~13:20 (person): A switch off and never on again
+        return None
     sw = saved_guard.a_switch(b, bool(r.get("a_as_bc")))
     if sw is None:
         return None

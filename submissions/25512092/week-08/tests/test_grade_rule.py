@@ -79,6 +79,10 @@ def test_moves_by_grade():
     assert r["grade_used"] == "A" and r["deal"]
     r, sent = run(10400, "A", rules=dict(ON, a_as_bc=True))     # the saved guard: A uses B / C's moves
     assert r["grade_used"] == "A" and sent[1] == "6500", sent
+    r, sent = run(10400, "A", rules=dict(ON, a_as_bc=True, a_as_bc_locked=True))   # 11/13 locked: A's own moves
+    assert r["deal"] and sent[-1] == "10400", sent
+    r, sent = run(12000, "A", rules=dict(ON, a_as_bc=True, a_as_bc_locked=True))
+    assert sent[1] == "7500", sent
 
 
 def test_c_first():
@@ -125,6 +129,37 @@ def test_shop_order_and_grades():
     assert [c["name"] for c in G.order_first(cands, 3, share)] == ["y", "z", "x", "w"]   # z unknown 0.5; w stays 4th
 
 
+def test_shop_scores_order():
+    """11/13 ~13:20 (person): shop order by my saved score per deal from the shop (24 h; < 10 deals -> the median),
+    through buyer_biz.grade_order (main's call)."""
+    import sqlite3
+    d = tempfile.mkdtemp()
+    db = os.path.join(d, "m.db")
+    c = sqlite3.connect(db)
+    c.execute("CREATE TABLE settles (ts, buyer, shop, sku, grade, amount)")
+    now = time.time()
+    rows = ([(now - 60, "choo-chu", "good", "S1", "A", 6500)] * 10        # A, list 10000: (10000-6500)/3500 = 1.0
+            + [(now - 60, "choo-chu", "bad", "S1", "C", 9000)] * 10       # C: (10000-9000)/6500 = 0.1538
+            + [(now - 60, "choo-chu", "mid", "S1", "B", 7500)] * 10       # B: 2500/5000 = 0.5
+            + [(now - 60, "choo-chu", "few", "S1", "A", 6500)] * 3        # under 10 -> the median 0.5
+            + [(now - 90000, "choo-chu", "old", "S1", "A", 6500)] * 20    # outside 24 h
+            + [(now - 60, "other", "bad", "S1", "A", 1000)] * 20)         # another buyer: not counted
+    c.executemany("INSERT INTO settles VALUES (?,?,?,?,?,?)", rows)
+    c.commit()
+    c.close()
+    cat = {"S1": {"list_price": 10000}}
+    sc, med = G.shop_scores(db, now, path=os.path.join(d, "sc.json"), catalog=cat)
+    assert med == 0.5 and sc == {"good": 1.0, "bad": 0.1538, "mid": 0.5, "few": 0.5}, (sc, med)
+    cands = [{"name": n} for n in ("bad", "new", "mid", "good", "few", "x5", "x6")]
+    with mock.patch.object(G, "shop_scores", lambda: (sc, med)), mock.patch.object(B, "TRIES_N", 5), \
+            mock.patch.object(B, "log", lambda m: None):
+        out = B.grade_order(list(cands), dict(ON, shop_key="score"))
+        assert [c["name"] for c in out] == ["good", "new", "mid", "few", "bad", "x5", "x6"], out   # new -> median
+        assert B.grade_order(list(cands), dict(ON, shop_key="score", enabled=False)) == cands
+        with mock.patch.object(G, "shop_grades", lambda: {"bad": 0.9}):                      # without the key: A/B share
+            assert B.grade_order(list(cands), dict(ON))[0]["name"] == "bad"
+
+
 def test_saved_guard_a_switch():
     import saved_guard_watch as W
     path = tmp_json({"enabled": True}, "gr")
@@ -139,6 +174,10 @@ def test_saved_guard_a_switch():
         assert W.a_guard({"saved": 0.8060, "student_below": 0.7909}, al, dec, path=path) is False  # >= 0.015
         assert not G.rules(path)["a_as_bc"]
     assert [a[1].split(":")[0] for a in sent] == ["grade_a_as_bc", "grade_a_as_bc"]
+    locked = tmp_json({"enabled": True, "a_as_bc": False, "a_as_bc_locked": True}, "grl")   # 11/13: never on again
+    with mock.patch.object(W, "log", lambda m: None):
+        assert W.a_guard({"saved": 0.7980, "student_below": 0.7909}, al, dec, path=locked) is None
+    assert not G.rules(locked)["a_as_bc"] and len(sent) == 2
     from depts import saved_guard
     assert saved_guard.why("high_accept", {"saved": 0.1}) is None and saved_guard.back("soft_neg", {"saved": 0.9}) is None
     j = {"players": [{"student": True, "buyer": {"name": n}} for n in ("choo-chu", "11im", "dragonash")] + [{"buyer": {"name": "x"}}],
@@ -152,5 +191,6 @@ if __name__ == "__main__":
     test_c_first()
     test_break_cap()
     test_shop_order_and_grades()
+    test_shop_scores_order()
     test_saved_guard_a_switch()
     print("ok")

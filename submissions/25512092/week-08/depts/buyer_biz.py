@@ -473,7 +473,7 @@ def negotiate(url, item, budget, start, first=None, market="", min_offers=MIN_OF
                 if market_avg and not res["injection"]:
                     budget = min(budget, int(market_avg * mv["accept"]))
                 log(f"[grade] {gwhy}: first {mv['first']} x avg, accept <= {mv['accept']} x avg -> cap {budget}"
-                    + (" (A as B/C: saved guard)" if g == "A" and gr.get("a_as_bc") else ""))
+                    + (" (A as B/C: saved guard)" if g == "A" and grade_rule.a_as_bc(gr) else ""))
                 w = WARRANTY_RE.search(text)
                 if grade_ctx.get("p") is not None and grade_ctx.get("list") and not (
                         w and float(w.group(1) or w.group(2) or 0) > 0):
@@ -679,6 +679,28 @@ def pick_sku(offers, stats, catalog, budget):
 
 
 # ---------- main ----------
+def grade_order(ordered, g_rules=None):
+    """11/12 ~18:30: within the first TRIES_N shops, more A / B sellers first (grade_rule.shop_grades); 11/13 ~13:20
+    (person): with grade_rule.json shop_key "score", my saved score per deal from each shop in the last 24 h instead
+    (grade_rule.shop_scores; under 10 deals -> the median). Unchanged when the grade rule is off or this fails."""
+    from depts import grade_rule
+    g_rules = grade_rule.rules() if g_rules is None else g_rules
+    if not grade_rule.on(g_rules):
+        return ordered
+    try:
+        if g_rules.get("shop_key") == "score":
+            gs, med = grade_rule.shop_scores()
+            ordered = grade_rule.order_first(ordered, TRIES_N, gs, default=med)
+        else:
+            gs = grade_rule.shop_grades()
+            ordered = grade_rule.order_first(ordered, TRIES_N, gs)
+        log(f"[grade] shop order ({g_rules.get('shop_key') or 'ab_share'}): "
+            + ", ".join(f"{c['name']} {gs.get(c['name'], '-')}" for c in ordered[:TRIES_N]))
+    except Exception as e:
+        log(f"[grade] shop order failed: {type(e).__name__}")
+    return ordered
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shops", required=True)
@@ -761,15 +783,9 @@ def main():
             ordered = buyer_break.order_shops(ordered, args.item, catalog, log=log)
         except Exception as e:
             log(f"[break rule] shop order failed: {type(e).__name__}")
-    from depts import grade_rule                     # 11/12 ~18:30: within the first TRIES_N, more A / B sellers first
+    from depts import grade_rule                     # 11/12 ~18:30: within the first TRIES_N, the grade rule
     g_rules = grade_rule.rules()
-    if grade_rule.on(g_rules):
-        try:
-            gs = grade_rule.shop_grades()
-            ordered = grade_rule.order_first(ordered, TRIES_N, gs)
-            log("[grade] shop order: " + ", ".join(f"{c['name']} {gs.get(c['name'], '-')}" for c in ordered[:TRIES_N]))
-        except Exception as e:
-            log(f"[grade] shop order failed: {type(e).__name__}")
+    ordered = grade_order(ordered, g_rules)
     tries = ordered[:TRIES_N]  # next candidate when a shop does not answer or fails the precheck
     from depts import high_accept, second_shop as d2
     ss_on = sn_arm == "soft" and d2.on()            # 11/09 plan D: a 2nd shop in the time under the 20 s spacing
