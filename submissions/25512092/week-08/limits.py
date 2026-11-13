@@ -153,3 +153,4 @@ STOCK_CAP_CHANGES.append((1794233530, 48_767_244))   # 11/09 23:12 automatic cap
 STOCK_CAP_CHANGES.append((1794279355, 58_042_837))   # 11/10 11:55 automatic cap on again (cash + stock - 3M; person 11/10 ~11:50)
 HIGH_MAX_CHANGES.append((1794396910, 3_000_000))   # 11/11 20:35 person's decision (1.5M -> 3.0M, pinned to 11/13 12:00)
 HIGH_MAX_CHANGES.append((1794551555, 2_000_000))   # 11/13 person's decision (3.0M -> 2.0M, held units sold as is)
+HIGH_MAX_CHANGES.append((1794590142, 1_500_000))   # 11/14 person's decision (2.0M -> 1.5M: over 1.5M 24 h profit 0.79M vs refunds 5.96M; held units sold as is)
