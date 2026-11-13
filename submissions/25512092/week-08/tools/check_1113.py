@@ -10,6 +10,8 @@ unchanged). One Telegram ("daily") at every 3rd hour (12, 15, 18 ...), each numb
   8. (11/13 ~10:40) high-price A SKUs on the 3% list (depts/a3_warranty.py) sold with a warranty: negotiations,
      receipts, sales, refunds
   9. inextro / cheapest-in-town / nocha12 purchases per hour since that warranty went live vs the 24 h before
+  10-13 (11/13 ~13:10): student saved rank with the gaps above / below, my buys' score and count by grade, top shops
+     by my saved score (grade_rule.shop_scores, the buyer's shop order), Book per hour
 Read-only.
     python tools/check_1113.py [--once | --dry]
 """
@@ -94,7 +96,8 @@ def text(now, cur, prev, sofa3, sofa3p, sofa48, cash_now, cash_prev, aged, guard
     return "\n".join(out)
 
 
-def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=None, a3_path=None):
+def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=None, a3_path=None, catalog=None,
+          shop_scores=None, board_path=None):
     import alerts
     from depts import wide_trial
     sofa_numbers = sofa_numbers or alerts.sofa_numbers
@@ -113,8 +116,91 @@ def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=
                cash(now, db_path), cash(t0, db_path), aged, guard, rk)
     from depts import a3_warranty
     r = a3_warranty.rules(a3_path)
-    return out + "\n" + a3_text(now, r, a3(t0, now, set(r.get("skus") or {}), db_path),
-                                a3(tp, t0, set(r.get("skus") or {}), db_path), db_path)
+    out += "\n" + a3_text(now, r, a3(t0, now, set(r.get("skus") or {}), db_path),
+                          a3(tp, t0, set(r.get("skus") or {}), db_path), db_path)
+    return out + "\n" + buyer_text(now, board, db_path, catalog, shop_scores, board_path)
+
+
+def saved_line(j, me=ME):
+    """10. my saved vs the students' 1st / 3rd (or the one above / below me)."""
+    names = {(p.get("buyer") or {}).get("name") for p in j.get("players") or [] if p.get("student")}
+    st = sorted((b for b in j.get("buyers") or [] if b.get("name") in names), key=lambda b: -(b.get("saved") or 0))
+    i = next(k for k, b in enumerate(st) if b["name"] == me)
+    v = st[i]["saved"]
+    nb = lambda k: f"{k + 1}위 {st[k]['name']} {st[k]['saved']} ({v - st[k]['saved']:+.4f})" if 0 <= k < len(st) else "-"
+    return f"10. 학생 saved {i + 1}위 {v}: 위 {nb(i - 1)}, 아래 {nb(i + 1)}"
+
+
+def grade_scores(t0, t1, db_path=None, catalog=None, me=ME):
+    """{grade: (n, mean saved score)} of my buys in [t0, t1): min(1, (list - paid) / (list - cost_share x list))."""
+    from depts import grade_rule
+    if catalog is None:
+        from depts.substitute import catalog as _cat
+        catalog = _cat()
+    cs = grade_rule.rules().get("cost_share") or grade_rule.DEFAULT["cost_share"]
+    d = _db(db_path)
+    try:
+        rows = d.execute("SELECT sku, grade, amount FROM settles WHERE buyer=? AND ts>=? AND ts<? AND amount IS NOT NULL",
+                         (me, t0, t1)).fetchall()
+    finally:
+        d.close()
+    by = {}
+    for sku, g, a in rows:
+        lp = (catalog.get(sku) or {}).get("list_price")
+        if not lp:
+            continue
+        g = g if g in cs else "B"
+        by.setdefault(g, []).append(min(1.0, (lp - a) / (lp * (1 - cs[g]))))
+    return {g: (len(v), sum(v) / len(v)) for g, v in by.items()}
+
+
+def book_rate(t0, t1, path=None, me=ME):
+    """My board book change per hour between the snapshots nearest t0 and t1 (logs/board_full.jsonl)."""
+    import json
+    best = [None, None]
+    with open(path or os.path.join(HERE, "logs", "board_full.jsonl"), encoding="utf-8") as f:
+        for ln in f:
+            try:
+                e = json.loads(ln)
+            except ValueError:
+                continue
+            for k, t in enumerate((t0, t1)):
+                if abs(e["ts"] - t) <= 1800 and (best[k] is None or abs(e["ts"] - t) < abs(best[k]["ts"] - t)):
+                    best[k] = e
+    a, b = best
+    if not a or not b or b["ts"] <= a["ts"] or me not in a["s"] or me not in b["s"]:
+        return None
+    return (b["s"][me]["book"] - a["s"][me]["book"]) / ((b["ts"] - a["ts"]) / 3600)
+
+
+def buyer_text(now, board, db_path=None, catalog=None, shop_scores=None, board_path=None):
+    """11/13 ~13:10 (person): 10. student saved 2nd / 3rd gap, 11. score and deals by grade, 12. top shops by my
+    score, 13. Book per hour (3 h vs the 3 h before)."""
+    t0, tp = now - H * 3600, now - 2 * H * 3600
+    out = []
+    try:
+        out.append(saved_line(board))
+    except Exception:
+        out.append("10. 학생 saved: board 읽기 실패")
+    cur, prev = grade_scores(t0, now, db_path, catalog), grade_scores(tp, t0, db_path, catalog)
+    f = lambda x, g: f"{x[g][0]}건 {x[g][1]:.3f}" if g in x else "0건"
+    out.append("11. 등급별 거래·점수(우리 구매): " + ", ".join(f"{g} {f(cur, g)} vs {f(prev, g)}" for g in "ABC"))
+    try:
+        if shop_scores is None:
+            from depts import grade_rule
+            shop_scores = grade_rule.shop_scores
+        sc, med = shop_scores()
+        top = sorted(sc.items(), key=lambda kv: -kv[1])[:5]
+        out.append(f"12. 가게별 점수 상위(24시간, 10건 미만은 중앙값 {med}): " + ", ".join(f"{k} {v}" for k, v in top))
+    except Exception as e:
+        out.append(f"12. 가게별 점수: 실패 {type(e).__name__}")
+    try:
+        a, b = book_rate(t0, now, board_path), book_rate(tp, t0, board_path)
+        r = lambda v: "-" if v is None else f"{v:+,.0f}"
+        out.append(f"13. Book 시간당: {r(a)} vs {r(b)}")
+    except OSError:
+        out.append("13. Book 시간당: 읽기 실패")
+    return "\n".join(out)
 
 
 def a3(t0, t1, skus, db_path=None):

@@ -1,6 +1,7 @@
 """tools/check_1113.py (3 h check, person 11/13 ~10:20) with a temp db, a fake board, fake units and a fake sofa_numbers;
 then main --once through alerts.send.
     python tests/test_check_1113.py"""
+import json
 import os
 import sqlite3
 import sys
@@ -23,7 +24,8 @@ def make_db():
     p = os.path.join(tempfile.mkdtemp(), "m.db")
     d = sqlite3.connect(p)
     d.execute("CREATE TABLE shop_deals (ts REAL, sku TEXT, cost INTEGER, outcome TEXT, warranty_hours REAL)")
-    d.execute("CREATE TABLE settles (ts REAL, shop TEXT, buyer TEXT, sku TEXT, amount INTEGER, unit TEXT, warranty_hours REAL)")
+    d.execute("CREATE TABLE settles (ts REAL, shop TEXT, buyer TEXT, sku TEXT, amount INTEGER, unit TEXT, warranty_hours REAL, "
+              "grade TEXT)")
     d.execute("CREATE TABLE broken (ts REAL, shop TEXT, sku TEXT, refunded INTEGER)")
     d.executemany("INSERT INTO broken VALUES (?,?,?,?)", [(NOW - 50, "choo-chu", "H1", 600_000),
                                                          (NOW - 50, "choo-chu", "L1", 0)])   # no refund
@@ -36,11 +38,16 @@ def make_db():
              + [(NOW - 4 * 3600, "H1", 500_000, "receipt")] * 2 + [(NOW - 4 * 3600, "H1", 500_000, "cancelled")] * 2)
     deals = [x + ((48 if x[1] == "H1" and i < 5 else 0),) for i, x in enumerate(deals)]   # H1: 1 receipt + 4 warranty
     d.executemany("INSERT INTO shop_deals VALUES (?,?,?,?,?)", deals)
-    d.executemany("INSERT INTO settles VALUES (?,?,?,?,?,?,?)", [
+    d.executemany("INSERT INTO settles (ts, shop, buyer, sku, amount, unit, warranty_hours) VALUES (?,?,?,?,?,?,?)", [
         (NOW - 100, "choo-chu", "inextro", "H1", 600_000, "u1", 48),
         (NOW - 150, "choo-chu", "nocha12", "L1", 6_000, "u2", 0),
         (NOW - 100, "other", "inextro", "H1", 610_000, "x", 48),         # another shop: not counted
-        (NOW - 4 * 3600, "choo-chu", "inextro", "H1", 550_000, "u3", 0)])
+        (NOW - 4 * 3600, "choo-chu", "inextro", "H1", 550_000, "u3", 0),
+        (NOW - 300, "x", "choo-chu", "B1", 6_500, "b1", 0),                 # my buys (11/13 ~13:10 items 10-13)
+        (NOW - 300, "x", "choo-chu", "B1", 9_000, "b2", 0),
+        (NOW - 4 * 3600, "x", "choo-chu", "B1", 6_500, "b3", 0)])
+    d.execute("UPDATE settles SET grade='A' WHERE unit IN ('b1', 'b3')")
+    d.execute("UPDATE settles SET grade='C' WHERE unit='b2'")
     d.executemany("INSERT INTO my_stock VALUES (?,?)", [("u1", 500_000), ("u2", 5_000), ("u3", 500_000)])
     d.executemany("INSERT INTO cash VALUES (?,?,?)", [(NOW - 3 * 3600 - 60, 60_000_000, 90_000_000),
                                                       (NOW - 60, 55_000_000, 95_000_000)])
@@ -53,6 +60,16 @@ A3 = tmp_json({"enabled": True, "applied_ts": NOW - 7200, "skus": {"H1": {"n": 4
 BOARD = {"players": [{"player": f"p{i}", "student": True, "student_total": 2 - i / 50, "student_shop": 0.7,
                       "student_buyer": 0.8} for i in range(12)]}
 BOARD["players"][9]["player"] = "Choo-chu"
+for _i, _p in enumerate(BOARD["players"]):
+    _p["buyer"] = {"name": "choo-chu" if _i == 9 else f"b{_i}"}
+BOARD["buyers"] = [{"name": "choo-chu", "saved": 0.8006}, {"name": "b0", "saved": 0.8097}, {"name": "b1", "saved": 0.7957},
+                   {"name": "b2", "saved": 0.70}, {"name": "outsider", "saved": 0.9}]
+CAT = {"B1": {"list_price": 10_000}}
+BOOK = tmp_json({}, "bf")
+with open(BOOK, "w", encoding="utf-8") as _f:
+    for _t, _b in ((NOW - 6 * 3600, 100_000_000), (NOW - 3 * 3600, 103_000_000), (NOW, 104_500_000)):
+        _f.write(json.dumps({"ts": _t, "s": {"choo-chu": {"book": _b}}, "b": {}}) + "\n")
+SCORES = lambda: ({"good": 0.9, "bad": 0.4, "mid": 0.8}, 0.8)
 
 
 def sofa_numbers(t0, t1):
@@ -63,7 +80,11 @@ def test_build():
     p = make_db()
     units = [{"cost": 400_000, "supplied_at": NOW - 13 * 3600, "grade": "A"}, {"cost": 400_000, "supplied_at": NOW - 3600}]
     t = C.build(NOW, db_path=p, board=BOARD, units=units, sofa_numbers=sofa_numbers, is_sofa=lambda s: s == "SOFA",
-                a3_path=A3)
+                a3_path=A3, catalog=CAT, shop_scores=SCORES, board_path=BOOK)
+    assert "10. 학생 saved 2위 0.8006: 위 1위 b0 0.8097 (-0.0091), 아래 3위 b1 0.7957 (+0.0049)" in t, t
+    assert "11. 등급별 거래·점수(우리 구매): A 1건 1.000 vs 1건 1.000, B 0건 vs 0건, C 1건 0.154 vs 0건" in t, t
+    assert "12. 가게별 점수 상위(24시간, 10건 미만은 중앙값 0.8): good 0.9, mid 0.8, bad 0.4" in t, t
+    assert "13. Book 시간당: +500,000 vs +1,000,000" in t, t
     assert "고가 2/12 (16.7%) vs 2/4 (50.0%)" in t, t
     assert "소파 1/2 (50.0%)" in t, t
     assert "inextro 1건 600,000 vs 1건" in t and "nocha12 1건 6,000" in t and "cheapest-in-town 0건" in t, t
