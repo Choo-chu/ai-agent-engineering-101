@@ -38,8 +38,9 @@ def units(n_h1, n_other):
                for i in range(n_other)])
 
 
-def plan_with(on, us, rank=False):
+def plan_with(on, us, rank=False, actual=None, deep=None, top=None):
     deep_high.RULES = tmp_json(dict(deep_high.rules(), enabled=True, outside_high_max=on), "deep_high")
+    top_high.RULES = tmp_json(top or {"enabled": False}, "top_high")
     W.RULES, W.LINES = tmp_json({"enabled": False}, "wide_trial"), tmp_path(f"wt-{time.time_ns()}.jsonl")
     PU.HIGH_MARGIN = tmp_json({"enabled": True, "min_margin": 0.08}, "high_margin")
     cat, st = catalog(), stats()
@@ -47,11 +48,11 @@ def plan_with(on, us, rank=False):
     noop = lambda *a, **k: None
     with contextlib.ExitStack() as es:
         for obj, name, val in (
-                (top_high, "last_costs", lambda *a, **k: {}), (PU, "load_stats", lambda: st),
+                (top_high, "last_costs", lambda *a, **k: dict(actual or {})), (PU, "load_stats", lambda: st),
                 (PU, "price_of", lambda k, s=None: (st["skus"][k]["avg"], 50)),
                 (PU, "busy_categories", lambda c, top=5: ["TV"]), (PU, "c_rules", lambda: {}),
                 (PU, "excluded", lambda: {}), (PU, "guard_check", lambda *a: None), (PU, "sofa_trial", lambda *a: None),
-                (deep_high, "current", lambda **k: dict(DEEP)), (PU.decisions, "record", noop),
+                (deep_high, "current", lambda **k: dict(deep or DEEP)), (PU.decisions, "record", noop),
                 (PU.strategy, "current", lambda: ("normal", None))):
             es.enter_context(P(obj, name, val))
         es.enter_context(mock.patch("depts.overcost.mark", lambda units, f, log=None: set()))
@@ -91,7 +92,33 @@ def test_room_left():
         assert "H1" not in plan and plan.get("H2") == 1, (rank, plan)
 
 
+TOP = {"enabled": True, "min_cost": 1_500_000, "max_units": 20, "max_per_sku": 3, "deep_per_sku": 5}
+
+
+def top_units(n, sku, start=0):
+    return [{"unit": f"t{sku}{i}", "sku": sku, "cost": 1_600_000, "grade": "A", "supplied_at": NOW - 3600}
+            for i in range(start, start + n)]
+
+
+def test_deep_per_sku():
+    """11/13 ~16:05 (person): a deep SKU over 1.5M may hold 5 (not 3); the 20 units over 1.5M stay; others 3."""
+    deep7 = {"H1": dict(DEEP["H1"], limit=7)}
+    act = {"H1": 1_600_000, "H2": 1_600_000}
+    for rank in (False, True):
+        plan, logs = plan_with(True, top_units(2, "H1") + top_units(1, "H2"), rank, act, deep7, TOP)
+        assert plan.get("H1") == 3 and "H2" not in plan, (rank, plan, logs)   # H1 2 -> 5; H2 (not deep) holds 1
+        plan, logs = plan_with(True, top_units(5, "H1"), rank, act, deep7, TOP)
+        assert "H1" not in plan, (rank, plan)
+        # 20 over 1.5M in all: 2 H1 + 16 others held -> 2 left for H1 (first line) and none for H2
+        plan, logs = plan_with(True, top_units(2, "H1") + top_units(16, "X"), rank, act, deep7, TOP)
+        assert plan.get("H1") == 2 and "H2" not in plan, (rank, plan, logs)
+        # without deep_per_sku: 3 as before
+        plan, _ = plan_with(True, top_units(2, "H1"), rank, act, deep7, dict(TOP, deep_per_sku=None))
+        assert plan.get("H1") == 1, (rank, plan)
+
+
 if __name__ == "__main__":
     test_full_room()
     test_room_left()
+    test_deep_per_sku()
     print("ok")

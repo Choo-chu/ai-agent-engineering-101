@@ -264,7 +264,7 @@ def make_plan(inv, units, catalog, budget, log, record=True):
         if cost > HIGH_MIN:                       # high price: a busy category, one unit, within the cap
             hold_max = deep_high.limit(sku, deep)  # 11/10 ~12:30: 1, or 2-5 for a fast-selling SKU
             if top_high.is_top(top_high.judge_cost(sku, cost, actual)):   # 11/11 ~20:10: over 1.5M per-SKU cap
-                hold_max = min(hold_max, top_high.per_sku())
+                hold_max = min(hold_max, top_high.per_sku(deep=sku in deep))   # 11/13 ~16:05: deep 5
             if (leaf_of(sku) not in hot_cats and not wide) or s["sold_30m"] < 1 or held.get(sku, 0) >= hold_max:
                 continue
             try:                                  # 11/08 ~17:00: expected first ask above the market average
@@ -369,7 +369,7 @@ def make_plan(inv, units, catalog, budget, log, record=True):
         sk = {x["sku"] for x in sofa}
         plan = sofa + [p for p in plan if p["sku"] not in sk][:MAX_LINES - len(sofa)]
     # 11/11 ~20:10 (person): over 1.5M at most 10 units held at once (stock + this plan, both halves of a window plan)
-    plan = top_high.cap_plan(plan, units, est, log=log, actual=actual)
+    plan = top_high.cap_plan(plan, units, est, log=log, actual=actual, deep=set(deep))
     if nm:                                         # 11/11 ~20:50: >= 4 normal lines in each run-sized chunk, first
         plan = normal_min.arrange(plan, is_low, LM.MAX_LINES, nm["min_lines"])
         log(f"[normal min] normal lines per run: " + ", ".join(

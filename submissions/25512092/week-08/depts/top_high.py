@@ -61,8 +61,11 @@ def judge_cost(sku, est, actual):
     return max(est or 0, (actual or {}).get(sku) or 0)
 
 
-def per_sku(r=None):
+def per_sku(r=None, deep=False):
+    """Units a SKU over min_cost may hold; deep=True (a deep_high SKU, 11/13 ~16:05 person): deep_per_sku (5) when set."""
     r = rules() if r is None else r
+    if deep and r.get("deep_per_sku"):
+        return int(r["deep_per_sku"])
     return int(r.get("max_per_sku", 2))
 
 
@@ -76,9 +79,10 @@ def held(units, r=None):
     return sum(per.values()), per
 
 
-def cap_plan(plan, units, est_cost, log=print, r=None, actual=None):
+def cap_plan(plan, units, est_cost, log=print, r=None, actual=None, deep=()):
     """The plan with its > min_cost lines cut so that held + planned <= max_units and <= max_per_sku per SKU (in plan
-    order: the first lines keep their units). A line's cost: judge_cost (estimate vs last actual supply cost)."""
+    order: the first lines keep their units). A line's cost: judge_cost (estimate vs last actual supply cost). deep:
+    the deep_high SKUs, per SKU deep_per_sku (11/13 ~16:05 person: 5) instead of max_per_sku; max_units unchanged."""
     r = rules() if r is None else r
     if not r.get("enabled"):
         return plan
@@ -91,13 +95,14 @@ def cap_plan(plan, units, est_cost, log=print, r=None, actual=None):
         if not is_top(c, r):
             out.append(p)
             continue
-        q = min(p["qty"], room, per_sku(r) - per.get(p["sku"], 0))
+        cap = per_sku(r, p["sku"] in deep)
+        q = min(p["qty"], room, cap - per.get(p["sku"], 0))
         if q <= 0:
             log(f"[top high] {p['sku']} x{p['qty']} (cost {int(c):,}, est. or last supply): over 1.5M held {n}/{r.get('max_units', 10)}, "
-                f"this SKU {per.get(p['sku'], 0)}/{per_sku(r)} -> skip")
+                f"this SKU {per.get(p['sku'], 0)}/{cap} -> skip")
             continue
         if q < p["qty"]:
-            log(f"[top high] {p['sku']} x{p['qty']} -> x{q} (over 1.5M room {room}, SKU {per.get(p['sku'], 0)}/{per_sku(r)})")
+            log(f"[top high] {p['sku']} x{p['qty']} -> x{q} (over 1.5M room {room}, SKU {per.get(p['sku'], 0)}/{cap})")
         room -= q
         per[p["sku"]] = per.get(p["sku"], 0) + q
         out.append(dict(p, qty=q))
