@@ -72,3 +72,30 @@ def policy(data=None):
     except Exception:
         pass
     return P
+
+
+def market_db():
+    """11/13 ~13:40 (person): a context manager - a new temp market.db with the live schema (market_db.connect's
+    CREATE TABLE IF NOT EXISTS, run on the temp path), and every sqlite3.connect of a "market.db" path (plain or a
+    file: URI, any module) sent there, so the test never reads the live market.db. Yields the temp path."""
+    import contextlib
+    import sqlite3
+    from unittest import mock
+    import market_db as M
+    path = tmp_path(f"market-{os.getpid()}-{id(object())}.db")
+    real = sqlite3.connect
+
+    def connect(database, *a, **k):
+        s = str(database)
+        if "market.db" in s.replace("\\", "/").split("/")[-1].split("?")[0]:
+            if s.startswith("file:"):
+                return real("file:" + path + ("?" + s.split("?", 1)[1] if "?" in s else ""), *a, **k)
+            return real(path, *a, **k)
+        return real(database, *a, **k)
+
+    @contextlib.contextmanager
+    def ctx():
+        with mock.patch.object(sqlite3, "connect", connect), mock.patch.object(M, "DB_PATH", path):
+            M.connect().close()
+            yield path
+    return ctx()

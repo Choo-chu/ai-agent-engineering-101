@@ -9,7 +9,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolate import policy, tmp_json  # noqa: E402
+from _isolate import market_db, policy, tmp_json  # noqa: E402
 
 policy()
 from depts import deep_high, line_rank, normal_min, purchasing as PU, top_high  # noqa: E402
@@ -32,6 +32,7 @@ def plan_with(units, rules=RULES, lines=20):
     P = mock.patch.object
     noop = lambda *a, **k: None
     with contextlib.ExitStack() as es:
+        es.enter_context(market_db())                # 11/13 ~13:40: a temp market.db, never the live one
         for obj, name, val in (
                 (normal_min, "RULES", tmp_json(rules, "normal_min")), (top_high, "RULES", tmp_json({}, "top_high")),
                 (PU, "MAX_LINES", lines), (PU, "load_stats", lambda: st),
