@@ -1,7 +1,7 @@
 {
  "metrics": {
-  "units_bought": 673,
-  "cost_bought": 62676974,
+  "units_bought": 1029,
+  "cost_bought": 34071998,
   "cap_runs": 0,
   "cap_budget_held": 0,
   "plan_decisions": 360,
@@ -9,8 +9,8 @@
  },
  "issues": [],
  "dept": "purchasing",
- "ts": 1794495452,
- "policy_version": 25,
+ "ts": 1794581969,
+ "policy_version": 29,
  "window_h": 6,
  "requests": []
 }

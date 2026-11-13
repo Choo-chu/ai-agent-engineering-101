@@ -1,15 +1,15 @@
 {
  "metrics": {
-  "cash": 79033557,
-  "stock_cost": 69563147,
-  "units": 504,
-  "storage_per_day": 695631,
-  "near_expiry_12h": 1,
-  "goods_over_48h": 12,
-  "high_over_24h": 32,
+  "cash": 75744215,
+  "stock_cost": 90314447,
+  "units": 722,
+  "storage_per_day": 903144,
+  "near_expiry_12h": 22,
+  "goods_over_48h": 21,
+  "high_over_24h": 53,
   "perishable_24h": {
-   "bought": 63,
-   "sold": 59,
+   "bought": 281,
+   "sold": 269,
    "wasted": 0,
    "waste_cost": 0
   }
@@ -19,79 +19,79 @@
    "unit": "u-b41384ba3c36",
    "sku": "G612e869d",
    "cost": 5594,
-   "hours": 131
-  },
-  {
-   "unit": "u-a7fe1e781ede",
-   "sku": "Gfe5449fb",
-   "cost": 446874,
-   "hours": 73
-  },
-  {
-   "unit": "u-a7fe1e781ede",
-   "sku": "Gfe5449fb",
-   "cost": 446874,
-   "hours": 73
+   "hours": 155
   },
   {
    "unit": "u-4149cf439538",
    "sku": "G2a787318",
    "cost": 261737,
-   "hours": 73
+   "hours": 97
   },
   {
    "unit": "u-4149cf439538",
    "sku": "G2a787318",
    "cost": 261737,
-   "hours": 73
+   "hours": 97
   },
   {
    "unit": "u-e2802d36c917",
    "sku": "Gc2ac2479",
    "cost": 245875,
-   "hours": 72
+   "hours": 96
   },
   {
    "unit": "u-e2802d36c917",
    "sku": "Gc2ac2479",
    "cost": 245875,
-   "hours": 72
+   "hours": 96
   },
   {
    "unit": "u-c9dbfc2f7317",
    "sku": "G785670a2",
    "cost": 249122,
-   "hours": 67
+   "hours": 91
   },
   {
    "unit": "u-c9dbfc2f7317",
    "sku": "G785670a2",
    "cost": 249122,
-   "hours": 67
+   "hours": 91
   },
   {
    "unit": "u-0b9cdd1b8ac8",
    "sku": "Ga4e6abc9",
    "cost": 484522,
-   "hours": 59
+   "hours": 83
+  },
+  {
+   "unit": "u-0b9cdd1b8ac8",
+   "sku": "Ga4e6abc9",
+   "cost": 484522,
+   "hours": 83
+  },
+  {
+   "unit": "u-634b3b6e98f5",
+   "sku": "G86ca9815",
+   "cost": 244366,
+   "hours": 81
   }
  ],
  "issues": [
   {
    "level": "warn",
-   "text": "32 high-price units unsold > 24 h",
+   "text": "53 high-price units unsold > 24 h",
    "refs": [
-    "u-a7fe1e781ede",
     "u-4149cf439538",
     "u-e2802d36c917",
     "u-c9dbfc2f7317",
-    "u-0b9cdd1b8ac8"
+    "u-0b9cdd1b8ac8",
+    "u-634b3b6e98f5"
    ]
   }
  ],
  "dept": "logistics",
- "ts": 1794495452,
- "policy_version": 25,
+ "ts": 1794581969,
+ "policy_version": 29,
  "window_h": 6,
  "requests": []
 }

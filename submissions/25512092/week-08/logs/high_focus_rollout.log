@@ -384,3 +384,139 @@
 11-12 23:22:18 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
 11-12 23:37:18 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
 11-12 23:52:18 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 00:07:18 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 00:22:18 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 00:37:19 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 00:52:19 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 01:07:19 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 01:22:19 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 01:37:19 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 01:52:19 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 02:07:20 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 02:22:20 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 02:37:20 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 02:37:20 [alert] info high_brake_warn:1794505040: 고가 브레이크 경고 02:37 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.6% (887건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram held)
+11-13 02:37:20 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.6% (887건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 02:52:20 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 03:07:20 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 03:22:21 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 03:37:21 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 03:52:21 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 04:07:21 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 04:07:21 [alert] info high_brake_warn:1794510441: 고가 브레이크 경고 04:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.6% (983건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram held)
+11-13 04:07:21 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.6% (983건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 04:22:21 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 04:37:21 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 04:52:22 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 05:07:22 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 05:07:22 [alert] info high_brake_warn:1794514042: 고가 브레이크 경고 05:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 4.9% (948건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (5회째 연속, 1시간마다 알림) (telegram held)
+11-13 05:07:22 warn only (check 5): 고가 협상 대비 영수증 최근 3시간 4.9% (948건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 05:22:24 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 05:37:24 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 05:52:24 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 06:07:24 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 06:07:24 [alert] info high_brake_warn:1794517644: 고가 브레이크 경고 06:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 4.7% (858건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (9회째 연속, 1시간마다 알림) (telegram held)
+11-13 06:07:24 warn only (check 9): 고가 협상 대비 영수증 최근 3시간 4.7% (858건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 06:22:25 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 06:37:25 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 06:52:25 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 07:07:25 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 07:07:25 [alert] info high_brake_warn:1794521245: 고가 브레이크 경고 07:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 3.3% (790건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (13회째 연속, 1시간마다 알림) (telegram held)
+11-13 07:07:25 warn only (check 13): 고가 협상 대비 영수증 최근 3시간 3.3% (790건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 07:22:27 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 07:37:27 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 07:52:27 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 08:07:27 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 08:07:29 [alert] info high_brake_warn:1794524847: 고가 브레이크 경고 08:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 1.8% (799건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (17회째 연속, 1시간마다 알림) (telegram sent)
+11-13 08:07:29 warn only (check 17): 고가 협상 대비 영수증 최근 3시간 1.8% (799건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 08:22:29 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 08:37:29 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 08:52:29 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 09:07:31 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 09:07:32 [alert] info high_brake_warn:1794528451: 고가 브레이크 경고 09:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 2.6% (901건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (21회째 연속, 1시간마다 알림) (telegram sent)
+11-13 09:07:32 warn only (check 21): 고가 협상 대비 영수증 최근 3시간 2.6% (901건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 09:22:32 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 09:37:33 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 09:52:33 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 10:07:33 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 10:07:34 [alert] info high_brake_warn:1794532053: 고가 브레이크 경고 10:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 3.7% (925건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (25회째 연속, 1시간마다 알림) (telegram sent)
+11-13 10:07:34 warn only (check 25): 고가 협상 대비 영수증 최근 3시간 3.7% (925건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 10:22:35 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 10:37:35 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 10:52:35 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 11:07:35 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 11:07:36 [alert] info high_brake_warn:1794535655: 고가 브레이크 경고 11:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.0% (973건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (29회째 연속, 1시간마다 알림) (telegram sent)
+11-13 11:07:36 warn only (check 29): 고가 협상 대비 영수증 최근 3시간 5.0% (973건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 11:22:37 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 11:37:37 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 11:52:37 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 12:07:38 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 12:07:39 [alert] info high_brake_warn:1794539258: 고가 브레이크 경고 12:07 (경고만, high_max·high_share 자동 하향 없음): 고가 입고->판매 중앙값(최근 6시간 판매 39건) 6.5시간 (기준 6시간 초과); 고가 협상 대비 영수증 최근 3시간 5.3% (972건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (33회째 연속, 1시간마다 알림) (telegram sent)
+11-13 12:07:39 warn only (check 33): 고가 입고->판매 중앙값(최근 6시간 판매 39건) 6.5시간 (기준 6시간 초과); 고가 협상 대비 영수증 최근 3시간 5.3% (972건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 12:22:41 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 12:37:41 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 12:52:41 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 13:07:42 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 13:22:42 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 13:37:42 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 13:52:42 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 14:07:43 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 14:07:45 [alert] info high_brake_warn:1794546463: 고가 브레이크 경고 14:07 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.5% (1086건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram sent)
+11-13 14:07:45 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.5% (1086건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 14:22:45 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 14:37:45 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 14:52:45 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 14:52:47 [alert] info high_brake_warn:1794549165: 고가 브레이크 경고 14:52 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.7% (1049건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram sent)
+11-13 14:52:47 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.7% (1049건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 15:07:47 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 15:22:48 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 15:37:49 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 15:52:49 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 16:07:49 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 16:22:49 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 16:22:51 [alert] info high_brake_warn:1794554569: 고가 브레이크 경고 16:22 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.4% (987건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram sent)
+11-13 16:22:51 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.4% (987건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 16:37:52 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 16:52:53 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 17:07:53 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 17:22:55 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 17:37:55 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 17:37:56 [alert] info high_brake_warn:1794559075: 고가 브레이크 경고 17:37 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.6% (914건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram sent)
+11-13 17:37:56 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.6% (914건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 17:52:56 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 18:07:56 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 18:22:58 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 18:37:58 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 18:38:00 [alert] info high_brake_warn:1794562678: 고가 브레이크 경고 18:37 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 4.4% (912건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (5회째 연속, 1시간마다 알림) (telegram sent)
+11-13 18:38:00 warn only (check 5): 고가 협상 대비 영수증 최근 3시간 4.4% (912건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 18:53:02 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 19:08:02 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 19:23:03 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 19:38:03 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 19:38:04 [alert] info high_brake_warn:1794566283: 고가 브레이크 경고 19:38 (경고만, high_max·high_share 자동 하향 없음): 고가 입고->판매 중앙값(최근 6시간 판매 41건) 9.5시간 (기준 6시간 초과); 고가 협상 대비 영수증 최근 3시간 4.1% (945건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (9회째 연속, 1시간마다 알림) (telegram sent)
+11-13 19:38:04 warn only (check 9): 고가 입고->판매 중앙값(최근 6시간 판매 41건) 9.5시간 (기준 6시간 초과); 고가 협상 대비 영수증 최근 3시간 4.1% (945건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 19:53:05 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 20:08:05 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 20:23:07 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 20:38:07 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 20:38:08 [alert] info high_brake_warn:1794569887: 고가 브레이크 경고 20:38 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 4.6% (787건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (13회째 연속, 1시간마다 알림) (telegram sent)
+11-13 20:38:08 warn only (check 13): 고가 협상 대비 영수증 최근 3시간 4.6% (787건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 20:53:08 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 21:08:08 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 21:23:09 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 21:38:09 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 21:38:11 [alert] info high_brake_warn:1794573489: 고가 브레이크 경고 21:38 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 4.8% (704건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (17회째 연속, 1시간마다 알림) (telegram sent)
+11-13 21:38:11 warn only (check 17): 고가 협상 대비 영수증 최근 3시간 4.8% (704건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 21:53:11 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 22:08:13 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 22:23:15 check sell_median=ok | stale_cost=ok | receipt_ratio=ok
+11-13 22:38:15 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 22:38:16 [alert] info high_brake_warn:1794577095: 고가 브레이크 경고 22:38 (경고만, high_max·high_share 자동 하향 없음): 고가 협상 대비 영수증 최근 3시간 5.7% (667건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (telegram sent)
+11-13 22:38:16 warn only (check 1): 고가 협상 대비 영수증 최근 3시간 5.7% (667건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 22:53:17 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 23:08:17 check sell_median=ok | stale_cost=ok | receipt_ratio=TRIP
+11-13 23:23:18 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 23:38:18 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
+11-13 23:38:19 [alert] info high_brake_warn:1794580698: 고가 브레이크 경고 23:38 (경고만, high_max·high_share 자동 하향 없음): 고가 입고->판매 중앙값(최근 6시간 판매 27건) 15.9시간 (기준 6시간 초과); 고가 협상 대비 영수증 최근 3시간 5.0% (763건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동) (5회째 연속, 1시간마다 알림) (telegram sent)
+11-13 23:38:19 warn only (check 5): 고가 입고->판매 중앙값(최근 6시간 판매 27건) 15.9시간 (기준 6시간 초과); 고가 협상 대비 영수증 최근 3시간 5.0% (763건) vs 적용 전 24시간 17.3% (3분의 1 이하면 발동)
+11-13 23:53:20 check sell_median=TRIP | stale_cost=ok | receipt_ratio=TRIP
