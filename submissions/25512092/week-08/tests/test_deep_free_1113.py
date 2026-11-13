@@ -104,6 +104,11 @@ def test_deep_per_sku():
     """11/13 ~16:05 (person): a deep SKU over 1.5M may hold 5 (not 3); the 20 units over 1.5M stay; others 3."""
     deep7 = {"H1": dict(DEEP["H1"], limit=7)}
     act = {"H1": 1_600_000, "H2": 1_600_000}
+    with mock.patch.object(PU, "HIGH_MAX", 2_000_000):
+        _deep_per_sku(deep7, act)
+
+
+def _deep_per_sku(deep7, act):
     for rank in (False, True):
         plan, logs = plan_with(True, top_units(2, "H1") + top_units(1, "H2"), rank, act, deep7, TOP)
         assert plan.get("H1") == 3 and "H2" not in plan, (rank, plan, logs)   # H1 2 -> 5; H2 (not deep) holds 1
@@ -117,8 +122,46 @@ def test_deep_per_sku():
         assert plan.get("H1") == 1, (rank, plan)
 
 
+def test_high_max_actual():
+    """11/14 ~02:30 (person): HIGH_MAX (1.5M) on max(estimate, last actual supply cost); a deep SKU too."""
+    deep7 = {"H1": dict(DEEP["H1"], limit=7)}
+    for rank in (False, True):
+        # H1 deep: estimate 600,000 but last supplied at 1,600,000 -> out; H2 at 1,400,000 -> bought
+        plan, logs = plan_with(True, [], rank, {"H1": 1_600_000, "H2": 1_400_000}, deep7)
+        assert "H1" not in plan and plan.get("H2") == 1, (rank, plan, logs)
+        assert any("[high max] 1 SKUs out" in m and "H1 1,600,000" in m for m in logs), logs
+        # both under 1.5M: both bought (H1 up to its deep limit 7)
+        plan, logs = plan_with(True, [], rank, {"H1": 1_400_000}, deep7)
+        assert plan.get("H1") == 7 and plan.get("H2") == 1, (rank, plan)
+        assert not any("[high max]" in m for m in logs), logs
+
+
+def test_sofa_trial_actual():
+    """The sofa trial (deep sofa SKUs up to their limit) skips a SKU whose last actual supply cost > HIGH_MAX."""
+    import limits
+    cat = {k: {"name": k, "list_price": 2_000_000, "kind": "goods", "category": "가구>" + PU.SOFA_CAT} for k in ("S1", "S2")}
+    st = {"skus": {k: {"name": k, "sold_30m": 3} for k in ("S1", "S2")}, "sku_break": {}}
+    P = mock.patch.object
+    with contextlib.ExitStack() as es:
+        for obj, name, val in ((PU.policy, "get", lambda s, k: {"sofa_trial_start": 1, "sofa_trial_end": 4e9}.get(k)),
+                               (PU.policy, "values", lambda s, *k: (0.1, 0.15)),
+                               (PU.sofa_rules, "limits_now", lambda r=None: (2, 30, 2, 1_500_000)),
+                               (PU.sofa_rules, "on", lambda: False), (PU, "excluded", lambda: {}),
+                               (PU, "_hce", lambda: {}), (PU, "price_of", lambda k, s=None: (1_500_000, 50)),
+                               (deep_high, "current", lambda **k: {"S1": {"limit": 2}, "S2": {"limit": 2}}),
+                               (top_high, "last_costs", lambda *a, **k: {"S1": 1_654_245, "S2": 1_300_000}),
+                               (limits, "stock_cap_now", lambda c, h: (10 ** 12, "")), (limits, "CASH_RESERVE", 0)):
+            es.enter_context(P(obj, name, val))
+        logs = []
+        out = PU.sofa_trial({"balance": 10 ** 10}, [], cat, st, {}, {}, [], logs.append)
+    assert out and {x["sku"] for x in out} == {"S2"}, (out, logs)
+    assert any("S1: last actual supply cost 1,654,245 > HIGH_MAX 1,500,000 -> skip" in m for m in logs), logs
+
+
 if __name__ == "__main__":
     test_full_room()
     test_room_left()
     test_deep_per_sku()
+    test_high_max_actual()
+    test_sofa_trial_actual()
     print("ok")

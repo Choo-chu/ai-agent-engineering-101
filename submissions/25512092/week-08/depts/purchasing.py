@@ -227,6 +227,7 @@ def make_plan(inv, units, catalog, budget, log, record=True):
     from depts import high_cost_exclude           # 11/09 ~23:40: our 48 h cost > 95% of the market average
     no_buy = dict(no_buy, **{k: 'high_cost_exclude' for k in high_cost_exclude.current(log=log)})
     actual =top_high.last_costs()                # 11/12 ~09:50: "over 1.5M" on max(estimate, last actual supply cost)
+    over_max = {}                                 # 11/14 ~02:30: SKUs out by HIGH_MAX on the actual cost (logged once)
     from depts import line_rank                   # 11/09 ~14:35: lines after the request lines by expected profit
     rank = line_rank.on()
     if rank:
@@ -253,6 +254,9 @@ def make_plan(inv, units, catalog, budget, log, record=True):
         mm = high_margin(MIN_MARGIN) if cost > HIGH_MIN else MIN_MARGIN
         if cost > HIGH_MIN:                       # 11/12 ~14:20 (person) B: 6% for a SKU my shop has sold
             mm0, mm = mm, wide_trial.b_margin(sku, mm)
+        if cost <= HIGH_MAX < top_high.judge_cost(sku, cost, actual):   # 11/14 ~02:30 (person): HIGH_MAX on
+            over_max[sku] = int(top_high.judge_cost(sku, cost, actual))   # max(estimate, last actual supply cost),
+            continue                                                       # deep SKUs too
         if cost > HIGH_MAX or avg < cost * (1 + mm):
             continue
         if cost > HIGH_MIN and avg < cost * (1 + mm0):
@@ -345,6 +349,9 @@ def make_plan(inv, units, catalog, budget, log, record=True):
             f"held {held.get(sku, 0)}{' (wanted on forum)' if forum else ''}{rot} -> buy {qty}")
         if len(plan) == MAX_LINES:
             break
+    if over_max:
+        log(f"[high max] {len(over_max)} SKUs out: last actual supply cost > HIGH_MAX {HIGH_MAX:,} (estimate under it): "
+            + ", ".join(f"{k} {v:,}" for k, v in over_max.items()))
     est = lambda k: (catalog.get(k) or {}).get("list_price", 0) * COST_SHARE.get((catalog.get(k) or {}).get("kind", "goods"),
                                                                                   0.6) * surge.get(k, 1.0)
     from depts import normal_min                  # 11/11 ~20:50: at least 4 normal lines a run (normal_min.json)
@@ -441,6 +448,7 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
     found = []
     from depts import deep_high                     # 11/10 ~12:30: a fast-selling sofa SKU held up to 2-5 (else 1)
     deep = deep_high.current(write=False)
+    actual = top_high.last_costs()                  # 11/14 ~02:30: HIGH_MAX on max(estimate, last actual supply cost)
     for sku, s in stats["skus"].items():
         c = catalog.get(sku) or {}
         if leaf(sku) != SOFA_CAT or not c.get("list_price") or held.get(sku, 0) >= deep_high.limit(sku, deep) \
@@ -453,6 +461,9 @@ def sofa_trial(inv, units, catalog, stats, held, surge, plan, log):
         cost = c["list_price"] * COST_SHARE["goods"] * surge.get(sku, 1.0)
         if cost > max(SOFA_MAX_COST, sofa_rules.limits_now()[3]) or avg < cost * (1 + min_margin):   # 11/09 ~21:20: x3 1.5M
             continue
+        if top_high.judge_cost(sku, cost, actual) > HIGH_MAX:   # 11/14 ~02:30 (person): HIGH_MAX on max(estimate, last
+            log(f"[sofa trial] {sku}: last actual supply cost {int(actual.get(sku) or 0):,} > HIGH_MAX {HIGH_MAX:,} -> skip")
+            continue                                             # actual supply cost), deep SKUs too
         if sofa_rules.on() and not sofa_rules.buy_ok(sku, cost)[0]:   # E: >= 30 market sales/48 h, >= 2/h, cost <= 500k
             continue
         found.append((sku, cost, s["sold_30m"], avg, s.get("name") or c.get("name")))
