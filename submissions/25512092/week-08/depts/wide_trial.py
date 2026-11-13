@@ -64,31 +64,34 @@ def sold_skus(db_path=None, now=None, ttl=600):
     return s
 
 
-_sold24 = {"ts": 0, "skus": set()}
+_sold24 = {}
 
 
-def sold_24h(db_path=None, now=None, ttl=600):
-    """SKUs my shop sold at least once in the last 24 h (settles); cached for ttl seconds."""
+def sold_24h(db_path=None, now=None, ttl=600, min_n=1):
+    """SKUs my shop sold at least min_n times in the last 24 h (settles); cached for ttl seconds (per min_n)."""
     now = now or time.time()
-    if db_path is None and now - _sold24["ts"] < ttl:
-        return _sold24["skus"]
+    c = _sold24.get(min_n)
+    if db_path is None and c and now - c[0] < ttl:
+        return c[1]
     d = sqlite3.connect(f"file:{db_path or os.path.join(HERE, 'market.db')}?mode=ro", uri=True, timeout=30)
     try:
-        s = {k for (k,) in d.execute("SELECT DISTINCT sku FROM settles WHERE shop=? AND ts>=?", (ME, now - 86400))}
+        s = {k for (k,) in d.execute("SELECT sku FROM settles WHERE shop=? AND ts>=? GROUP BY sku HAVING COUNT(*)>=?",
+                                     (ME, now - 86400, min_n))}
     finally:
         d.close()
     if db_path is None:
-        _sold24.update(ts=now, skus=s)
+        _sold24[min_n] = (now, s)
     return s
 
 
 def two_limit(sku, r=None, sold=None):
-    """2 for a SKU sold in the last 24 h while TWO is on, else 1 (deep_high's SKUs are decided before this)."""
+    """2 for a SKU sold in the last 24 h while TWO is on, else 1 (deep_high's SKUs are decided before this).
+    11/13 ~13:10 (person): sold at least two_min_sold (wide_trial.json, 2) times in the last 24 h."""
     r = rules() if r is None else r
     if not on("TWO", r):
         return 1
     try:
-        s = sold_24h() if sold is None else sold
+        s = sold_24h(min_n=int(r.get("two_min_sold", 1))) if sold is None else sold
     except sqlite3.Error:
         return 1
     return int(r.get("two_max", 2)) if sku in s else 1

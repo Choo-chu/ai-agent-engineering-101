@@ -29,5 +29,9 @@
  "two_max": 2,
  "max_cost": 60000000,
  "high_max_back": 100,
- "why_two": "person 11/13 ~00:00: high SKU sold >= 1 in 24 h (not deep_high's) up to 2 a SKU; high_max 100 -> 200 (CEO/QC ceilings too); guard only 12 h+ unsold high cost > 60M -> B, C, TWO off + high_max 100; B / C on again under this guard; 3 h check"
+ "why_two": "person 11/13 ~00:00: high SKU sold >= 1 in 24 h (not deep_high's) up to 2 a SKU; high_max 100 -> 200 (CEO/QC ceilings too); guard only 12 h+ unsold high cost > 60M -> B, C, TWO off + high_max 100; B / C on again under this guard; 3 h check",
+ "two_reported": 1794505987,
+ "two_min_sold": 2,
+ "two_min_sold_ts": 1794543411,
+ "why_two_min_sold": "person 11/13 ~13:10: TWO only for a high SKU my shop sold >= 2 times in the last 24 h"
 }

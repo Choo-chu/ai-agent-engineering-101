@@ -47,7 +47,7 @@ def stats():
             "hot": ["N1", "H1", "H2"], "wanted": [], "wanted_cats": [], "sku_break": {}, "sku_n": {}}
 
 
-def plan_with(wrules, units=(), record=True):
+def plan_with(wrules, units=(), record=True, sold24=None):
     W.RULES, W.LINES = tmp_json(wrules, "wide_trial"), tmp_path(f"wide_trial-{time.time_ns()}.jsonl")
     PU.HIGH_MARGIN = tmp_json({"enabled": True, "min_margin": 0.08}, "high_margin")
     cat, st = catalog(), stats()
@@ -57,7 +57,7 @@ def plan_with(wrules, units=(), record=True):
     with contextlib.ExitStack() as es:
         for obj, name, val in (
                 (top_high, "last_costs", lambda *a, **k: {}), (W, "sold_skus", lambda *a, **k: {"H1"}),
-                (W, "sold_24h", lambda *a, **k: {"H1"}),
+                (W, "sold_24h", sold24 or (lambda *a, **k: {"H1"})),
                 (PU, "load_stats", lambda: st), (PU, "price_of", lambda k, s=None: (st["skus"][k]["avg"], 50)),
                 (PU, "busy_categories", lambda c, top=5: ["TV"]), (PU, "c_rules", lambda: {}),
                 (PU, "excluded", lambda: {}), (PU, "guard_check", lambda *a: None), (PU, "sofa_trial", lambda *a: None),
@@ -157,6 +157,29 @@ def test_two():
     assert W.two_limit("H1", rules(applied=["TWO"], off_ts=1), sold={"H1"}) == 1
 
 
+def test_two_min_sold():
+    # 11/13 ~13:10 (person): TWO only for a high SKU my shop sold >= 2 times in the last 24 h, via make_plan
+    import sqlite3
+    db = os.path.join(tempfile.mkdtemp(), "m.db")
+    c = sqlite3.connect(db)
+    c.execute("CREATE TABLE settles (ts, shop, sku)")
+    now = time.time()
+    c.executemany("INSERT INTO settles VALUES (?,?,?)", [(now - 60, "choo-chu", "H1")] * 2 + [(now - 60, "choo-chu", "H2")]
+                  + [(now - 90000, "choo-chu", "H2")] * 3 + [(now - 60, "other", "H2")] * 3)
+    c.commit()
+    c.close()
+    assert W.sold_24h(db, now, min_n=2) == {"H1"} and W.sold_24h(db, now) == {"H1", "H2"}
+    counts = {"H1": 2, "H2": 1}
+    s24 = lambda *a, min_n=1, **k: {s for s, n in counts.items() if n >= min_n}
+    q, _, _, _ = plan_with(rules(applied=["C", "B", "TWO"], two_min_sold=2), sold24=s24)
+    assert q.get("H1") == 2, q                                                     # sold twice: 2
+    counts["H1"] = 1
+    q, _, _, _ = plan_with(rules(applied=["C", "B", "TWO"], two_min_sold=2), sold24=s24)
+    assert q.get("H1") == 1, q                                                     # sold once: back to 1
+    q, _, _, _ = plan_with(rules(applied=["C", "B", "TWO"]), sold24=s24)           # without the key: once is enough
+    assert q.get("H1") == 2, q
+
+
 def test_cost_guard():
     # only the 12 h+ unsold high cost over 60M trips: B, C, TWO off, high_max back to 100, one urgent alert
     r = rules(applied=["C", "B", "TWO"], max_cost=60_000_000, high_max_back=100)
@@ -211,6 +234,7 @@ if __name__ == "__main__":
     test_plan_b_c()
     test_watch_guard_and_report()
     test_two()
+    test_two_min_sold()
     test_cost_guard()
     test_two_report()
     print("ok")
