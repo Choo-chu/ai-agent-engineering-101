@@ -197,6 +197,72 @@ def guard(units=None, now=None, send=None, path=None, log=print, high_max_back_f
     return "tripped"
 
 
+REON = os.path.join(HERE, "logs", "wide_trial_reon.json")
+REON_GAP_S = 1800          # a gap in the checks longer than this restarts the under-the-line clock
+
+
+def _reon_state(path=None):
+    try:
+        with open(path or REON, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def re_on(units=None, now=None, send=None, path=None, state_path=None, log=print, high_max_fn=None):
+    """11/14 ~16:10 (person): after the guard turned the trial off, the 12 h+ unsold high-price cost under re_on_cost
+    (45,000,000) for re_on_h (6) hours in a row -> on again (off_ts cleared, the off kept in "offs"), high_max back to
+    re_on_high_max (120; policy.json + the high_caps.json ceiling), one Telegram. The clock (logs/wide_trial_reon.json)
+    restarts when the cost is at or over the line or the checks stop for over REON_GAP_S. Checked at every buy plan.
+    Returns 'n/a', 'above', 'below' or 'on'."""
+    r = rules(path)
+    if not r.get("enabled") or not r.get("off_ts") or not r.get("re_on_cost"):
+        return "n/a"
+    now = now or time.time()
+    units = live_units() if units is None else units
+    n, cost = aged_high(units, now)
+    st = _reon_state(state_path)
+    since = st.get("below_since") if st.get("off_ts") == r["off_ts"] and now - st.get("last", 0) <= REON_GAP_S else None
+    if cost >= r["re_on_cost"]:
+        since = None
+    elif since is None:
+        since = round(now)
+    st = {"off_ts": r["off_ts"], "below_since": since, "last": round(now), "n": n, "cost": cost}
+    tmp = (state_path or REON) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(st, f)
+    os.replace(tmp, state_path or REON)
+    h = float(r.get("re_on_h", 6))
+    if since is None:
+        return "above"
+    if now - since < h * 3600:
+        return "below"
+    off = {k: r.pop(k) for k in ("off_ts", "off_why") if k in r}
+    r.setdefault("offs", []).append(dict(off, on_ts=round(now), on_why=f"12h+ unsold high cost < {r['re_on_cost']:,} "
+                                                                         f"for {h:g} h"))
+    save(r, path)
+    why = (f"12시간+ 미판매 고가 원가가 {datetime.fromtimestamp(since):%m-%d %H:%M}부터 {h:g}시간 동안 "
+           f"{r['re_on_cost']:,} 아래 (지금 {n}개 {cost:,})")
+    log(f"[wide trial] on again: {why}")
+    back = ""
+    if r.get("re_on_high_max"):
+        try:
+            (high_max_fn or high_max_back)(int(r["re_on_high_max"]), f"wide trial on again: {why}")
+            back = f", high_max {r['re_on_high_max']}"
+        except Exception as e:
+            log(f"[wide trial] high_max on again failed: {type(e).__name__}: {e}")
+            back = f", high_max 되돌리기 실패 ({type(e).__name__})"
+    if send is None:
+        import alerts
+        send = alerts.send
+    try:
+        send("urgent", f"wide_trial_on:{round(now)}", f"후보 넓히기 {'+'.join(r.get('applied') or [])} 자동으로 다시 켬: "
+             f"{why}{back}. 안전장치(원가 {r.get('max_cost', 0):,} 초과 시 끔)는 그대로")
+    except Exception as e:
+        log(f"[wide trial] alert failed: {type(e).__name__}: {e}")
+    return "on"
+
+
 def _lines(t0, t1, path=None):
     out = []
     try:

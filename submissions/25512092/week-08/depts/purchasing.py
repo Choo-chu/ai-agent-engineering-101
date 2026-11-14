@@ -150,6 +150,7 @@ def make_plan(inv, units, catalog, budget, log, record=True):
     from depts import wide_trial                  # 11/12 ~14:20 (person): B / C on, off by its guard (wide_trial.json)
     try:
         wide_trial.guard(units, log=log)
+        wide_trial.re_on(units, log=log)            # 11/14 ~16:10 (person): on again after 6 h under 45M
     except Exception as e:
         log(f"[wide trial] guard failed: {type(e).__name__}: {e}")
     surge = {s["sku"]: s.get("factor", 1.0) for s in (inv.get("surge") or []) if isinstance(s, dict)}
