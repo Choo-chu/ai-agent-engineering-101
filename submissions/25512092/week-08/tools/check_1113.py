@@ -17,6 +17,9 @@ unchanged). One Telegram ("daily") at every 3rd hour (12, 15, 18 ...), each numb
      and the 24 h before scaled to that length: negotiations, receipts, sales, refunds
   16 (11/13 ~18:10, for 21:00): my deals per hour, grade C deals / score since the C >= 0.75 rule vs the same length
      before (10 and 11 already give the student saved 2nd / 3rd gap and the C deals / score of the 3 h)
+  17 (11/14 ~16:10, for 18:00): shop score parts among the student shops - Book, revenue and stars: value, student
+     rank and percentile now (live board) vs 3 h ago (logs/board_full.jsonl), the shop ALL from them, who passed me
+     and whom I passed; cash, stock at cost and their sum: change over the 3 h vs the 3 h before
 Read-only.
     python tools/check_1113.py [--once | --dry]
 """
@@ -124,7 +127,80 @@ def build(now, db_path=None, board=None, units=None, sofa_numbers=None, is_sofa=
     out += "\n" + a3_text(now, r, a3(t0, now, set(r.get("skus") or {}), db_path),
                           a3(tp, t0, set(r.get("skus") or {}), db_path), db_path)
     out += "\n" + a3_since_text(now, r, db_path)
-    return out + "\n" + buyer_text(now, board, db_path, catalog, shop_scores, board_path, kit_logs)
+    out += "\n" + buyer_text(now, board, db_path, catalog, shop_scores, board_path, kit_logs)
+    return out + "\n" + score_text(now, board or {}, db_path, board_path)      # 11/14 ~16:10: 17
+
+
+SCORE_KEYS = (("book", "Book", 0.5), ("revenue", "매출", 0.3), ("stars_rank", "별점", 0.2))
+
+
+def _snap(t, path=None):
+    """The logs/board_full.jsonl row nearest t (within 1800 s), or None."""
+    import json
+    best = None
+    with open(path or os.path.join(HERE, "logs", "board_full.jsonl"), encoding="utf-8") as f:
+        for ln in f:
+            try:
+                e = json.loads(ln)
+            except ValueError:
+                continue
+            if not isinstance(e, dict) or "ts" not in e or "s" not in e:
+                continue
+            if abs(e["ts"] - t) <= 1800 and (best is None or abs(e["ts"] - t) < abs(best["ts"] - t)):
+                best = e
+    return best
+
+
+def shop_parts(S, me=ME):
+    """{key: (my value, student rank, percentile)} and "all" for {student shop: {book, revenue, stars_rank}}; the
+    percentile and ALL as the board's (board_speed.pct / shop_all)."""
+    import board_speed
+    out, tot = {}, 0.0
+    for k, _, w in SCORE_KEYS:
+        vals = [x[k] for x in S.values()]
+        v = S[me][k]
+        out[k] = (v, 1 + sum(1 for x in vals if x > v), board_speed.pct(vals, v))
+        tot += w * out[k][2]
+    out["all"] = tot
+    return out
+
+
+def score_text(now, board, db_path=None, board_path=None, me=ME):
+    """17. shop score parts among the students now vs 3 h ago, who passed whom; cash / stock change."""
+    t0, tp = now - H * 3600, now - 2 * H * 3600
+    out = []
+    try:
+        stud = {(p.get("shop") or {}).get("name") for p in board.get("players") or [] if p.get("student")}
+        cur = {x["name"]: x for x in board.get("shops") or [] if x.get("name") in stud}
+        row = _snap(t0, board_path)
+        prev = {n: x for n, x in (row or {}).get("s", {}).items() if n in stud}
+        a = shop_parts(cur, me)
+        b = shop_parts(prev, me) if me in prev else None
+        f = lambda k, v: f"{v:,.0f}" if k != "stars_rank" else f"{v}"
+        parts = []
+        for k, name, _ in SCORE_KEYS:
+            x = f"{name} {f(k, a[k][0])} {a[k][1]}위({a[k][2]:.3f})"
+            if b:
+                x += f" vs {f(k, b[k][0])} {b[k][1]}위({b[k][2]:.3f})"
+                up = [n for n in cur if n != me and n in prev and prev[n][k] <= prev[me][k] and cur[n][k] > cur[me][k]]
+                dn = [n for n in cur if n != me and n in prev and prev[n][k] > prev[me][k] and cur[n][k] <= cur[me][k]]
+                if up:
+                    x += " [우리를 넘음: " + ", ".join(up) + "]"
+                if dn:
+                    x += " [우리가 넘음: " + ", ".join(dn) + "]"
+            parts.append(x)
+        out.append(f"17. shop 점수(학생 {len(cur)}곳 기준) {a['all']:.3f}" + (f" vs 3시간 전 {b['all']:.3f}" if b else "")
+                   + ": " + "; ".join(parts))
+    except Exception as e:
+        out.append(f"17. shop 점수 구성: 실패 {type(e).__name__}")
+    c1, c0, cp = cash(now, db_path), cash(t0, db_path), cash(tp, db_path)
+    d = lambda x, y: f"현금 {x[0] - y[0]:+,} 재고 원가 {x[1] - y[1]:+,} 합 {x[0] + x[1] - y[0] - y[1]:+,}"
+    if c1 and c0:
+        out.append(f"    현금·재고 변화: 최근 3시간 {d(c1, c0)}" + (f" | 그 전 3시간 {d(c0, cp)}" if cp else "")
+                   + f" (지금 현금 {c1[0]:,}, 재고 원가 {c1[1]:,})")
+    else:
+        out.append("    현금·재고 변화: 읽기 실패")
+    return "\n".join(out)
 
 
 def saved_line(j, me=ME):

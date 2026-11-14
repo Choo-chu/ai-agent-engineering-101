@@ -105,6 +105,30 @@ def test_build():
     assert "적용 전" in off and "9. 구매량 변화" not in off and "15. 보증 SKU 적용 후 비교: 적용 전" in off, off
 
 
+def test_score():
+    # 17 (11/14 ~16:10): 3 student shops + 1 non-student; s1 passes me in revenue, I pass s2 in stars
+    b = dict(BOARD, players=[dict(p, shop={"name": "choo-chu" if p["player"] == "Choo-chu" else f"s{i}"})
+                             for i, p in enumerate(BOARD["players"][8:11], 1)])
+    b["shops"] = [{"name": "choo-chu", "book": 100, "revenue": 500, "stars_rank": 4.4},
+                  {"name": "s1", "book": 200, "revenue": 600, "stars_rank": 4.5},
+                  {"name": "s3", "book": 50, "revenue": 100, "stars_rank": 4.3},
+                  {"name": "outsider", "book": 999, "revenue": 999, "stars_rank": 5.0}]
+    prev = {"choo-chu": {"book": 90, "revenue": 450, "stars_rank": 4.3}, "s1": {"book": 180, "revenue": 400,
+            "stars_rank": 4.5}, "s3": {"book": 40, "revenue": 90, "stars_rank": 4.35}}
+    bp = tmp_json({}, "bf17")
+    with open(bp, "w", encoding="utf-8") as f:
+        f.write(json.dumps({"ts": NOW - 3 * 3600 + 120, "s": prev, "b": {}}) + "\n")
+    t = C.build(NOW, db_path=make_db(), board=b, units=[], sofa_numbers=sofa_numbers, is_sofa=lambda s: False,
+                a3_path=A3, catalog=CAT, shop_scores=SCORES, board_path=bp)
+    # now: book 2nd (0.5), revenue 2nd (0.5), stars 2nd (0.5) -> 0.5; before: 0.5 x 0.5 + 0.3 x 1.0 + 0.2 x 0 = 0.55
+    assert ("17. shop 점수(학생 3곳 기준) 0.500 vs 3시간 전 0.550: Book 100 2위(0.500) vs 90 2위(0.500); 매출 500 2위(0.500) "
+            "vs 450 1위(1.000) [우리를 넘음: s1]; 별점 4.4 2위(0.500) vs 4.3 3위(0.000) [우리가 넘음: s3]") in t, t
+    assert "현금·재고 변화: 최근 3시간 현금 -5,000,000 재고 원가 +5,000,000 합 +0 (지금 현금 55,000,000, 재고 원가 95,000,000)" in t, t
+    # no board row 3 h ago: now only
+    t = C.score_text(NOW, b, make_db(), tmp_json({}, "bf17e"))
+    assert "17. shop 점수(학생 3곳 기준) 0.500: Book 100 2위(0.500);" in t, t
+
+
 def test_deals():
     """11/13 ~18:10: 16. deals per hour (3 h vs 3 h before) and C since the 0.75 rule vs the same length before."""
     p = make_db()
@@ -155,6 +179,7 @@ def test_once():
 
 if __name__ == "__main__":
     test_build()
+    test_score()
     test_acp()
     test_deals()
     test_once()
