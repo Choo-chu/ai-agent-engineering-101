@@ -48,3 +48,63 @@
 ## 메모
 
 - 앱 도구 `app_owner_memo`: 앱 하단 "사장님 메모"에 저장한 텍스트 (브라우저 localStorage). 앱 페이지가 열려 있어야 에이전트가 읽을 수 있다.
+
+## 운영
+
+개장 당일 (2026-11-24 19:00 KST) 실행 절차. PowerShell 기준, 터미널 2개.
+
+**콘솔 저장 위치에 주의.** 키트 콘솔에는 `[app] open ...?k=<접근 코드>` 링크가 찍힌다 (키트는 이 코드를 로그 파일에는 안 쓰고 터미널에만 찍는다). 콘솔을 `logs/`에 저장하면 제출물에 섞여 커밋될 수 있으니, gitignore된 `.kit/` 아래에 저장한다. shim 콘솔은 gitignore된 `shim/logs/`.
+
+공통 준비 (각 터미널에서 한 번): 한글 깨짐 방지
+
+```powershell
+[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$env:PYTHONIOENCODING = "utf-8"; $env:PYTHONUNBUFFERED = "1"
+```
+
+### 터미널 1: shim
+
+```powershell
+cd C:\Users\108\Desktop\AX\ai-agent-engineering-101\submissions\25512092\round-4
+$env:SHIM_MODEL = "sonnet"        # 바꾸려면 Ctrl-C 후 "haiku"로 다시 실행 (키트는 그대로 둬도 됨)
+cmd /c "python shim\claude_shim.py 2>&1" | Out-File -Encoding utf8 "shim\logs\shim-console-$(Get-Date -Format MMdd-HHmm).txt"
+```
+
+- 요청별 기록은 `shim\logs\shim.log`에 따로 남는다. 시작 확인: 다른 창에서 `curl.exe -s http://127.0.0.1:8900/health` → `{"ok": true, ...}`
+- `cmd /c "... 2>&1"`: PowerShell 5.1에서 `2>&1`을 직접 쓰면 stderr 줄마다 NativeCommandError가 붙으므로 cmd에서 합친다.
+
+### 터미널 2: 키트
+
+```powershell
+cd C:\Users\108\Desktop\AX\ai-agent-engineering-101
+$env:SHIM_KEY = "dummy"           # shim은 Authorization 헤더를 읽지 않는다. 진짜 키를 넣지 말 것
+Remove-Item Env:AGENT_LLM_BASE, Env:AGENT_LLM_MODEL, Env:AGENT_LLM_KEY -ErrorAction SilentlyContinue   # 있으면 agent.json llm을 덮어씀
+New-Item -ItemType Directory -Force submissions\25512092\round-4\.kit | Out-Null
+cmd /c "python scripts\round4\agent_kit.py run --dir submissions\25512092\round-4 --market https://market.ourolabs.ai --name <nickname> --owner <claim code> --tunnel --app 8800 --app-tunnel 2>&1" | Out-File -Encoding utf8 "submissions\25512092\round-4\.kit\console-$(Get-Date -Format MMdd-HHmm).txt"
+```
+
+콘솔이 파일로만 가므로, 세 번째 창에서 따라 읽는다:
+
+```powershell
+cd C:\Users\108\Desktop\AX\ai-agent-engineering-101\submissions\25512092\round-4
+Get-Content -Wait -Encoding utf8 (Get-ChildItem .kit\console-*.txt | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+```
+
+### 확인할 것
+
+1. **buyer 지갑 → faucet**: `[maroo] shop wallet 0x..., buyer wallet 0x...` 줄의 **buyer** 주소를 https://faucet.maroo.io 에서 수동 청구 (캡차, 5,000/회, 10,000까지). 에이전트 간 거래 결제에 쓰인다.
+2. **[app] open 링크**: `http://127.0.0.1:8800/?k=...` (이 PC), `https://....trycloudflare.com/?k=...` (휴대폰). 링크는 남에게 주지 말 것 (`k=`가 접근 코드). 앱 하단 "사장님 메모"를 열어 둬야 `app_owner_memo`가 동작한다.
+3. `[tunnel] ...`, `[market] shop joined as <nickname>`, `[kit] the agent is awake` 가 나오는지.
+4. **사용량 (shim.log)**: 매 요청 줄의 `rate_limit`에 5시간/주간 사용률이 있다. 마지막 값 보기:
+
+```powershell
+$l = Get-Content shim\logs\shim.log -Encoding utf8 | Select-String 'five_hour' | Select-Object -Last 1
+if ($l -match '"five_hour":\{"utilization":([\d.]+).*"seven_day":\{"utilization":([\d.]+)') { "5h=$($Matches[1])  7d=$($Matches[2])" }
+(Get-Content shim\logs\shim.log -Encoding utf8 | Select-String 'ok=False').Count   # 실패(거절 포함) 수
+```
+
+### 주간 사용량이 빠르게 오르면
+
+- **모델 낮추기**: 터미널 1에서 Ctrl-C → `$env:SHIM_MODEL = "haiku"` → shim 다시 실행. 키트는 재시작 불필요 (shim이 멈춘 동안 키트는 3-8초마다 재시도). agent.json의 `model` 값은 표시용이고 실제 모델은 `SHIM_MODEL`이 정한다.
+- **max_steps 줄이기**: `agent.json`의 `max_steps` (기본 40)를 줄인다. 키트는 agent.json을 시작할 때 한 번만 읽으므로 **키트 재시작이 필요**하다 (터미널 2에서 Ctrl-C 후 같은 명령).
+- 참고 (11/22 측정): 호출 약 45번에 5시간 사용률 0.05 → 0.06, 주간 0.04 그대로. 이 세션 같은 Claude Code 사용도 같은 한도를 쓴다. 초과 사용(overage)은 꺼져 있어서 한도에 닿으면 호출이 실패하고 에이전트가 멈춘다.
