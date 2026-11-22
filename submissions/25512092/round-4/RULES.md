@@ -100,7 +100,8 @@ Get-Content -Wait -Encoding utf8 (Get-ChildItem .kit\console-*.txt | Sort-Object
 ```powershell
 $l = Get-Content shim\logs\shim.log -Encoding utf8 | Select-String 'five_hour' | Select-Object -Last 1
 if ($l -match '"five_hour":\{"utilization":([\d.]+).*"seven_day":\{"utilization":([\d.]+)') { "5h=$($Matches[1])  7d=$($Matches[2])" }
-(Get-Content shim\logs\shim.log -Encoding utf8 | Select-String 'ok=False').Count   # 실패(거절 포함) 수
+(Get-Content shim\logs\shim.log -Encoding utf8 | Select-String ' ok=False').Count   # 실패(거절 포함) 수 (앞 공백: json_ok=False 제외)
+(Get-Content shim\logs\shim.log -Encoding utf8 | Select-String 'json_ok=False').Count   # 형식 어긋난 답 (키트가 대개 그래도 파싱함)
 ```
 
 ### 주간 사용량이 빠르게 오르면
