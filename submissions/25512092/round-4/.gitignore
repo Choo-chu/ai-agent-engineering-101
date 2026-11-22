@@ -2,3 +2,5 @@
 .market/
 .kit/
 meshkit.json
+shim/workdir/
+shim/logs/
