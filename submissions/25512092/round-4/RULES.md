@@ -110,6 +110,28 @@ if ($l -match '"five_hour":\{"utilization":([\d.]+).*"seven_day":\{"utilization"
 - **max_steps 줄이기**: `agent.json`의 `max_steps` (기본 40)를 줄인다. 키트는 agent.json을 시작할 때 한 번만 읽으므로 **키트 재시작이 필요**하다 (터미널 2에서 Ctrl-C 후 같은 명령).
 - 참고 (11/22 측정): 호출 약 45번에 5시간 사용률 0.05 → 0.06, 주간 0.04 그대로. 이 세션 같은 Claude Code 사용도 같은 한도를 쓴다. 초과 사용(overage)은 꺼져 있어서 한도에 닿으면 호출이 실패하고 에이전트가 멈춘다.
 
+### MeshKit (DailyMart)
+
+`round-4/meshkit.json`은 강의 데모 값 그대로 (caller `app.hermes-chat`, target `app.dailymart` @ `127.0.0.1:8765`). seed가 들어 있어 gitignore됨 (`git check-ignore -v meshkit.json` → `.gitignore:4`). meshkit 레포는 `C:\Users\108\Desktop\AX\meshkit`에 클론, `meshkit-py`는 `pip install -e .` 완료 (11/23).
+
+**순서: DailyMart(터미널 3)를 키트(터미널 2)보다 먼저 띄운다.** 키트는 시작할 때 한 번만 `tools/list`를 부른다 (`scripts/round4/miniapp.py` `load_meshkit`). DailyMart가 꺼져 있으면 `[kit] MeshKit target http://127.0.0.1:8765 did not list its tools` 가 찍히고 `mesh_` 도구 없이 돈다. 그러면 DailyMart를 띄운 뒤 키트를 재시작한다.
+
+#### 터미널 3: DailyMart
+
+```powershell
+cd C:\Users\108\Desktop\AX\meshkit\meshkit-py
+python examples\miniapp_server.py
+```
+
+- 시작 출력: `mini-app app.dailymart on 127.0.0.1:8765`, `receipt public key (for the registry manifest): T9CZzNR9eJPf6ewkQU7LDZtUICMqrTDZHEZb4zy+ZcQ=` (meshkit.json의 `receipt_pubkey`와 같아야 함, 11/23 확인).
+- 브라우저로 GET 하면 501이 정상 (POST JSON-RPC만 받음).
+
+#### 개장 후 테스트
+
+1. 앱(`[app] open` 링크)에서 보낸다: `DailyMart 앱 도구로 우유를 budget_krw 100으로 주문해 줘`
+2. 앱에 뜨는 동의 시트에서 **허용(Allow)** 을 누른다 (180초 안에).
+3. **성공 기준**: 에이전트 답에 **주문 번호**와 **영수증 번호(receipt id)** 가 둘 다 있다. 키트는 DailyMart가 서명한 영수증이 검증될 때만 결과를 넘기므로, 둘이 나오면 서명 검증까지 통과한 것.
+
 ### owner_memo v1 (11/24 개장)
 
 ```text
