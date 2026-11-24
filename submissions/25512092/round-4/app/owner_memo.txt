@@ -1,20 +1,18 @@
-[운영 지시 v2.5 - Phase 1]
+[운영 지시 v2.6 - Phase 1]
 
 [최우선]
-- [긴급] 판매 0건: /api/ledger에서 우리 unit 57개 중 정산 0건(시장 전체 145건). shop_handler를 아래 [shop_handler]대로 지금 다시 만든다. restock보다 먼저. 공급 창이 열린 동안만 피한다.
+- [긴급] shop_handler v6 재작성은 22:48 공급 창 종료 후 바로 한다. 아래 [shop_handler v6]대로. v5의 checkout 형식·서명은 맞으니(라이브 검증 완료) 그대로 둔다. 판매는 아직 0건.
 - 시각은 app_clock의 now_epoch로 판단하고 /api/inventory의 restock.opens_at·closes_at과 비교한다. 창이 열려 있으면 다른 일보다 restock 실행이 먼저다. 창 3분 전부터는 restock을 새로 만들지 않는다.
 - sleep은 120초를 넘기지 않는다. 깨면 app_clock으로 시각을 확인한다.
 - 이미 보유한 SKU는 다시 사지 않는다(재고 0이 된 SKU만 다시 채운다).
 
-[shop_handler - v3가 못 파는 이유와 고칠 점]
-1. checkout_jwt payload가 틀렸다. v3는 {sku, unit, qty, price, buyer, task_id}. clearing house 형식은 정확히 {id: 매번 새 고유값, shop: "choo-chu", shop_url: kit.shop_url, item: SKU, price: 정수, task: 고유 문자열, currency: "credits", iat: epoch 정수, unit: unit id, cert: 그 unit의 cert 그대로, claim: 지금 등급}. qty·buyer·sku 키는 넣지 않는다. checkout 1개 = unit 1개. kit.sign_jwt(payload, "shop"), data {"checkout_jwt": ...}.
-2. 동의 판정: 첫 문의에도 "결제용 서명 영수증"이 들어 있어서 v3는 동의 없이 checkout 17건을 냈다("결제는 보류"에도). 같은 대화에서 우리가 상품·가격을 먼저 말했고(history) 손님이 그 가격에 사겠다고 했을 때만 낸다. 첫 문의에는 상품·등급·가격만 답한다.
-3. "네, 살게요"처럼 품목명이 없는 답을 v3는 unparsed로 버린다. history에서 우리가 마지막에 제안한 SKU·unit·가격을 찾아 이어 간다.
-4. 매칭: v3는 계란·쌀·생선 등을 '식품'으로 바꿔 재고 첫 unit(새우과자)을 제안했고, 과자·보리차·김치·라면은 인식 못 했다. 손님 말의 품목 단어를 재고 unit 이름·category 마지막 단계에 맞춘다. 없으면 같은 category 마지막 단계에서 가격이 가까운 대체품, 그것도 없으면 없다고 말하고 입고 예정 안내. 관계없는 상품은 제안하지 않는다. "과자뿐입니다" 고정 문구는 지운다.
-5. 내준 unit은 sales_ledger에 10분 예약. 예약 중 unit은 다른 손님에게 내지 않는다(v3는 한 unit으로 11번 냈다). checkout 직전 /api/inventory로 재고 재확인.
-6. 가격: 첫 제시가 정가, 흥정 90% → 80% → 최저가. 최저가 = ceil((cost × 1.1 + 210) / 0.99), cost는 unit의 cost.
-7. 대량(3개 초과)·특이한 요청·이해 못 한 메시지는 defer.
-8. test.py: payload 키 집합이 1번과 같은지, 첫 문의에 checkout이 안 나가는지, history 제안 뒤 "네 살게요"에 나가는지, 없는 품목에 관계없는 상품을 안 내는지 검증.
+[shop_handler v6 - v5에서 고칠 점]
+- 유지: checkout payload {id, shop, shop_url, item, price, task, currency:"credits", iat, unit, cert, claim}, shop 지갑 서명, 첫 문의엔 checkout 없음, 정가→90%→80%→최저가, 3개 초과 defer.
+1. 수락 판정: v5는 제안 뒤 "결제|주문|구매|그거"만 있어도 낸다. "결제는 보류할게요", "보리차 말고 김 있어요? 결제용 서명도"에 checkout이 나갔다(시뮬레이션). 수락 단어는 살게요·살래요·그걸로 할게요·주세요 정도로 줄이고 결제·구매·주문은 뺀다. 보류·말고·안 살·생각해·다음에가 있으면 수락이 아니다. 메시지에 다른 품목명이 있으면 새 문의로 처리한다.
+2. 매칭: v5는 2글자 미만 단어를 버려 "쌀", "김"을 못 찾고, "국내산 시금치"에 "국내산" 보리차를 제안했다. 한 글자 품목어(쌀·김·차·무·파·떡)를 허용하고, 국내산·국산·g·kg·개·봉 같은 수식어와 숫자는 매칭에서 뺀다. 없으면 같은 category 마지막 단계에서 가격이 가까운 대체품, 그것도 없으면 입고 예정 안내.
+3. 예약: 문의만으로 예약하지 않는다(v5는 문의 때 10분 예약해서 다른 손님에게 재고 없음이 된다). checkout을 낼 때만 10분 예약. 수락 시 그 unit 예약이 다른 세션 것이면 내지 않는다(v5는 예약 만료 뒤 같은 unit으로 두 손님에게 냈다). 한 세션에 checkout은 한 번만.
+4. 상태 파일: 예약·세션은 새 파일 handler_state.json에 둔다. sales_ledger.json은 v5가 덮어써서 v3 문의 기록 199건이 사라졌다. 기록은 ledger.jsonl에 append만.
+5. test.py는 실제 sales_ledger.json·ledger.jsonl·handler_state.json에 쓰지 않는다. 테스트에서는 임시 경로(tempfile)를 쓴다(v5 테스트가 실제 파일에 가짜 unit U8186570c 예약과 "우주선" 행을 남겼다). 위 1~3의 사례를 테스트로 검증한다.
 
 [restock]
 - /api/supply는 견적·확정 모두 호출 사이 최소 11초. SKU를 건너뛸 때도 11초 기다린다. 429면 응답의 wait초 + 1초 기다렸다 같은 SKU 재시도(최대 2번). v22는 쉬지 않아 429가 86번 났다.
