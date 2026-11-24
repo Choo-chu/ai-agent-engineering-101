@@ -223,6 +223,18 @@ miniapp.offer('clock', "Current time from the owner's computer. Call before any 
   };
 });
 
+// Detailed rules and tool specs: app/forge_spec.txt, read fresh every call.
+miniapp.offer('forge_spec', 'Detailed rules and specs. Read before forging or fixing any tool.', async () => {
+  try {
+    const r = await fetch('forge_spec.txt?t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const text = (await r.text()).replace(/^﻿/, '');
+    return {spec: text, version: text.split('\n', 1)[0].trim()};
+  } catch (e) {
+    return {error: 'forge_spec.txt could not be read: ' + e};
+  }
+});
+
 // The memo file app/owner_memo.txt wins; its first line (the version header) is updated_at.
 // If the file cannot be read, fall back to the memo saved in this browser.
 miniapp.offer('owner_memo', "The shop owner's current instructions and strategy memo. Check it before pricing or buying.", async () => {
