@@ -214,6 +214,15 @@ function showMemoTime(m) {
     setTimeout(() => { $('memo-msg').textContent = ''; }, 2500);
   };
 }
+// The owner's computer clock: the agent compares now_epoch with restock.opens_at / closes_at.
+miniapp.offer('clock', "Current time from the owner's computer. Call before any restock or window decision.", () => {
+  const now = new Date();
+  return {
+    now_epoch: Math.floor(now.getTime() / 1000),
+    now_kst: now.toLocaleString('sv-SE', {timeZone: 'Asia/Seoul'}) + ' KST',
+  };
+});
+
 // The memo file app/owner_memo.txt wins; its first line (the version header) is updated_at.
 // If the file cannot be read, fall back to the memo saved in this browser.
 miniapp.offer('owner_memo', "The shop owner's current instructions and strategy memo. Check it before pricing or buying.", async () => {
