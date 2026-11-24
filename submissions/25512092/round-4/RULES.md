@@ -116,6 +116,8 @@ cmd /c "python scripts\round4\agent_kit.py run --dir submissions\25512092\round-
 
 `<claim code>`는 실행할 때 직접 입력한다 (파일에 쓰지 않는다).
 
+키트 재시작하면 앱 탭 Ctrl+Shift+R 필수(page_token 갱신). 안 하면 app_owner_memo·app_clock 등 앱 도구가 사라진다.
+
 ### 터미널 4: 콘솔 보기
 
 콘솔이 파일로만 가므로, 네 번째 창에서 따라 읽는다:

@@ -1,0 +1,9 @@
+name: offer
+description: 손님에게 가격을 말하기 전에 부른다. args {customer_key: 손님 이름(대기 메시지 from의 '...' 안), sku, price: 정수}. price가 그 sku의 최저가(가장 비싼 unit cost 기준) 이상이면 handler_state.json offers[손님]에 저장하고 {ok: true, price, floor}, 미만이면 {ok: false, floor}. 예약은 하지 않는다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [handler_state.json, test_state.json]
+  identity: [shop]
+  timeout: 30
+logic: logic.py
+test: test.py

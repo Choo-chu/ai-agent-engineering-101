@@ -1,0 +1,12 @@
+name: shop_handler
+description: A2A 핸들러. 손님(claimed_from)에게 30분 안의 offer가 있고 메시지가 수락이면 미예약 unit을 10분 예약하고 가게 지갑으로 서명한 checkout_jwt를 data로 돌려준다. 그 밖의 메시지는 모두 defer.
+permission:
+  network: [market.ourolabs.ai]
+  write: [handler_state.json, ledger.jsonl, test_state.json, test_ledger.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 30
+  handles: [a2a]
+logic: logic.py
+test: test.py

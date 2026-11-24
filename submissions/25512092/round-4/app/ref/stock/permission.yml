@@ -1,0 +1,8 @@
+name: stock
+description: 재고 요약. args {query: 선택, 띄어쓰기로 여러 단어}. 예약 안 된 unit을 sku별로 묶어 "sku|이름|등급별 개수|floor|정가" 한 줄씩(최대 4000자). query가 있으면 이름·카테고리에 단어가 들어간 것만.
+permission:
+  network: [market.ourolabs.ai]
+  identity: [shop]
+  timeout: 30
+logic: logic.py
+test: test.py

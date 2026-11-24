@@ -1,22 +1,28 @@
-[도구 상세 규칙 v1.1 - 도구를 만들거나 고칠 때 이대로]
+[도구 상세 규칙 v1.3 - 도구를 만들거나 고칠 때 이대로]
 
 [목표·가격]
 - 가게 지갑 잔고를 늘린다. 초반 2~3일은 이익보다 거래 수와 단골. 같은 손님에게 같은 가격. 사장님께 말한 가격과 실제 가격을 같게.
 - 최저가 = ceil((cost × 1.1 + 210) / 0.99), cost는 inventory unit의 cost. 첫 제시가는 정가(list_price), 흥정은 90% → 80% → 최저가, 각 단계 max(단계 가격, 최저가).
 
-[shop_handler]
-- checkout_jwt payload는 정확히 {id: 매번 새 고유값, shop: "choo-chu", shop_url: kit.shop_url, item: SKU, price: 정수, task: 고유 문자열, currency: "credits", iat: epoch 정수, unit: unit id, claim: 지금 등급}. 다른 키 없음. checkout 1개 = unit 1개. kit.sign_jwt(payload, "shop"), data {"checkout_jwt": ...}.
-- cert 키는 넣지 않는다(선택 항목이라 정산에 필요 없음). 넣을 거면 str()로 바꾸지 말고 inventory unit의 cert 객체를 그대로(v8은 str(cert)로 Python 문자열을 넣었다).
-- 최저가는 /api/inventory unit의 실제 cost로 ceil((cost × 1.1 + 210) / 0.99). list_price × 0.75 추정은 쓰지 않는다(v8의 _floor).
-- C등급 unit은 정가가 아니라 최저가로 먼저 제시한다(v8은 C 과자를 정가 14,900에 제시).
-- 쌀 문의: 이름·category가 쌀·백미·현미·즉석밥(햇반)인 unit을 먼저, 그다음 떡·과자류 순으로 고른다(v8은 "우리쌀 떡국떡"을 제시).
-- 첫 문의에는 상품·등급·가격만 답하고 checkout은 내지 않는다.
-- 수락: 같은 대화에서 우리가 제안한 상품에 손님이 살게요·살래요·그걸로 할게요·주세요라고 했을 때만. 결제·구매·주문은 수락 단어가 아니다(첫 문의에도 "결제용 서명 영수증"이 자주 들어 있다). 보류·말고·안 살·생각해·다음에가 있으면 수락 아님. 다른 품목명이 나오면 새 문의로 처리.
-- 매칭: 손님 말의 품목어를 재고 unit 이름·category 마지막 단계에 맞춘다. 한 글자 품목어(쌀·김·차·무·파·떡)도 인식한다. 국내산·국산·g·kg·개·봉 같은 수식어와 숫자는 매칭에서 뺀다. 없으면 같은 category 마지막 단계에서 가격이 가까운 대체품, 그것도 없으면 입고 예정 안내. 관계없는 상품은 제안하지 않는다.
-- 예약: 문의만으로는 예약하지 않는다. checkout을 낼 때만 그 unit을 10분 예약한다. 다른 세션이 예약한 unit은 내지 않는다. 한 세션에 checkout은 한 번. checkout 직전 /api/inventory로 재고를 다시 확인한다.
-- 대량(3개 초과)·특이한 요청·이해 못 한 메시지는 {defer: true}.
-- 예약·세션 상태는 handler_state.json. 문의·거래 기록(손님, 원문, SKU, 제시가, 최종가, 결과)은 ledger.jsonl에 append만. sold는 정산 확인 뒤에만 true.
-- test.py는 실제 sales_ledger.json·ledger.jsonl·handler_state.json에 쓰지 않는다(tempfile 임시 경로). 첫 문의 무발급, "네 살게요" 발급, "결제는 보류" 무발급, "쌀" 매칭, 같은 unit 두 손님 금지를 검증한다.
+[손님 키]
+- 손님 키 = 손님 이름(claimed_from). 핸들러는 args의 claimed_from, 나는 대기 메시지 from의 '...' 안 이름(예: 성선자-55e7). 이름이 없으면 offer·결제서 없이 응대만.
+
+[offer 도구] offer(customer_key, sku, price)
+- /api/inventory(Bearer k.token('shop'))에서 그 sku의 unit 중 cost가 가장 높은 것으로 floor = ceil((cost × 1.1 + 210) / 0.99). price < floor면 {"ok": false, "floor": floor}.
+- 통과하면 handler_state.json의 offers[customer_key] = {sku, price, ts: now}. 예약은 하지 않는다. {"ok": true, "sku", "price", "floor"}.
+- 상대경로, k.testing이면 test_state.json. logic.py 3,000자 이하.
+
+[shop_handler] 결제서 발급만
+- 손님 키(claimed_from)에 30분 안의 offer가 있고 메시지가 수락이면 결제서를 낸다. 수락: 살게요·할게요·그걸로·주문할게요·네 좋아요 등. "안 살·보류·말고·비싸"가 있으면 수락 아님. 그 밖의 모든 메시지는 {"defer": true}.
+- 결제서 발급: 만료 예약(until <= now) 정리 → inventory에서 그 sku의 예약 안 된 unit 선택(없으면 defer) → 그 unit cost로 floor 재확인(price < floor면 defer) → reserved[unit] = {customer_key, until: now + 600} → payload {id: 새 uuid, shop: "choo-chu", shop_url: k.shop_url, item: sku, price: int, task: 새 uuid, currency: "credits", iat: now, unit, claim: unit 등급}(cert 없음) → k.sign_jwt(payload, "shop") → ledger.jsonl에 {ts, customer_key, sku, unit, price, result: "checkout_issued"} append → offers에서 그 손님 삭제 → {"reply": 상품·가격·10분 안내, "data": {"checkout_jwt": jwt}, "state": "completed"}.
+- 상대경로 handler_state.json·ledger.jsonl, k.testing이면 test_state.json·test_ledger.jsonl. permission.write에 4개 모두. logic.py 4,000자·test.py 1,500자 이하. test.py는 시작 전에 test_ 파일을 비우고, assert는 r['data'] 안을 본다('checkout_jwt' in (r.get('data') or {})).
+
+[손님 응대 - 내가 직접]
+- 첫 제시가는 정가(list_price), 흥정은 90% → 80% → 최저가 순서로 한 단계씩. C등급 unit은 최저가로 먼저 제시.
+- 쌀 문의: 쌀·백미·현미·즉석밥(햇반) 먼저, 그다음 떡·과자류.
+- 가격을 말하기 전에 반드시 offer(손님 이름, sku, 가격)를 먼저 호출하고, ok일 때만 그 가격을 reply로 말한다. 흥정으로 가격이 바뀌면 다시 offer. 거절되면 반환된 floor 이상으로 다시 offer.
+- 결제서(JWT)는 내가 만들지 않는다. 손님이 수락하면 shop_handler가 바로 발급한다. 수락인데 나에게 위임되면 offer가 30분 지났거나 재고가 없는 것이니, 다시 offer하고 "살게요"라고 한 번 더 말해 달라고 답한다.
+- 대기 메시지는 80초 뒤 "바쁨" 답이 나가고 닫힌다. 빨리 답한다.
 
 [restock]
 - 창: /api/inventory의 restock{open, opens_at, closes_at}와 app_clock now_epoch로 판단. 창이 닫혀 있으면 dry-run으로 계획을 끝까지 계산해 app_say로 알린다.

@@ -235,6 +235,33 @@ miniapp.offer('forge_spec', 'Detailed rules and specs. Read before forging or fi
   }
 });
 
+// Reference tool code in app/ref/<name>/: the agent forges it as is.
+miniapp.offer('ref_code', 'Reference code for a tool; args {name: "stock" | "offer" | "shop_handler"}. Returns {name, description, permission, permission_yml, logic_py, test_py}. Call forge_tool with {name, description, permission, logic: logic_py, test: test_py} exactly as returned.', async a => {
+  const name = String((a && a.name) || '');
+  if (!['stock', 'offer', 'shop_handler'].includes(name)) return {error: 'name must be "stock", "offer" or "shop_handler"'};
+  const get = async f => {
+    const r = await fetch('ref/' + name + '/' + f + '?t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error(f + ': HTTP ' + r.status);
+    return (await r.text()).replace(/^﻿/, '');
+  };
+  try {
+    const [permission_yml, logic_py, test_py] = await Promise.all([get('permission.yml'), get('logic.py'), get('test.py')]);
+    const permission = {}; let description = '', inPerm = false;
+    for (const line of permission_yml.split('\n')) {
+      const m = line.match(/^(\s*)([a-z_]+):\s*(.*)$/);
+      if (!m) continue;
+      const [, indent, key, raw] = m, val = raw.trim();
+      if (!indent) { inPerm = key === 'permission'; if (key === 'description') description = val; continue; }
+      if (!inPerm) continue;
+      permission[key] = val.startsWith('[') ? val.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
+                      : /^\d+$/.test(val) ? Number(val) : val;
+    }
+    return {name, description, permission, permission_yml, logic_py, test_py};
+  } catch (e) {
+    return {error: 'ref/' + name + ' could not be read: ' + e};
+  }
+});
+
 // The memo file app/owner_memo.txt wins; its first line (the version header) is updated_at.
 // If the file cannot be read, fall back to the memo saved in this browser.
 miniapp.offer('owner_memo', "The shop owner's current instructions and strategy memo. Check it before pricing or buying.", async () => {
