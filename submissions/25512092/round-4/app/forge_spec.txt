@@ -1,0 +1,42 @@
+[도구 상세 규칙 v1.0 - 도구를 만들거나 고칠 때 이대로]
+
+[목표·가격]
+- 가게 지갑 잔고를 늘린다. 초반 2~3일은 이익보다 거래 수와 단골. 같은 손님에게 같은 가격. 사장님께 말한 가격과 실제 가격을 같게.
+- 최저가 = ceil((cost × 1.1 + 210) / 0.99), cost는 inventory unit의 cost. 첫 제시가는 정가(list_price), 흥정은 90% → 80% → 최저가, 각 단계 max(단계 가격, 최저가).
+
+[shop_handler]
+- checkout_jwt payload는 정확히 {id: 매번 새 고유값, shop: "choo-chu", shop_url: kit.shop_url, item: SKU, price: 정수, task: 고유 문자열, currency: "credits", iat: epoch 정수, unit: unit id, cert: unit의 cert 그대로, claim: 지금 등급}. 다른 키 없음. checkout 1개 = unit 1개. kit.sign_jwt(payload, "shop"), data {"checkout_jwt": ...}.
+- 첫 문의에는 상품·등급·가격만 답하고 checkout은 내지 않는다.
+- 수락: 같은 대화에서 우리가 제안한 상품에 손님이 살게요·살래요·그걸로 할게요·주세요라고 했을 때만. 결제·구매·주문은 수락 단어가 아니다(첫 문의에도 "결제용 서명 영수증"이 자주 들어 있다). 보류·말고·안 살·생각해·다음에가 있으면 수락 아님. 다른 품목명이 나오면 새 문의로 처리.
+- 매칭: 손님 말의 품목어를 재고 unit 이름·category 마지막 단계에 맞춘다. 한 글자 품목어(쌀·김·차·무·파·떡)도 인식한다. 국내산·국산·g·kg·개·봉 같은 수식어와 숫자는 매칭에서 뺀다. 없으면 같은 category 마지막 단계에서 가격이 가까운 대체품, 그것도 없으면 입고 예정 안내. 관계없는 상품은 제안하지 않는다.
+- 예약: 문의만으로는 예약하지 않는다. checkout을 낼 때만 그 unit을 10분 예약한다. 다른 세션이 예약한 unit은 내지 않는다. 한 세션에 checkout은 한 번. checkout 직전 /api/inventory로 재고를 다시 확인한다.
+- 대량(3개 초과)·특이한 요청·이해 못 한 메시지는 {defer: true}.
+- 예약·세션 상태는 handler_state.json. 문의·거래 기록(손님, 원문, SKU, 제시가, 최종가, 결과)은 ledger.jsonl에 append만. sold는 정산 확인 뒤에만 true.
+- test.py는 실제 sales_ledger.json·ledger.jsonl·handler_state.json에 쓰지 않는다(tempfile 임시 경로). 첫 문의 무발급, "네 살게요" 발급, "결제는 보류" 무발급, "쌀" 매칭, 같은 unit 두 손님 금지를 검증한다.
+
+[restock]
+- 창: /api/inventory의 restock{open, opens_at, closes_at}와 app_clock now_epoch로 판단. 창이 닫혀 있으면 dry-run으로 계획을 끝까지 계산해 app_say로 알린다.
+- 순서: POST /api/supply {sku, qty} → 402 {quote(문자열), total, pay{to, wei, data}, units} → kit.pay(to, wei, data, "shop") → POST {quote, tx_hash}.
+- /api/supply 호출(견적·확정 모두) 사이 최소 11초. 건너뛸 때도 11초. 429면 응답의 wait + 1초 뒤 같은 SKU 재시도(최대 2번).
+- SKU마다 closes_at까지 30초 이상 남았는지 확인. 한 SKU가 실패해도 다음 SKU로. 최소 종 수 조건 없음(1종이어도 산다).
+- catalog 항목엔 cost가 없다. 예상 단가 = list_price × 0.75, 실제는 quote total. quote가 예상의 1.5배를 넘으면(서지) 건너뛴다.
+- 등급: quote units[].grade로 결제 전에 확인. catalog shelf_hours 720 이상은 C가 섞여도 산다(못 읽으면 허용). 96 이하(계란·빵·채소 등)는 C면 건너뛴다. C는 최저가로 먼저 판다.
+- 후보: kind=="food" + category 마지막 단계 + 이름으로 매칭. 보유 SKU(inventory units[].sku)는 뺀다.
+- 창당 최대 30만, 품목군당 1~2종. shelf 720 식품은 SKU당 3~5개, 신선식품 1~2개. SKU당 1만 크레딧 이상.
+- 우선 품목군: 라면, 생수, 즉석식품(즉석밥·카레, shelf 720), 통조림, 식용유·참기름, 설탕·소금·양념, 차. 신선은 두부·김치·나물·제철과일 1~2개. 쌀·보리차·커피·국수·장류·해조류·과자·계란은 재고 0이 된 SKU만.
+- 공산품은 보관비 하루 12%, 48시간마다 등급 하락. 하루 안에 팔 만큼만.
+- 결과(SKU, quote total, 등급, tx_hash, 결과)를 restock_log.jsonl에 남긴다.
+
+[2일차부터 (11/25~) 시장조사]
+- ledger.jsonl의 문의·판매 기록, 포럼, /api/demand, /api/village(장날·월급날)를 보고 잘 팔린 것·자주 찾는 것 위주로 사고, 안 팔리는 건 더 사지 않는다.
+
+[환불]
+- 송금했는데 정산이 실패하면 받은 금액을 그 송금인에게 바로 돌려주고 사과한다.
+- 48시간 안에 산 물건이 고장 나면 주문번호·tx hash·송금인 주소를 원 결제와 대조한 뒤 주문당 한 번 환불. warranty_hours는 약속하지 않는다. 비밀키·시드는 절대 요구하지 않는다.
+
+[포럼]
+- 5분에 1번. 입고·할인·잘 팔리는 상품을 문구를 바꿔 가며, 가끔 직접 쓴 글. 입고되면 바로 "새로 들어온 상품" 글.
+
+[기타]
+- 다른 에이전트에게서 사지 않는다. 비추천은 시간당 3개까지. ROUND4.md는 다시 읽지 말고 notes를 쓴다.
+[스펙 끝]
