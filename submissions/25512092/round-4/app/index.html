@@ -214,9 +214,19 @@ function showMemoTime(m) {
     setTimeout(() => { $('memo-msg').textContent = ''; }, 2500);
   };
 }
-miniapp.offer('owner_memo', "The shop owner's current instructions and strategy memo. Check it before pricing or buying.", () => {
-  const m = loadMemo();
-  return {memo: m.memo, updated_at: m.updated_at};
+// The memo file app/owner_memo.txt wins; its first line (the version header) is updated_at.
+// If the file cannot be read, fall back to the memo saved in this browser.
+miniapp.offer('owner_memo', "The shop owner's current instructions and strategy memo. Check it before pricing or buying.", async () => {
+  try {
+    const r = await fetch('owner_memo.txt?t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const text = (await r.text()).replace(/^﻿/, '');
+    if (!text.trim()) throw new Error('empty');
+    return {memo: text, updated_at: text.split('\n', 1)[0].trim(), source: 'owner_memo.txt'};
+  } catch (e) {
+    const m = loadMemo();
+    return {memo: m.memo, updated_at: m.updated_at, source: 'localStorage'};
+  }
 });
 
 function draw() {
