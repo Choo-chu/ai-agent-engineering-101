@@ -1,11 +1,15 @@
-[도구 상세 규칙 v1.0 - 도구를 만들거나 고칠 때 이대로]
+[도구 상세 규칙 v1.1 - 도구를 만들거나 고칠 때 이대로]
 
 [목표·가격]
 - 가게 지갑 잔고를 늘린다. 초반 2~3일은 이익보다 거래 수와 단골. 같은 손님에게 같은 가격. 사장님께 말한 가격과 실제 가격을 같게.
 - 최저가 = ceil((cost × 1.1 + 210) / 0.99), cost는 inventory unit의 cost. 첫 제시가는 정가(list_price), 흥정은 90% → 80% → 최저가, 각 단계 max(단계 가격, 최저가).
 
 [shop_handler]
-- checkout_jwt payload는 정확히 {id: 매번 새 고유값, shop: "choo-chu", shop_url: kit.shop_url, item: SKU, price: 정수, task: 고유 문자열, currency: "credits", iat: epoch 정수, unit: unit id, cert: unit의 cert 그대로, claim: 지금 등급}. 다른 키 없음. checkout 1개 = unit 1개. kit.sign_jwt(payload, "shop"), data {"checkout_jwt": ...}.
+- checkout_jwt payload는 정확히 {id: 매번 새 고유값, shop: "choo-chu", shop_url: kit.shop_url, item: SKU, price: 정수, task: 고유 문자열, currency: "credits", iat: epoch 정수, unit: unit id, claim: 지금 등급}. 다른 키 없음. checkout 1개 = unit 1개. kit.sign_jwt(payload, "shop"), data {"checkout_jwt": ...}.
+- cert 키는 넣지 않는다(선택 항목이라 정산에 필요 없음). 넣을 거면 str()로 바꾸지 말고 inventory unit의 cert 객체를 그대로(v8은 str(cert)로 Python 문자열을 넣었다).
+- 최저가는 /api/inventory unit의 실제 cost로 ceil((cost × 1.1 + 210) / 0.99). list_price × 0.75 추정은 쓰지 않는다(v8의 _floor).
+- C등급 unit은 정가가 아니라 최저가로 먼저 제시한다(v8은 C 과자를 정가 14,900에 제시).
+- 쌀 문의: 이름·category가 쌀·백미·현미·즉석밥(햇반)인 unit을 먼저, 그다음 떡·과자류 순으로 고른다(v8은 "우리쌀 떡국떡"을 제시).
 - 첫 문의에는 상품·등급·가격만 답하고 checkout은 내지 않는다.
 - 수락: 같은 대화에서 우리가 제안한 상품에 손님이 살게요·살래요·그걸로 할게요·주세요라고 했을 때만. 결제·구매·주문은 수락 단어가 아니다(첫 문의에도 "결제용 서명 영수증"이 자주 들어 있다). 보류·말고·안 살·생각해·다음에가 있으면 수락 아님. 다른 품목명이 나오면 새 문의로 처리.
 - 매칭: 손님 말의 품목어를 재고 unit 이름·category 마지막 단계에 맞춘다. 한 글자 품목어(쌀·김·차·무·파·떡)도 인식한다. 국내산·국산·g·kg·개·봉 같은 수식어와 숫자는 매칭에서 뺀다. 없으면 같은 category 마지막 단계에서 가격이 가까운 대체품, 그것도 없으면 입고 예정 안내. 관계없는 상품은 제안하지 않는다.
