@@ -1,5 +1,5 @@
 name: shop_handler
-description: A2A 핸들러(첫 답에 결제서). 손님 메시지의 단어를 재고 상품명·카테고리와 매칭해 1개를 골라(매칭 > 임박 > 신선 > 기타, 싼 것 우선) 제안가로 unit을 10분 예약하고 가게 지갑으로 서명한 checkout_jwt를 reply와 함께 낸다(손님당 예약 1개). 30분 안의 offer가 있고 수락이면 그 offer로 발급. 안 살·말고·보류·환불·취소가 있거나 매칭이 없으면 defer.
+description: A2A 핸들러(첫 답에 결제서). 손님 메시지의 단어를 재고 상품명·카테고리와 매칭해 1개를 골라(매칭 > 임박 > 신선 > 기타, 싼 것 우선) 제안가로 unit을 10분 예약하고 가게 지갑으로 서명한 checkout_jwt를 reply와 함께 낸다(손님당 예약 1개). 그 손님의 같은 상품 예약이 살아 있으면 새로 내지 않고 기존 결제서를 다시 안내. '말고/빼고' 앞 품목은 제외. 안 살·보류·환불·취소가 있거나 매칭이 없으면 defer. 손님 원문·상품·결과를 ledger에 기록.
 permission:
   network: [market.ourolabs.ai]
   write: [handler_state.json, ledger.jsonl, test_state.json, test_ledger.jsonl]

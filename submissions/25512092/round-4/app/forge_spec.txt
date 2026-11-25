@@ -16,9 +16,9 @@
 
 [shop_handler] 첫 답에 결제서
 - 결제서는 shop_handler가 첫 답에 함께 낸다(손님은 원할 때만 결제). LLM은 shop_handler가 넘긴 메시지만 quote → reply.
-- 손님 메시지 단어를 재고와 매칭해 1개 선택(매칭 > 임박 > 신선 > 기타, 싼 것 우선), 제안가로 10분 예약·서명 결제서·reply. 손님당 예약 1개. 30분 안의 offer + 수락이면 그 offer로 발급. 안 살·말고·보류·환불·취소 또는 매칭 0개면 defer.
-- unit: offer에 저장된 unit이 미예약·만료 전이면 그것, 아니면 만료가 가장 빠른 미예약 unit. price < 그 unit의 min_price면 defer.
-- 10분 예약 → 가게 지갑 서명 checkout_jwt(cert 없음) → ledger.jsonl에 checkout_issued.
+- 손님 메시지 단어를 재고와 매칭해 1개 선택(매칭 > 임박 > 신선 > 기타, 싼 것 우선), 제안가로 10분 예약·서명 결제서·reply. 손님당 예약 1개. 안 살·보류·환불·취소 또는 매칭 0개면 defer. '말고/빼고'는 취소가 아니라 그 앞 품목 제외. '등급·재고·가격'과 숫자로 시작하는 말은 매칭에 안 쓴다.
+- 수락도 상품 이름으로 처리(offer 경로 없음). 그 손님의 같은 상품 예약이 살아 있으면 새로 내지 않고 기존 결제서를 다시 안내.
+- 10분 예약 → 가게 지갑 서명 checkout_jwt(cert 없음) → ledger.jsonl에 손님 원문·상품·결과(checkout_issued, checkout_reused, defer_stop, defer_nomatch).
 
 [손님 응대 - 내가 직접]
 - 내가 받는 메시지는 shop_handler가 넘긴 것뿐(매칭 0개·취소·환불 등). quote → reply로 답한다.
@@ -27,7 +27,7 @@
 - 가격: stock의 제안가를 그대로 offer하고 말한다. 흥정은 한 번만 제안가의 5% 내리되 offer 최저가 미만 금지.
 - 쌀 문의: 쌀·백미·현미·즉석밥(햇반) 먼저, 그다음 떡·과자류.
 - 가격을 말하기 전에 반드시 offer(손님 이름, sku, 가격)를 먼저 호출하고, ok일 때만 그 가격을 reply로 말한다. 흥정으로 가격이 바뀌면 다시 offer. 거절되면 반환된 floor 이상으로 다시 offer.
-- 결제서(JWT)는 내가 만들지 않는다. quote가 offer를 저장하니 손님이 "살게요"라고 하면 shop_handler가 발급한다.
+- 결제서(JWT)는 내가 만들지 않는다. 손님이 상품 이름을 말하면 shop_handler가 발급한다.
 - 대기 메시지는 80초 뒤 "바쁨" 답이 나가고 닫힌다. 빨리 답한다.
 
 [restock]

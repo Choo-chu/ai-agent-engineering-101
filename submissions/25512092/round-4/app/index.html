@@ -236,8 +236,10 @@ miniapp.offer('forge_spec', 'Detailed rules and specs. Read before forging or fi
 });
 
 // Reference tool code in app/ref/<name>/: the agent forges it as is.
-miniapp.offer('ref_code', 'Reference code for a tool; args {name: "stock" | "offer" | "shop_handler" | "restock_list" | "checkout" | "sku_lookup" | "quote" | "set_intro"}. Returns {name, description, permission, permission_yml, logic_py, test_py}. Call forge_tool with {name, description, permission, logic: logic_py, test: test_py} exactly as returned.', async a => {
+miniapp.offer('ref_code', 'Reference code for a tool; args {name: "stock" | "offer" | "shop_handler" | "restock_list" | "checkout" | "sku_lookup" | "quote" | "set_intro", part (optional): "logic" | "rest"}. No part: returns {name, description, permission, permission_yml, logic_py, test_py}. part "logic": {name, part, logic_py} only. part "rest": {name, part, description, permission, test_py}. For a big tool call it twice (part "logic" and part "rest") and join the two. Call forge_tool with {name, description, permission, logic: logic_py, test: test_py} exactly as returned.', async a => {
   const name = String((a && a.name) || '');
+  const part = String((a && a.part) || '');
+  if (part && !['logic', 'rest'].includes(part)) return {error: 'part must be "logic", "rest" or left out'};
   if (!['stock', 'offer', 'shop_handler', 'restock_list', 'checkout', 'sku_lookup', 'quote', 'set_intro'].includes(name)) return {error: 'name must be "stock", "offer", "shop_handler", "restock_list", "checkout", "sku_lookup", "quote" or "set_intro"'};
   const get = async f => {
     const r = await fetch('ref/' + name + '/' + f + '?t=' + Date.now(), {cache: 'no-store'});
@@ -256,6 +258,8 @@ miniapp.offer('ref_code', 'Reference code for a tool; args {name: "stock" | "off
       permission[key] = val.startsWith('[') ? val.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean)
                       : /^\d+$/.test(val) ? Number(val) : val;
     }
+    if (part === 'logic') return {name, part, logic_py};
+    if (part === 'rest') return {name, part, description, permission, test_py};
     return {name, description, permission, permission_yml, logic_py, test_py};
   } catch (e) {
     return {error: 'ref/' + name + ' could not be read: ' + e};
