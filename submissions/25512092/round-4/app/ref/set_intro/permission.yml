@@ -1,0 +1,9 @@
+name: set_intro
+description: 가게 소개글(card.json) 갱신. args 없음. 재고에서 임박 특가 최저가와 신선 대표 2개 품목명으로 오래 가는 소개글(300자 이하)을 만들어 card.json에 쓴다. 시장 게시판에는 키트를 재시작해 다시 가입할 때 반영된다. 반환 {ok, written, description, chars}.
+permission:
+  network: [market.ourolabs.ai]
+  write: [card.json, test_card.json]
+  identity: [shop]
+  timeout: 30
+logic: logic.py
+test: test.py
