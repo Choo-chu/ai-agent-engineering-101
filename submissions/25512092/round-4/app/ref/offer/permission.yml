@@ -1,5 +1,5 @@
 name: offer
-description: 손님에게 가격을 말하기 전에 부른다. args {customer_key: 손님 이름(대기 메시지 from의 '...' 안), sku, price: 정수}. price가 그 sku의 최저가(가장 비싼 unit cost 기준) 이상이면 handler_state.json offers[손님]에 저장하고 {ok: true, price, floor}, 미만이면 {ok: false, floor}. 예약은 하지 않는다.
+description: 손님에게 가격을 말하기 전에 부른다. args {customer_key: 손님 이름(대기 메시지 from의 '...' 안), sku, price: 정수, grade: 선택(stock 줄의 등급 A/B/C, [임박] 줄이면 '임박')}. grade가 있으면 그 등급의 임박 아닌 unit(또는 '임박'이면 24시간 안 만료 unit) 중에서 고른다. 최저가 floor는 (조건에 맞는) 그 sku의 예약 안 된 unit 중 min_price가 가장 낮은 값(만료 6시간 안 cost 30%, 24시간 안 60%, 최소 300, 그 외 원가 floor). price가 floor 이상이면 handler_state.json offers[손님]에 {sku, price, unit(그 최저가 unit)} 저장하고 {ok: true, unit, price, floor}, 미만이면 {ok: false, floor}. 예약은 하지 않는다.
 permission:
   network: [market.ourolabs.ai]
   write: [handler_state.json, test_state.json]

@@ -1,30 +1,36 @@
 [도구 상세 규칙 v1.3 - 도구를 만들거나 고칠 때 이대로]
 
+코드는 app_ref_code가 정답. 스펙에 맞춰 고치지 않는다.
+
 [목표·가격]
-- 가게 지갑 잔고를 늘린다. 초반 2~3일은 이익보다 거래 수와 단골. 같은 손님에게 같은 가격. 사장님께 말한 가격과 실제 가격을 같게.
-- 최저가 = ceil((cost × 1.1 + 210) / 0.99), cost는 inventory unit의 cost. 첫 제시가는 정가(list_price), 흥정은 90% → 80% → 최저가, 각 단계 max(단계 가격, 최저가).
+- 가게 지갑 잔고를 늘린다. 같은 손님에게 같은 가격. 사장님께 말한 가격과 실제 가격을 같게.
+- unit별 최저가 min_price: 만료 6시간 안 max(300, cost×0.3), 24시간 안 max(300, cost×0.6), 그 외 ceil((cost×1.1+210)/0.99). 만료는 inventory unit의 expires_at.
+- 제시가는 stock의 제안가([임박] 줄 = min_price, [일반] 줄 = 신선 A 80%·B 75%·C floor, 가공 floor×1.05). 흥정은 한 번만 5%, 최저가 미만 금지.
 
 [손님 키]
 - 손님 키 = 손님 이름(claimed_from). 핸들러는 args의 claimed_from, 나는 대기 메시지 from의 '...' 안 이름(예: 성선자-55e7). 이름이 없으면 offer·결제서 없이 응대만.
 
 [offer 도구] offer(customer_key, sku, price)
-- /api/inventory(Bearer k.token('shop'))에서 그 sku의 unit 중 cost가 가장 높은 것으로 floor = ceil((cost × 1.1 + 210) / 0.99). price < floor면 {"ok": false, "floor": floor}.
-- 통과하면 handler_state.json의 offers[customer_key] = {sku, price, ts: now}. 예약은 하지 않는다. {"ok": true, "sku", "price", "floor"}.
-- 상대경로, k.testing이면 test_state.json. logic.py 3,000자 이하.
+- grade(선택: A/B/C면 그 등급의 임박 아닌 unit, '임박'이면 24시간 안 만료 unit)로 좁힌 뒤, 그 sku의 예약 안 된·만료 전 unit 중 min_price가 가장 낮은 unit이 허용 최저가. price가 그보다 낮으면 {ok: false, floor}.
+- 통과하면 offers[손님] = {sku, price, ts, unit(그 최저가 unit)}. 예약은 하지 않는다.
 
 [shop_handler] 결제서 발급만
-- 손님 키(claimed_from)에 30분 안의 offer가 있고 메시지가 수락이면 결제서를 낸다. 수락: 살게요·할게요·그걸로·주문할게요·네 좋아요 등. "안 살·보류·말고·비싸"가 있으면 수락 아님. 그 밖의 모든 메시지는 {"defer": true}.
-- 결제서 발급: 만료 예약(until <= now) 정리 → inventory에서 그 sku의 예약 안 된 unit 선택(없으면 defer) → 그 unit cost로 floor 재확인(price < floor면 defer) → reserved[unit] = {customer_key, until: now + 600} → payload {id: 새 uuid, shop: "choo-chu", shop_url: k.shop_url, item: sku, price: int, task: 새 uuid, currency: "credits", iat: now, unit, claim: unit 등급}(cert 없음) → k.sign_jwt(payload, "shop") → ledger.jsonl에 {ts, customer_key, sku, unit, price, result: "checkout_issued"} append → offers에서 그 손님 삭제 → {"reply": 상품·가격·10분 안내, "data": {"checkout_jwt": jwt}, "state": "completed"}.
-- 상대경로 handler_state.json·ledger.jsonl, k.testing이면 test_state.json·test_ledger.jsonl. permission.write에 4개 모두. logic.py 4,000자·test.py 1,500자 이하. test.py는 시작 전에 test_ 파일을 비우고, assert는 r['data'] 안을 본다('checkout_jwt' in (r.get('data') or {})).
+- 손님에게 30분 안의 offer가 있고 메시지가 수락(살게요·할게요·그걸로 등, "안 살·보류·말고·비싸" 없음)이면 결제서, 그 밖은 defer.
+- unit: offer에 저장된 unit이 미예약·만료 전이면 그것, 아니면 만료가 가장 빠른 미예약 unit. price < 그 unit의 min_price면 defer.
+- 10분 예약 → 가게 지갑 서명 checkout_jwt(cert 없음) → ledger.jsonl에 checkout_issued.
 
 [손님 응대 - 내가 직접]
-- 첫 제시가는 정가(list_price), 흥정은 90% → 80% → 최저가 순서로 한 단계씩. C등급 unit은 최저가로 먼저 제시.
+- 가격 제안 reply 마지막에 항상 "구매하시려면 '살게요'라고 답해 주세요."를 붙인다.
+- offer할 때 stock 줄의 등급을 grade로 넘긴다([임박] 줄이면 grade='임박').
+- 임박 상품이 있으면 먼저 "유통기한 임박 특가"로 안내: stock [임박] 줄의 만료까지 시간을 정직하게 말하고(예: 약 5시간 뒤 만료), 그 줄의 제안가로 offer.
+- 가격: stock의 제안가를 그대로 offer하고 말한다. 흥정은 한 번만 제안가의 5% 내리되 offer 최저가 미만 금지.
 - 쌀 문의: 쌀·백미·현미·즉석밥(햇반) 먼저, 그다음 떡·과자류.
 - 가격을 말하기 전에 반드시 offer(손님 이름, sku, 가격)를 먼저 호출하고, ok일 때만 그 가격을 reply로 말한다. 흥정으로 가격이 바뀌면 다시 offer. 거절되면 반환된 floor 이상으로 다시 offer.
 - 결제서(JWT)는 내가 만들지 않는다. 손님이 수락하면 shop_handler가 바로 발급한다. 수락인데 나에게 위임되면 offer가 30분 지났거나 재고가 없는 것이니, 다시 offer하고 "살게요"라고 한 번 더 말해 달라고 답한다.
 - 대기 메시지는 80초 뒤 "바쁨" 답이 나가고 닫힌다. 빨리 답한다.
 
 [restock]
+- 현재 구매 중지, 사장 지시 전엔 쓰지 않음.
 - 창: /api/inventory의 restock{open, opens_at, closes_at}와 app_clock now_epoch로 판단. 창이 닫혀 있으면 dry-run으로 계획을 끝까지 계산해 app_say로 알린다.
 - 순서: POST /api/supply {sku, qty} → 402 {quote(문자열), total, pay{to, wei, data}, units} → kit.pay(to, wei, data, "shop") → POST {quote, tx_hash}.
 - /api/supply 호출(견적·확정 모두) 사이 최소 11초. 건너뛸 때도 11초. 429면 응답의 wait + 1초 뒤 같은 SKU 재시도(최대 2번).
@@ -45,7 +51,7 @@
 - 48시간 안에 산 물건이 고장 나면 주문번호·tx hash·송금인 주소를 원 결제와 대조한 뒤 주문당 한 번 환불. warranty_hours는 약속하지 않는다. 비밀키·시드는 절대 요구하지 않는다.
 
 [포럼]
-- 5분에 1번. 입고·할인·잘 팔리는 상품을 문구를 바꿔 가며, 가끔 직접 쓴 글. 입고되면 바로 "새로 들어온 상품" 글.
+- 1시간에 1번. '신선 채소·과일 임박 특가'(품목, 가격대, 만료 정직 표기)를 문구를 바꿔 가며.
 
 [기타]
 - 다른 에이전트에게서 사지 않는다. 비추천은 시간당 3개까지. ROUND4.md는 다시 읽지 말고 notes를 쓴다.

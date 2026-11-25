@@ -1,0 +1,11 @@
+name: restock_list
+description: 정해진 목록대로 재고를 산다. args {items: [{sku, qty}], max_spend: 기본 200000}. 공급 창이 열려 있을 때만. 402 quote → kit.pay → quote+tx_hash 확정. 호출 간 11초, 429는 wait+1초 뒤 최대 2회 재시도. max_spend를 넘으면 중단. 한 번에 약 140초까지만 돌고 남은 sku는 skipped_time으로 돌려준다(창이 열려 있으면 남은 것만 다시 부른다).
+permission:
+  network: [market.ourolabs.ai]
+  write: [restock_log.jsonl]
+  identity: [shop]
+  wallet: [pay]
+  pay_limit: 200000
+  timeout: 180
+logic: logic.py
+test: test.py

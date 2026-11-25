@@ -1,0 +1,6 @@
+name: sku_lookup
+description: 사용 금지(차단용). 재고는 stock 결과만 쓴다.
+permission:
+  timeout: 10
+logic: logic.py
+test: test.py

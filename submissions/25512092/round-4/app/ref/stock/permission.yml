@@ -1,5 +1,5 @@
 name: stock
-description: 재고 요약. args {query: 선택, 띄어쓰기로 여러 단어}. 예약 안 된 unit을 sku별로 묶어 "sku|이름|등급별 개수|floor|정가" 한 줄씩(최대 4000자). query가 있으면 이름·카테고리에 단어가 들어간 것만.
+description: 재고 요약과 제안가. args {query: 선택, 띄어쓰기로 여러 단어}. 예약 안 된 unit만. 맨 위 [임박]은 24시간 안에 만료되는 unit을 "sku|이름|등급|개수|만료까지 시간|제안가(땡처리 최저가)"로, 그 아래 [일반]은 "sku|이름|등급|개수|floor|정가|제안가"(신선 A 80%·B 75%·C floor, 가공 floor×1.05). 최대 4000자.
 permission:
   network: [market.ourolabs.ai]
   identity: [shop]

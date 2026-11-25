@@ -1,7 +1,8 @@
 import json
 def test(f,k):
- a=dict(claimed_from='A',_inventory=[dict(unit='u',sku='G',cost=1000)])
- o=dict(sku='G',price=2500,ts=9e9)
- json.dump(dict(offers=dict(A=o)),open('test_state.json','w'))
- assert f(dict(a,text='안 살게'),k)['defer']
- assert f(dict(a,text='살게'),k)['data']['checkout_jwt']
+ u=dict(unit='h1',sku='H',cost=9)
+ v=dict(u,unit='h2',expires_at=9e11)
+ s='test_state.json'
+ json.dump({'offers':{'C':{'sku':'H','price':300,'ts':9e9,'unit':'h1'}}},open(s,'w'))
+ f(dict(claimed_from='C',text='구매하겠습니다',_inventory=[u,v]),k)
+ assert 'h1' in open(s).read()

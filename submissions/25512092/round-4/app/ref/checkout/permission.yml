@@ -1,0 +1,6 @@
+name: checkout
+description: 사용 금지(차단용). 결제서는 shop_handler만 발급한다. 손님에게 '살게요'라고 답해 달라고 하면 된다.
+permission:
+  timeout: 10
+logic: logic.py
+test: test.py

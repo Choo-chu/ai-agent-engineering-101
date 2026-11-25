@@ -1,0 +1,9 @@
+name: quote
+description: 손님 응대 1단계. args {customer_key: 손님 이름(대기 메시지 from의 '...' 안), query: 손님이 찾는 말}. 재고에서 관련 상품 1개를 골라(임박 특가 > 신선 > 기타, 같은 우선순위면 싼 것) 가격을 정하고 offers[손님]={sku, price, unit, grade, ts}에 저장한다. 반환 {ok, sku, name, grade, price, expires_h, others, say}. say를 그대로 reply하면 된다. 없으면 ok=false와 대체품 안내 say.
+permission:
+  network: [market.ourolabs.ai]
+  write: [handler_state.json, test_state.json]
+  identity: [shop]
+  timeout: 30
+logic: logic.py
+test: test.py
