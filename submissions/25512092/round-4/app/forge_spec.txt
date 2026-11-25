@@ -14,19 +14,20 @@
 - grade(선택: A/B/C면 그 등급의 임박 아닌 unit, '임박'이면 24시간 안 만료 unit)로 좁힌 뒤, 그 sku의 예약 안 된·만료 전 unit 중 min_price가 가장 낮은 unit이 허용 최저가. price가 그보다 낮으면 {ok: false, floor}.
 - 통과하면 offers[손님] = {sku, price, ts, unit(그 최저가 unit)}. 예약은 하지 않는다.
 
-[shop_handler] 결제서 발급만
-- 손님에게 30분 안의 offer가 있고 메시지가 수락(살게요·할게요·그걸로 등, "안 살·보류·말고·비싸" 없음)이면 결제서, 그 밖은 defer.
+[shop_handler] 첫 답에 결제서
+- 결제서는 shop_handler가 첫 답에 함께 낸다(손님은 원할 때만 결제). LLM은 shop_handler가 넘긴 메시지만 quote → reply.
+- 손님 메시지 단어를 재고와 매칭해 1개 선택(매칭 > 임박 > 신선 > 기타, 싼 것 우선), 제안가로 10분 예약·서명 결제서·reply. 손님당 예약 1개. 30분 안의 offer + 수락이면 그 offer로 발급. 안 살·말고·보류·환불·취소 또는 매칭 0개면 defer.
 - unit: offer에 저장된 unit이 미예약·만료 전이면 그것, 아니면 만료가 가장 빠른 미예약 unit. price < 그 unit의 min_price면 defer.
 - 10분 예약 → 가게 지갑 서명 checkout_jwt(cert 없음) → ledger.jsonl에 checkout_issued.
 
 [손님 응대 - 내가 직접]
-- 가격 제안 reply 마지막에 항상 "구매하시려면 '살게요'라고 답해 주세요."를 붙인다.
+- 내가 받는 메시지는 shop_handler가 넘긴 것뿐(매칭 0개·취소·환불 등). quote → reply로 답한다.
 - offer할 때 stock 줄의 등급을 grade로 넘긴다([임박] 줄이면 grade='임박').
 - 임박 상품이 있으면 먼저 "유통기한 임박 특가"로 안내: stock [임박] 줄의 만료까지 시간을 정직하게 말하고(예: 약 5시간 뒤 만료), 그 줄의 제안가로 offer.
 - 가격: stock의 제안가를 그대로 offer하고 말한다. 흥정은 한 번만 제안가의 5% 내리되 offer 최저가 미만 금지.
 - 쌀 문의: 쌀·백미·현미·즉석밥(햇반) 먼저, 그다음 떡·과자류.
 - 가격을 말하기 전에 반드시 offer(손님 이름, sku, 가격)를 먼저 호출하고, ok일 때만 그 가격을 reply로 말한다. 흥정으로 가격이 바뀌면 다시 offer. 거절되면 반환된 floor 이상으로 다시 offer.
-- 결제서(JWT)는 내가 만들지 않는다. 손님이 수락하면 shop_handler가 바로 발급한다. 수락인데 나에게 위임되면 offer가 30분 지났거나 재고가 없는 것이니, 다시 offer하고 "살게요"라고 한 번 더 말해 달라고 답한다.
+- 결제서(JWT)는 내가 만들지 않는다. quote가 offer를 저장하니 손님이 "살게요"라고 하면 shop_handler가 발급한다.
 - 대기 메시지는 80초 뒤 "바쁨" 답이 나가고 닫힌다. 빨리 답한다.
 
 [restock]
