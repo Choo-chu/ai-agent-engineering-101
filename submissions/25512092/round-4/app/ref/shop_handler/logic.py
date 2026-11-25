@@ -1,62 +1,71 @@
-import json
-import math
-import time
-import uuid
-import httpx
-
-STOP = ['안 살', '안살', '취소', '환불', '보류']
-FRESH = '채소 야채 나물 계란 곡물 생수 김치 과일 생선 두부'.split()
-
+import json, math, re, time, uuid, httpx
+SW = '기한 국내산 신선 등급 가격 재고 상품 결제서 영수증 receipt 있나 있어 주세요 알려 얼마 오늘 구매 판매 시간 보관 다른 포장 구성 대한'.split()
+FR = '채소 야채 나물 계란 곡물 생수 김치 과일 생선 두부'.split()
+NO = '않겠|않을|안 ?살|아니|필요 ?없|취소|환불|보류'
+def rd(f):
+    try:
+        return open(f, encoding='utf-8').read()
+    except:
+        return ''
+def ok(w):
+    return w[1:] and w[0] > '9' and not any(x in w for x in SW)
+def Q(w):
+    return {w, re.sub('(이나|으로|이랑|[은는이가을를와과나도만의로랑요])$', '', w)}
 def hit(w, t):
-    return len(w) > 1 and w[:2] in t and w[:2] not in '등급 재고 가격' and w[0] > '9'
-
+    return ok(w) and any(x.endswith(q) for x in re.findall('[가-힣A-Za-z]+', t) for q in Q(w) if q[1:])
 def run(a, k):
     s = a.get('text') or ''
     ck = a.get('claimed_from') or ''
-    p = 'test_' if k.testing else ''
-    fs = [(p or 'handler_') + 'state.json', p + 'ledger.jsonl']
+    fs = ['test_state.json', 'test_ledger.jsonl'] if k.testing else ['handler_state.json', 'ledger.jsonl']
     n = int(time.time())
     rec = {'ts': n, 'customer_key': ck, 'text': s}
     def log(**x):
-        open(fs[1], 'a', encoding='utf-8').write(json.dumps(dict(rec, **x)) + chr(10))
+        open(fs[1], 'a').write(json.dumps(dict(rec, **x)) + chr(10))
         return {'defer': True}
-    if not ck or any(w in s for w in STOP):
+    st = json.loads(rd(fs[0]) or '{}')
+    rv = {x: v for x, v in st.get('reserved', {}).items() if v['until'] > n}
+    st['reserved'] = {x: v for x, v in rv.items() if v.get('ck') != ck}
+    cl = re.split('[?,!]|[.] |[.]$', s)
+    if not ck or any(re.search(NO, c) and not re.search('전에|없는|않은|안 되|않으면|없으면|면 |엉뚱|다른|임박|낮은', c) for c in cl):
+        json.dump(st, open(fs[0], 'w'))
         return log(result='defer_stop')
-    try:
-        st = json.load(open(fs[0], encoding='utf-8'))
-    except:
-        st = {}
-    rv = {x: v for x, v in st.get('reserved', {}).items() if v.get('until', 0) > n}
     us = a.get('_inventory') or httpx.get(k.market + '/api/inventory', headers={'authorization': 'Bearer ' + k.token('shop')}, timeout=15).json()['units']
+    try:
+        V = set(re.findall('[가-힣]{2,}', ' '.join(c['name'] for c in json.loads(rd('analysis/data/live_catalog.json') or '[]') if c['kind'] == 'food') + a.get('_voc', '')))
+        assert V
+    except:
+        return log(result='defer_catalog')
     ex, ws = [], []
-    for c in s.replace('?', ',').replace('. ', ',').replace('빼고', '말고').split(','):
-        b, m, r = c.partition('말고')
-        (ex if m else ws).extend(b.split())
-        ws += r.split()
+    for c in cl:
+        *e, w = re.split('[말빼]고', c)
+        ex += ' '.join(e).split()
+        ws += [] if re.search(NO, c) else w.split()
+    N = {u['name'] for u in us}
+    it = [any(hit(w, t) for t in N) for w in ws if ok(w) and Q(w) & V or any(hit(w, t) for t in N)]
+    rk = 2 * sum(it) > len(it)
+    g = re.findall('([ABC]) ?등급', s) + ['']
+    fo = re.search('임박[^ ]* ?[말빼]고|임박한 [건것]|신선한 ?[거것]|넉넉', s)
     rs = []
     for u in us:
         h = ((u.get('expires_at') or 9e12) - n) / 3600
-        t = f"{u['name']} {u.get('category')}"
-        if h <= 0 or not u.get('cost') or rv.get(u['unit'], {}).get('customer_key', ck) != ck or any(hit(w, u['name']) for w in ex) or not any(hit(w, t) for w in ws):
+        t = u['name']
+        sc = len({w for w in ws if hit(w, t)})
+        if h <= 0 or u['unit'] in st['reserved'] or any(hit(w, t) for w in ex) or not sc or fo and h <= 24 or not (rk or all(x in s for x in re.sub('[([][^])]*[])]', '', t.split('/')[0]).split() if ok(x))):
             continue
-        c = u['cost']
-        fl = max(300, math.ceil(c * (.3 if h <= 6 else .6))) if h <= 24 else math.ceil((c * 1.1 + 210) / .99)
-        p = 0 if h <= 24 else {'A': .8, 'B': .75}.get(u['grade'], 0) * u.get('list_price', 0) if any(w in t for w in FRESH) else fl * 1.05
-        rs.append((h > 24, max(fl, round(p)), h, u))
+        fl = max(300, math.ceil(u['cost'] * (.3 if h <= 6 else .6))) if h <= 24 else math.ceil((u['cost'] * 1.1 + 210) / .99)
+        q = 0 if h <= 24 else {'A': .8, 'B': .75}.get(u['grade'], 0) * u['list_price'] if any(w in f"{t} {u.get('category')}" for w in FR) else fl * 1.05
+        rs.append((-sc, u['grade'] != g[0], max(fl, round(q)), h, u))
     if not rs:
         return log(result='defer_nomatch')
-    _, pr, h, u = min(rs, key=lambda r: r[:2])
-    rec.update(sku=u['sku'], name=u['name'])
-    old = [v for v in rv.values() if v['customer_key'] == ck and v.get('sku') == u['sku']]
-    if old:
-        jwt = old[0]['jwt']
+    *_, pr, h, u = min(rs, key=lambda r: r[:3])
+    rec['sku'] = u['sku']
+    jwt = ([v['jwt'] for v in rv.values() if v.get('ck') == ck and v['sku'] == u['sku']] or [0])[0]
+    if jwt:
         log(result='checkout_reused')
-        say = '앞서 보낸 결제서로 결제해 주세요.'
+        say = '보낸 결제서 그대로예요.'
     else:
-        pl = {'id': str(uuid.uuid4()), 'shop': 'choo-chu', 'shop_url': k.shop_url, 'item': u['sku'], 'price': pr, 'task': str(uuid.uuid4()), 'currency': 'credits', 'iat': n, 'unit': u['unit'], 'claim': u['grade'] or ''}
-        jwt = k.sign_jwt(pl, 'shop')
-        st['reserved'] = {x: v for x, v in rv.items() if v['customer_key'] != ck}
-        st['reserved'][u['unit']] = {'customer_key': ck, 'until': n + 600, 'sku': u['sku'], 'jwt': jwt}
+        jwt = k.sign_jwt({'id': uuid.uuid4().hex, 'shop': k.name, 'shop_url': k.shop_url, 'item': u['sku'], 'price': pr, 'task': uuid.uuid4().hex, 'currency': 'credits', 'iat': n, 'unit': u['unit'], 'claim': u['grade']}, 'shop')
+        st['reserved'][u['unit']] = {'ck': ck, 'until': n + 600, 'sku': u['sku'], 'jwt': jwt}
         json.dump(st, open(fs[0], 'w'))
         log(unit=u['unit'], price=pr, result='checkout_issued')
         say = f"{u['grade']}등급({round(h) or 1}시간 뒤 만료) {pr:,}크레딧, 결제서 보내요."

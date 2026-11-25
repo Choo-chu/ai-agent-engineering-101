@@ -244,7 +244,7 @@ miniapp.offer('ref_code', 'Reference code for a tool; args {name: "stock" | "off
   const get = async f => {
     const r = await fetch('ref/' + name + '/' + f + '?t=' + Date.now(), {cache: 'no-store'});
     if (!r.ok) throw new Error(f + ': HTTP ' + r.status);
-    return (await r.text()).replace(/^﻿/, '');
+    return (await r.text()).replace(/^﻿/, '').replace(/\r\n?/g, '\n');
   };
   try {
     const [permission_yml, logic_py, test_py] = await Promise.all([get('permission.yml'), get('logic.py'), get('test.py')]);
