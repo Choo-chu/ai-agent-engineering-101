@@ -58,7 +58,7 @@ def run(a, k):
         if h <= 0 or not u.get('cost') or res.get(u['unit'], {}).get('until', 0) > n or any(hit(w, t) for w in ex) or fo and h <= 24:
             continue
         c = u['cost']
-        fl = max(300, math.ceil(c * (.3 if h <= 6 else .6))) if h <= 24 else math.ceil((c * 1.1 + 210) / .99)
+        fl = max(300, math.ceil(c * (.2 if h <= 6 else .4))) if h <= 24 else math.ceil((c * 1.1 + 210) / .99)
         p = 0 if h <= 24 else {'A': .8, 'B': .75}.get(u['grade'], 0) * (u.get('list_price') or 0) if any(w in f"{t} {u.get('category')}" for w in FRESH) else fl * 1.05
         sc = len({w for w in ws if hit(w, t)}) if rk or all(x in s for x in re.sub('[([][^])]*[])]', '', t.split('/')[0]).split() if ok(x)) else 0
         rs.append((-sc, u['grade'] != g[0], max(fl, round(p)), h, u))

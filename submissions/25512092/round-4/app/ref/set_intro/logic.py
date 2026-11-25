@@ -7,9 +7,9 @@ def min_price(u, n):
     c = u.get('cost') or 0
     h = ((u.get('expires_at') or 9e12) - n) / 3600
     if h <= 6:
-        return max(300, math.ceil(c * 0.3))
+        return max(300, math.ceil(c * 0.2))
     if h <= 24:
-        return max(300, math.ceil(c * 0.6))
+        return max(300, math.ceil(c * 0.4))
     return math.ceil((c * 1.1 + 210) / 0.99)
 
 

@@ -52,7 +52,7 @@ def run(a, k):
         sc = len({w for w in ws if hit(w, t)})
         if h <= 0 or u['unit'] in st['reserved'] or any(hit(w, t) for w in ex) or not sc or fo and h <= 24 or not (rk or all(x in s for x in re.sub('[([][^])]*[])]', '', t.split('/')[0]).split() if ok(x))):
             continue
-        fl = max(300, math.ceil(u['cost'] * (.3 if h <= 6 else .6))) if h <= 24 else math.ceil((u['cost'] * 1.1 + 210) / .99)
+        fl = max(300, math.ceil(u['cost'] * (.2 if h <= 6 else .4))) if h <= 24 else math.ceil((u['cost'] * 1.1 + 210) / .99)
         q = 0 if h <= 24 else {'A': .8, 'B': .75}.get(u['grade'], 0) * u['list_price'] if any(w in f"{t} {u.get('category')}" for w in FR) else fl * 1.05
         rs.append((-sc, u['grade'] != g[0], max(fl, round(q)), h, u))
     if not rs:

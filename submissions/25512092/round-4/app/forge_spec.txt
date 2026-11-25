@@ -4,7 +4,7 @@
 
 [목표·가격]
 - 가게 지갑 잔고를 늘린다. 같은 손님에게 같은 가격. 사장님께 말한 가격과 실제 가격을 같게.
-- unit별 최저가 min_price: 만료 6시간 안 max(300, cost×0.3), 24시간 안 max(300, cost×0.6), 그 외 ceil((cost×1.1+210)/0.99). 만료는 inventory unit의 expires_at.
+- unit별 최저가 min_price: 만료 6시간 안 max(300, cost×0.2), 24시간 안 max(300, cost×0.4), 그 외 ceil((cost×1.1+210)/0.99). 만료는 inventory unit의 expires_at.
 - 제시가는 stock의 제안가([임박] 줄 = min_price, [일반] 줄 = 신선 A 80%·B 75%·C floor, 가공 floor×1.05). 흥정은 한 번만 5%, 최저가 미만 금지.
 
 [손님 키]
