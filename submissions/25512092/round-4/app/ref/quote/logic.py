@@ -4,7 +4,9 @@ import re
 import time
 import httpx
 
-SW = '기한 국내산 신선 등급 가격 재고 상품 결제서 영수증 receipt 있나 있어 주세요 알려 얼마 오늘 구매 판매 시간 보관 다른 포장 구성 대한'.split()
+SW = '기한 국내산 국산 신선 등급 가격 재고 상품 결제서 영수증 receipt 있나 있어 주세요 알려 얼마 오늘 구매 판매 시간 보관 다른 포장 구성 대한 세트 반찬 찌개 냉장 냉동 친환경 모듬 제철'.split()
+GN = '나물 채소 야채 과일 생선 고기 돼지고기 간식'.split()
+FO = '임박[^ ]*( 상품| 품목)?[은는이을과]? ?(제외|[말빼]고|안 ?사|사지)|임박한 [건것]|임박품|신선한 ?([거것]|상품)|넉넉|충분|짧'
 NO = '않겠|않을|안 ?살|아니|필요 ?없|취소|환불|보류'
 FRESH = '채소 야채 나물 계란 곡물 생수 김치 과일 생선 두부'.split()
 
@@ -27,12 +29,15 @@ def run(a, k):
     key = a.get('customer_key')
     s = str(a.get('query') or '')
     ex, ws = [], []
-    for c in re.split('[?,!]|[.] |[.]$', s):
+    for c in re.split('[?,!]|[.] |[.]$', re.sub('[^가-힣A-Za-z0-9 ?,!.]', ' ', re.sub('(SKU ?)?G[0-9a-f]{8}', ' ', s))):
         *e, w = re.split('[말빼]고', c)
         ex += ' '.join(e).split()
         ws += [] if re.search(NO, c) else w.split()
-    g = re.findall('([ABC]) ?등급', s) + ['']
-    fo = re.search('임박[^ ]* ?[말빼]고|임박한 [건것]|신선한 ?[거것]|넉넉', s)
+    sk = re.findall('G[0-9a-f]{8}', s)
+    lo = re.search('C ?등급[^.?!]{0,12}(제외|[말빼]고|않|안 ?사)|더 높|등급 이상|[AB] ?등급', s)
+    G = 'A' if re.search('A ?등급|등급[이은는가]? ?A[^a-zA-Z]', s) and not re.search('B ?등급', s) else 'AB' if lo else 'ABC'
+    m = re.search('([0-9]+) ?시간 ?(이하|미만)', s)
+    hm = int(m[1]) if m else 48 if '이틀' in s else 24 if re.search(FO, s) else 0
     sf = 'test_state.json' if k.testing else 'handler_state.json'
     try:
         st = json.load(open(sf, encoding='utf-8'))
@@ -55,19 +60,21 @@ def run(a, k):
     for u in us:
         h = ((u.get('expires_at') or 9e12) - n) / 3600
         t = u['name']
-        if h <= 0 or not u.get('cost') or res.get(u['unit'], {}).get('until', 0) > n or any(hit(w, t) for w in ex) or fo and h <= 24:
+        if h <= 0 or not u.get('cost') or res.get(u['unit'], {}).get('until', 0) > n or any(hit(w, t) for w in ex) or any(re.search('[0-9] ?' + z, s) and not re.search(y + ' ?' + z, s) for y, z in re.findall('([0-9]+) ?(구|kg)', t)):
             continue
         c = u['cost']
         fl = max(300, math.ceil(c * (.2 if h <= 6 else .4))) if h <= 24 else math.ceil((c * 1.1 + 210) / .99)
         p = 0 if h <= 24 else {'A': .8, 'B': .75}.get(u['grade'], 0) * (u.get('list_price') or 0) if any(w in f"{t} {u.get('category')}" for w in FRESH) else fl * 1.05
-        sc = len({w for w in ws if hit(w, t)}) if rk or all(x in s for x in re.sub('[([][^])]*[])]', '', t.split('/')[0]).split() if ok(x)) else 0
-        rs.append((-sc, u['grade'] != g[0], max(fl, round(p)), h, u))
+        sc = sum(1 if q in GN else 10 for q in {min(Q(w), key=len) for w in ws if hit(w, t)}) + 100 * (u['sku'] in sk) if rk or all(x in s for x in re.sub('[([][^])]*[])]', '', t.split('/')[0]).split() if ok(x)) else 0
+        rs.append((-sc * (sc >= 1 + 19 * bool(sk)), u['grade'] not in G or h <= hm, max(fl, round(p)), h, u))
     rs.sort(key=lambda r: r[:3])
     names = list(dict.fromkeys(r[4]['name'] for r in rs if r[0] == rs[0][0]))
     if not key or not rs or not rs[0][0]:
         return {'ok': False, 'others': names[:3], 'say': '그 상품은 지금 없습니다. 대신 있는 상품: ' + ', '.join(names[:3])}
-    _, _, price, h, u = rs[0]
+    _, bad, price, h, u = rs[0]
     gr = u['grade'] or '?'
+    if bad:
+        return {'ok': False, 'others': names[:3], 'say': f"말씀하신 등급·기한 조건에 맞는 재고가 없습니다. 지금 있는 것: {names[0]} {gr}등급, 약 {round(h) or 1}시간 뒤 만료."}
     st.setdefault('offers', {})[key] = {'sku': u['sku'], 'price': price, 'unit': u['unit'], 'grade': gr, 'ts': int(n)}
     json.dump(st, open(sf, 'w', encoding='utf-8'), ensure_ascii=False)
     when = f'임박 특가, 약 {round(h) or 1}시간 뒤 만료' if h <= 24 else f'소비기한 약 {round(h / 24)}일'

@@ -13,6 +13,7 @@ def test(f, k):
     st = json.load(open('test_state.json', encoding='utf-8'))
     assert 'E' not in [x.get('ck') for x in st['reserved'].values()]
     assert 'A등급' in f(dict(a, text='A등급 시금치'), k)['reply']
+    assert f(dict(a, text='사과 A등급 있어요?'), k).get('defer')
     assert '배추김치' in f(dict(a, text='김치 주세요? 총각김치 말고'), k)['reply']
     for s in ['우유 있어요?', '구워 먹을 삼겹살', '무항생제 앞다리살']:
         assert f(dict(a, text=s), k).get('defer')
