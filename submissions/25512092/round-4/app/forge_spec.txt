@@ -24,7 +24,7 @@
 - 손님 품목 단어(analysis/data/live_catalog.json 식품 상품명에 있는 단어) 중 우리 재고에 맞은 비율이 절반 이하면 defer. 상품명 앞부분 단어가 다 문장에 있으면 인정.
 - 거절·부정(않겠·안 살·아니·필요 없·취소·환불·보류)은 조건절(전에는·없는·않은·안 되면·엉뚱·다른·임박·낮은)이 아닐 때만 거절: 그 손님 예약 해제 + defer. 조건절은 매칭에서 뺀다.
 - 수락도 상품 이름으로 처리(offer 경로 없음). 그 손님의 같은 상품 예약이 살아 있으면 새로 내지 않고 기존 결제서를 다시 안내.
-- 10분 예약 → 가게 지갑 서명 checkout_jwt(cert 없음) → ledger.jsonl에 손님 원문·상품·결과(checkout_issued, checkout_reused, defer_stop, defer_nomatch, defer_cond).
+- 10분 예약 → 가게 지갑 서명 checkout_jwt(cert 없음) → ledger.jsonl에 손님 원문·상품·발급 jwt 전체(필드 jwt)·결과(checkout_issued, checkout_reused, defer_stop, defer_nomatch, defer_cond).
 
 [손님 응대 - 내가 직접]
 - 내가 받는 메시지는 shop_handler가 넘긴 것뿐(매칭 0개·취소·환불 등). quote → reply로 답한다.

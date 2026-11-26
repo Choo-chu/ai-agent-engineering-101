@@ -8,6 +8,7 @@ def test(f, k):
     assert f(dict(a, text='소비기한 알려주세요'), k).get('defer')
     r = f(dict(a, text='사과 있어요?'), k)
     assert r['reply'].startswith('사과 ')
+    assert json.loads(open('test_ledger.jsonl').read().splitlines()[-1])['jwt'] == r['data']['checkout_jwt']
     assert f(dict(a, text='사과 주세요. 확인 전에는 결제하지 않겠습니다'), k)['data'] == r['data']
     assert f(dict(a, text='이건 안 살게요'), k).get('defer')
     st = json.load(open('test_state.json', encoding='utf-8'))

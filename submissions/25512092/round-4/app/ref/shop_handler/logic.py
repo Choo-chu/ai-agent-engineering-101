@@ -74,6 +74,6 @@ def run(a, k):
         jwt = k.sign_jwt({'id': uuid.uuid4().hex, 'shop': k.name, 'shop_url': k.shop_url, 'item': u['sku'], 'price': pr, 'task': uuid.uuid4().hex, 'currency': 'credits', 'iat': n, 'unit': u['unit'], 'claim': u['grade']}, 'shop')
         st['reserved'][u['unit']] = {'ck': ck, 'until': n + 600, 'sku': u['sku'], 'jwt': jwt}
         json.dump(st, open(fs[0], 'w'))
-        log(unit=u['unit'], price=pr, result='checkout_issued')
+        log(unit=u['unit'], price=pr, jwt=jwt, result='checkout_issued')
         say = f"{u['grade']}등급({round(h) or 1}시간 뒤 만료) {pr:,}크레딧, 결제서 보내요."
     return {'reply': f"{u['name']} {say}", 'data': {'checkout_jwt': jwt}, 'state': 'input_required'}
